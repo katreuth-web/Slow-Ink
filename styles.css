@@ -4,8 +4,8 @@
    =================================================================== */
 
 :root {
-  --font-display: "Cormorant Garamond", "Iowan Old Style", serif;
-  --font-body: "Jost", "Avenir Next", sans-serif;
+  --font-display: "Caladea", "Iowan Old Style", serif;
+  --font-body: "Questrial", "Avenir Next", sans-serif;
   --dur: .22s;
   --ease: cubic-bezier(.22, .61, .36, 1);
   --r-card: 14px;
@@ -99,7 +99,7 @@ body {
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 
-h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; margin: 0; }
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 400; margin: 0; }
 p { margin: 0; }
 button, input, textarea, select { font-family: inherit; color: inherit; }
 a { color: inherit; }
