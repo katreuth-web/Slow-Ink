@@ -137,7 +137,7 @@
   /* ------------------------------------------------------------- icons */
 
   var ICONS = {
-    cover: '<path d="M4 5.5c2.4-1.2 5.2-1.2 8 0v13c-2.8-1.2-5.6-1.2-8 0v-13z"/><path d="M20 5.5c-2.4-1.2-5.2-1.2-8 0v13c2.8-1.2 5.6-1.2 8 0v-13z"/>',
+    cover: '<rect x="4" y="4" width="16" height="16" rx="5"/><path d="M12 8c1.8 1.7 2.8 3.4 2.8 5.1 0 1.9-1.2 3.4-2.8 4.3-1.6-.9-2.8-2.4-2.8-4.3 0-1.7 1-3.4 2.8-5.1z"/><path d="M12 11.2v3.6"/>',
     year: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.4"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.4"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.4"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.4"/>',
     month: '<rect x="3.5" y="4.5" width="17" height="16" rx="2"/><path d="M3.5 9.5h17M8 3v3M16 3v3"/>',
     week: '<path d="M4 4v16M9.5 4v16M15 4v16M20 4v16"/>',
@@ -146,7 +146,15 @@
     goals: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.2"/><circle cx="12" cy="12" r=".9" fill="currentColor"/>',
     reading: '<path d="M3.5 5.5c2.6-1.4 5.7-1.4 8.5 0v13c-2.8-1.4-5.9-1.4-8.5 0v-13z"/><path d="M20.5 5.5c-2.6-1.4-5.7-1.4-8.5 0v13c2.8-1.4 5.9-1.4 8.5 0v-13z"/>',
     finance: '<circle cx="12" cy="12" r="8.2"/><path d="M12 7.2v9.6M14.6 9.2c0-1.1-1.2-2-2.6-2s-2.6.9-2.6 2 1.2 1.6 2.6 1.9c1.4.3 2.6.9 2.6 2s-1.2 2-2.6 2-2.6-.9-2.6-2"/>',
-    notes: '<path d="M5 4h14v13l-4 4H5V4z"/><path d="M19 17h-4v4"/>'
+    notes: '<path d="M5 4h14v13l-4 4H5V4z"/><path d="M19 17h-4v4"/>',
+    home: '<path d="M4 11.5L12 4l8 7.5"/><path d="M6 10v9h5v-5h2v5h5v-9"/>',
+    pencil: '<path d="M4 20l1-4.2L15.8 4.9a1.8 1.8 0 0 1 2.5 0l1 1a1.8 1.8 0 0 1 0 2.5L8.3 19.3 4 20z"/><path d="M14 6.8l3.2 3.2"/>',
+    sliders: '<path d="M4 7h9M17 7h3M4 17h3M9 17h11"/><circle cx="14" cy="7" r="2.2"/><circle cx="7" cy="17" r="2.2"/>',
+    list: '<path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1.1" fill="currentColor" stroke="none"/>',
+    moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+    sunTheme: '<circle cx="12" cy="12" r="4.4"/><path d="M12 3v2.4M12 18.6V21M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M3 12h2.4M18.6 12H21M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"/>',
+    menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+    close: '<path d="M6 6l12 12M18 6L6 18"/>'
   };
 
   function icon(name) {
@@ -174,22 +182,66 @@
     finance: "Finance", notes: "Notes"
   };
 
-  function buildRail() {
-    var rail = document.getElementById("rail");
-    var mark = document.createElement("div");
-    mark.className = "rail-mark";
-    mark.innerHTML = icon("cover").replace("currentColor", "var(--rail-ink)");
-    rail.appendChild(mark);
+  var TAB_ITEMS = [
+    { id: "cover", icon: "home" },
+    { id: "month", icon: "month" },
+    { id: "day", icon: "pencil" },
+    { id: "habits", icon: "sliders" },
+    { id: "year", icon: "year" },
+    { id: "goals", icon: "list" }
+  ];
+
+  function buildTabbar() {
+    var bar = document.getElementById("tabbar");
+    bar.innerHTML = "";
+    TAB_ITEMS.forEach(function (t) {
+      var btn = document.createElement("button");
+      btn.className = "tab-btn";
+      btn.dataset.section = t.id;
+      btn.title = TITLES[t.id] || t.id;
+      btn.innerHTML = icon(t.icon);
+      btn.addEventListener("click", function () { go(defaultRouteFor(t.id)); });
+      bar.appendChild(btn);
+    });
+    var moonBtn = document.createElement("button");
+    moonBtn.className = "tab-btn theme-btn";
+    moonBtn.dataset.theme = "green-velvet";
+    moonBtn.title = "Green Velvet (dark)";
+    moonBtn.innerHTML = icon("moon");
+    moonBtn.addEventListener("click", function () { setTheme("green-velvet"); });
+    bar.appendChild(moonBtn);
+    var sunBtn = document.createElement("button");
+    sunBtn.className = "tab-btn theme-btn";
+    sunBtn.dataset.theme = "ivory-lace";
+    sunBtn.title = "Ivory Lace (light)";
+    sunBtn.innerHTML = icon("sunTheme");
+    sunBtn.addEventListener("click", function () { setTheme("ivory-lace"); });
+    bar.appendChild(sunBtn);
+  }
+
+  function buildDrawer() {
+    var wrap = document.getElementById("drawer-sections");
+    wrap.innerHTML = "";
     SECTIONS.forEach(function (s) {
       var btn = document.createElement("button");
-      btn.className = "rail-item";
+      btn.className = "drawer-link";
       btn.dataset.section = s.id;
-      btn.innerHTML = icon(s.id) + "<span>" + s.label + "</span>";
+      btn.innerHTML = '<span class="drawer-icon">' + icon(s.id) + "</span><span>" + s.label + "</span>";
       btn.addEventListener("click", function () {
+        closeDrawer();
         go(defaultRouteFor(s.id));
       });
-      rail.appendChild(btn);
+      wrap.appendChild(btn);
     });
+  }
+
+  function openDrawer() {
+    document.getElementById("drawer").classList.add("show");
+    document.getElementById("drawer-scrim").classList.add("show");
+  }
+  function closeDrawer() {
+    document.getElementById("drawer").classList.remove("show");
+    document.getElementById("drawer-scrim").classList.remove("show");
   }
 
   function defaultRouteFor(section) {
@@ -210,8 +262,11 @@
     return { section: parts[0] || "cover", param: parts[1] };
   }
 
-  function updateRailActive(section) {
-    document.querySelectorAll(".rail-item").forEach(function (el) {
+  function updateNavActive(section) {
+    document.querySelectorAll(".tab-btn[data-section]").forEach(function (el) {
+      el.classList.toggle("active", el.dataset.section === section);
+    });
+    document.querySelectorAll(".drawer-link[data-section]").forEach(function (el) {
       el.classList.toggle("active", el.dataset.section === section);
     });
   }
@@ -261,10 +316,10 @@
         '<div class="cover-mark">' + icon("cover") + "</div>" +
         '<div class="cover-year">' + YEAR + "</div>" +
         '<h1 class="cover-title">Slow Ink</h1>' +
-        '<p class="cover-tag">A calm, tactile planner for the year ahead — yearly overview, monthly, weekly and daily pages, a habit tracker, goals, a reading log, a finance ledger and notes. Everything saved right here in your browser.</p>' +
         '<div class="cover-rule"></div>' +
+        '<p class="cover-tag">Intention in Every Mark</p>' +
         '<button class="cover-cta" id="btn-open-planner">Open Planner</button>' +
-        '<div class="cover-foot">Loose pages, kept together.</div>' +
+        '<div class="cover-foot">' + YEAR + " Yearly Planner</div>" +
       "</div></div>"
     );
   }
@@ -915,15 +970,32 @@
 
   /* ------------------------------------------------------------- render loop */
 
+  function contextLabel(route) {
+    if (route.section === "month") return MONTH_ABBR[clampMonth(route.param)] + " " + YEAR;
+    if (route.section === "week") {
+      var wk = WEEKS[clampWeek(route.param) - 1];
+      return MONTH_ABBR[wk.days[0].m] + " " + YEAR;
+    }
+    if (route.section === "day") {
+      var key = clampDayKey(route.param);
+      return MONTH_ABBR[parseInt(key.slice(5, 7), 10) - 1] + " " + YEAR;
+    }
+    if (route.section === "cover") return "Jan " + YEAR;
+    return String(YEAR);
+  }
+
   function render() {
     var route = getRoute();
     var renderer = RENDERERS[route.section] || RENDERERS.cover;
-    document.getElementById("toolbar-title").textContent = TITLES[route.section] || "Slow Ink";
     document.getElementById("view").innerHTML = renderer(route.param);
-    updateRailActive(route.section);
+    document.getElementById("section-badge").innerHTML = icon(route.section);
+    document.getElementById("section-name").textContent = TITLES[route.section] || "Slow Ink";
+    document.getElementById("context-label").textContent = contextLabel(route);
+    updateNavActive(route.section);
     var binder = BINDERS[route.section];
     if (binder) binder(route.param);
     document.getElementById("view").scrollTop = 0;
+    closeDrawer();
   }
 
   /* ------------------------------------------------------------- theme */
@@ -931,25 +1003,42 @@
   function applyTheme() {
     document.documentElement.setAttribute("data-theme", state.theme);
     var isLight = state.theme === "ivory-lace";
-    document.getElementById("theme-label").textContent = isLight ? "Green Velvet" : "Ivory Lace";
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute("content", isLight ? "#ECE5D3" : "#29281E");
+    var label = document.getElementById("drawer-theme-label");
+    if (label) label.textContent = isLight ? "Switch to Green Velvet" : "Switch to Ivory Lace";
+    var icoEl = document.getElementById("drawer-theme-icon");
+    if (icoEl) icoEl.innerHTML = icon(isLight ? "moon" : "sunTheme");
+    document.querySelectorAll(".tab-btn.theme-btn").forEach(function (el) {
+      el.classList.toggle("active", el.dataset.theme === state.theme);
+    });
   }
 
-  document.getElementById("btn-theme-toggle").addEventListener("click", function () {
-    state.theme = state.theme === "ivory-lace" ? "green-velvet" : "ivory-lace";
+  function setTheme(t) {
+    state.theme = t;
     saveState();
     applyTheme();
+  }
+
+  document.getElementById("drawer-theme").addEventListener("click", function () {
+    setTheme(state.theme === "ivory-lace" ? "green-velvet" : "ivory-lace");
   });
 
-  /* ------------------------------------------------------------- toolbar actions */
+  /* ------------------------------------------------------------- nav chrome */
 
-  document.getElementById("btn-today").addEventListener("click", function () {
+  document.getElementById("btn-menu").innerHTML = icon("menu");
+  document.getElementById("drawer-close").innerHTML = icon("close");
+  document.getElementById("btn-menu").addEventListener("click", openDrawer);
+  document.getElementById("btn-topbar-left").addEventListener("click", openDrawer);
+  document.getElementById("drawer-close").addEventListener("click", closeDrawer);
+  document.getElementById("drawer-scrim").addEventListener("click", closeDrawer);
+
+  document.getElementById("drawer-today").addEventListener("click", function () {
     go(defaultRouteFor("day"));
     toast(now.getFullYear() === YEAR ? "Jumped to today" : "Today is outside " + YEAR + " — showing Jan 1");
   });
 
-  document.getElementById("btn-export").addEventListener("click", function () {
+  document.getElementById("drawer-export").addEventListener("click", function () {
     var blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
@@ -960,6 +1049,7 @@
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast("Data exported");
+    closeDrawer();
   });
 
   document.getElementById("input-import").addEventListener("change", function (e) {
@@ -982,7 +1072,7 @@
     e.target.value = "";
   });
 
-  document.getElementById("btn-reset").addEventListener("click", function () {
+  document.getElementById("drawer-reset").addEventListener("click", function () {
     if (!confirm("Reset the planner? This clears everything saved in this browser.")) return;
     state = defaultState();
     saveState();
@@ -993,7 +1083,8 @@
 
   /* ------------------------------------------------------------- boot */
 
-  buildRail();
+  buildTabbar();
+  buildDrawer();
   applyTheme();
   if (!location.hash) location.hash = "#/cover";
   window.addEventListener("hashchange", render);
