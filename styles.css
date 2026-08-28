@@ -157,12 +157,6 @@ a { color: inherit; }
 }
 
 .topbar-right { display: flex; align-items: center; gap: 16px; }
-.context-label {
-  font-size: 12px;
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  color: var(--ink-faint);
-}
 .hamburger-btn {
   border: none;
   background: transparent;

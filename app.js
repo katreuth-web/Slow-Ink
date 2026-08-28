@@ -970,27 +970,12 @@
 
   /* ------------------------------------------------------------- render loop */
 
-  function contextLabel(route) {
-    if (route.section === "month") return MONTH_ABBR[clampMonth(route.param)] + " " + YEAR;
-    if (route.section === "week") {
-      var wk = WEEKS[clampWeek(route.param) - 1];
-      return MONTH_ABBR[wk.days[0].m] + " " + YEAR;
-    }
-    if (route.section === "day") {
-      var key = clampDayKey(route.param);
-      return MONTH_ABBR[parseInt(key.slice(5, 7), 10) - 1] + " " + YEAR;
-    }
-    if (route.section === "cover") return "Jan " + YEAR;
-    return String(YEAR);
-  }
-
   function render() {
     var route = getRoute();
     var renderer = RENDERERS[route.section] || RENDERERS.cover;
     document.getElementById("view").innerHTML = renderer(route.param);
     document.getElementById("section-badge").innerHTML = icon(route.section);
     document.getElementById("section-name").textContent = TITLES[route.section] || "Slow Ink";
-    document.getElementById("context-label").textContent = contextLabel(route);
     updateNavActive(route.section);
     var binder = BINDERS[route.section];
     if (binder) binder(route.param);
