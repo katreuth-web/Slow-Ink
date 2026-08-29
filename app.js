@@ -15,7 +15,20 @@
   var DOW_ABBR = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
   var DOW_MIN = ["M","T","W","T","F","S","S"];
   var MOODS = ["😊","😌","😐","😔","😤","😴"];
-  var TINTS = ["card", "rose", "peach", "gold", "sage"];
+  var TINTS = ["card", "1", "2", "3"];
+  var WEATHERS = [
+    { id: "sunny", icon: "sunTheme", label: "Sunny" },
+    { id: "cloudy", icon: "weatherCloudy", label: "Cloudy" },
+    { id: "rainy", icon: "weatherRainy", label: "Rainy" },
+    { id: "snowy", icon: "weatherSnowy", label: "Snowy" },
+    { id: "stormy", icon: "weatherStormy", label: "Stormy" }
+  ];
+  var MEAL_FIELDS = [
+    { id: "breakfast", label: "Breakfast" },
+    { id: "lunch", label: "Lunch" },
+    { id: "dinner", label: "Dinner" },
+    { id: "snack", label: "Snack" }
+  ];
 
   var now = new Date();
 
@@ -23,7 +36,7 @@
 
   function defaultState() {
     return {
-      theme: "ivory-lace",
+      theme: "tuscan-rose",
       monthlyFocus: {},
       daily: {},
       weekly: {},
@@ -54,9 +67,17 @@
 
   function getDay(key) {
     if (!state.daily[key]) {
-      state.daily[key] = { top3: ["", "", ""], mood: "", gratitude: "", worked: "", notes: "" };
+      state.daily[key] = {
+        top3: ["", "", ""], mood: "", gratitude: "", worked: "", notes: "",
+        weather: "", water: 0, sleep: 0, meals: { breakfast: "", lunch: "", dinner: "", snack: "" }
+      };
     }
-    return state.daily[key];
+    var d = state.daily[key];
+    if (!d.meals) d.meals = { breakfast: "", lunch: "", dinner: "", snack: "" };
+    if (d.water === undefined) d.water = 0;
+    if (d.sleep === undefined) d.sleep = 0;
+    if (d.weather === undefined) d.weather = "";
+    return d;
   }
 
   function getWeek(idx) {
@@ -154,7 +175,11 @@
     moon: '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
     sunTheme: '<circle cx="12" cy="12" r="4.4"/><path d="M12 3v2.4M12 18.6V21M4.2 4.2l1.7 1.7M18.1 18.1l1.7 1.7M3 12h2.4M18.6 12H21M4.2 19.8l1.7-1.7M18.1 5.9l1.7-1.7"/>',
     menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
-    close: '<path d="M6 6l12 12M18 6L6 18"/>'
+    close: '<path d="M6 6l12 12M18 6L6 18"/>',
+    weatherCloudy: '<path d="M7 18a4 4 0 0 1-.3-7.98A5.5 5.5 0 0 1 17.5 9.5 4.5 4.5 0 0 1 17 18H7z"/>',
+    weatherRainy: '<path d="M7 14a4 4 0 0 1-.3-7.98A5.5 5.5 0 0 1 17.5 5.5 4.5 4.5 0 0 1 17 14H7z"/><path d="M8 17.5l-1 3M12.5 17.5l-1 3M17 17.5l-1 3"/>',
+    weatherSnowy: '<path d="M7 14a4 4 0 0 1-.3-7.98A5.5 5.5 0 0 1 17.5 5.5 4.5 4.5 0 0 1 17 14H7z"/><circle cx="8" cy="19" r=".9" fill="currentColor" stroke="none"/><circle cx="12.5" cy="19" r=".9" fill="currentColor" stroke="none"/><circle cx="17" cy="19" r=".9" fill="currentColor" stroke="none"/>',
+    weatherStormy: '<path d="M7 13a4 4 0 0 1-.3-7.98A5.5 5.5 0 0 1 17.5 4.5 4.5 4.5 0 0 1 17 13H7z"/><path d="M13 13l-3 5h3l-2 4"/>'
   };
 
   function icon(name) {
@@ -205,17 +230,17 @@
     });
     var moonBtn = document.createElement("button");
     moonBtn.className = "tab-btn theme-btn";
-    moonBtn.dataset.theme = "green-velvet";
-    moonBtn.title = "Green Velvet (dark)";
+    moonBtn.dataset.theme = "soft-black";
+    moonBtn.title = "Soft Black (dark)";
     moonBtn.innerHTML = icon("moon");
-    moonBtn.addEventListener("click", function () { setTheme("green-velvet"); });
+    moonBtn.addEventListener("click", function () { setTheme("soft-black"); });
     bar.appendChild(moonBtn);
     var sunBtn = document.createElement("button");
     sunBtn.className = "tab-btn theme-btn";
-    sunBtn.dataset.theme = "ivory-lace";
-    sunBtn.title = "Ivory Lace (light)";
+    sunBtn.dataset.theme = "tuscan-rose";
+    sunBtn.title = "Tuscan Rose (light)";
     sunBtn.innerHTML = icon("sunTheme");
-    sunBtn.addEventListener("click", function () { setTheme("ivory-lace"); });
+    sunBtn.addEventListener("click", function () { setTheme("tuscan-rose"); });
     bar.appendChild(sunBtn);
   }
 
@@ -540,6 +565,17 @@
     MOODS.forEach(function (em) {
       moods += '<button class="mood-opt' + (day.mood === em ? " active" : "") + '" data-mood="' + em + '">' + em + "</button>";
     });
+    var weathers = "";
+    WEATHERS.forEach(function (w) {
+      weathers += '<button class="weather-opt' + (day.weather === w.id ? " active" : "") + '" data-weather="' + w.id + '" title="' + w.label + '">' + icon(w.icon) + "</button>";
+    });
+    var meals = "";
+    MEAL_FIELDS.forEach(function (mf) {
+      meals += (
+        '<div><span class="field-label">' + mf.label + '</span>' +
+        '<input type="text" data-meal="' + mf.id + '" placeholder="What did you eat?" value="' + escapeHtml(day.meals[mf.id] || "") + '" /></div>'
+      );
+    });
     var d0 = new Date(YEAR, 0, 1), d1 = new Date(YEAR, 11, 31);
     var cur = new Date(y, m, d);
     var prevDate = new Date(y, m, d - 1), nextDate = new Date(y, m, d + 1);
@@ -566,6 +602,18 @@
           '<textarea id="day-worked" rows="3" style="margin-top:10px;">' + escapeHtml(day.worked || "") + "</textarea>" +
           '<h3 style="margin-top:18px;">Notes</h3>' +
           '<textarea id="day-notes" rows="4" placeholder="Daily notes…" style="margin-top:10px;">' + escapeHtml(day.notes || "") + "</textarea>" +
+        "</div>" +
+      "</div>" +
+      '<div class="grid-2" style="margin-top:20px;">' +
+        '<div class="panel">' +
+          '<h3>Wellness</h3>' +
+          '<div class="weather-row">' + weathers + "</div>" +
+          '<div class="field-row"><span class="field-label">Cups of water</span><input type="number" id="day-water" min="0" step="1" value="' + (day.water || 0) + '" /></div>' +
+          '<div class="field-row"><span class="field-label">Hours of sleep</span><input type="number" id="day-sleep" min="0" step="0.5" value="' + (day.sleep || 0) + '" /></div>' +
+        "</div>" +
+        '<div class="panel">' +
+          '<h3>Meals</h3>' +
+          '<div class="meal-grid" style="margin-top:12px;">' + meals + "</div>" +
         "</div>" +
       "</div>"
     );
@@ -598,9 +646,23 @@
         render();
       });
     });
+    document.querySelectorAll(".weather-opt").forEach(function (el) {
+      el.addEventListener("click", function () {
+        day.weather = day.weather === el.dataset.weather ? "" : el.dataset.weather;
+        saveState();
+        render();
+      });
+    });
     ["gratitude", "worked", "notes"].forEach(function (field) {
       var el = document.getElementById("day-" + field);
       if (el) el.addEventListener("input", function () { day[field] = el.value; saveState(); });
+    });
+    var waterEl = document.getElementById("day-water");
+    if (waterEl) waterEl.addEventListener("input", function () { day.water = parseInt(waterEl.value, 10) || 0; saveState(); });
+    var sleepEl = document.getElementById("day-sleep");
+    if (sleepEl) sleepEl.addEventListener("input", function () { day.sleep = parseFloat(sleepEl.value) || 0; saveState(); });
+    document.querySelectorAll("[data-meal]").forEach(function (el) {
+      el.addEventListener("input", function () { day.meals[el.dataset.meal] = el.value; saveState(); });
     });
   }
 
@@ -924,12 +986,10 @@
   }
 
   function tintColor(t) {
-    var map = { card: "var(--card-2)", rose: "#CBBAB7", peach: "#E0C2AE", gold: "#A88D65", sage: "#9CAF88" };
-    return map[t] || map.card;
+    return t === "card" ? "var(--card-2)" : "var(--swatch-" + t + ")";
   }
   function tintBg(t) {
-    var map = { card: "var(--card-2)", rose: "rgba(203,186,183,.28)", peach: "rgba(224,194,174,.28)", gold: "rgba(168,141,101,.22)", sage: "rgba(156,175,136,.22)" };
-    return map[t] || map.card;
+    return t === "card" ? "var(--card-2)" : "var(--swatch-" + t + "-wash)";
   }
 
   function bindNotes() {
@@ -987,11 +1047,11 @@
 
   function applyTheme() {
     document.documentElement.setAttribute("data-theme", state.theme);
-    var isLight = state.theme === "ivory-lace";
+    var isLight = state.theme === "tuscan-rose";
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", isLight ? "#ECE5D3" : "#29281E");
+    if (meta) meta.setAttribute("content", isLight ? "#FEFFF1" : "#232323");
     var label = document.getElementById("drawer-theme-label");
-    if (label) label.textContent = isLight ? "Switch to Green Velvet" : "Switch to Ivory Lace";
+    if (label) label.textContent = isLight ? "Switch to Soft Black" : "Switch to Tuscan Rose";
     var icoEl = document.getElementById("drawer-theme-icon");
     if (icoEl) icoEl.innerHTML = icon(isLight ? "moon" : "sunTheme");
     document.querySelectorAll(".tab-btn.theme-btn").forEach(function (el) {
@@ -1006,7 +1066,7 @@
   }
 
   document.getElementById("drawer-theme").addEventListener("click", function () {
-    setTheme(state.theme === "ivory-lace" ? "green-velvet" : "ivory-lace");
+    setTheme(state.theme === "tuscan-rose" ? "soft-black" : "tuscan-rose");
   });
 
   /* ------------------------------------------------------------- nav chrome */
