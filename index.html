@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en" data-theme="tuscan-rose">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>Slow Ink — 2027 Digital Planner</title>
+    <meta
+      name="description"
+      content="Slow Ink is an interactive 2027 digital planner — yearly overview, monthly, weekly and daily pages, habit tracker, goals, reading log, finance ledger and notes, in two hand-mixed colour palettes. Built with plain HTML5, CSS and JavaScript."
+    />
+    <meta name="theme-color" content="#FEFFF1" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%23514742'/%3E%3Cg fill='none' stroke='%23ECE5D3' stroke-width='1.9' stroke-linejoin='round' stroke-linecap='round'%3E%3Cpath d='M20 10.5c3.4 3.2 5.1 6.4 5.1 9.6 0 2.2-.7 4-2 5.4L20 29l-3.1-3.5c-1.3-1.4-2-3.2-2-5.4 0-3.2 1.7-6.4 5.1-9.6z'/%3E%3Cpath d='M20 15.4v7.2'/%3E%3C/g%3E%3Ccircle cx='20' cy='23.4' r='1.8' fill='%23ECE5D3'/%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Caladea:ital@0;1&family=Questrial&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app" id="app">
+      <div class="shell">
+        <header class="topbar">
+          <button class="topbar-left" id="btn-topbar-left" title="Open menu">
+            <span class="section-badge" id="section-badge"></span>
+            <span class="section-name" id="section-name">Cover</span>
+          </button>
+          <div class="topbar-right">
+            <button class="hamburger-btn" id="btn-menu" aria-label="Open menu" title="Menu"></button>
+          </div>
+        </header>
+
+        <main class="page" id="view" tabindex="-1"></main>
+
+        <nav class="tabbar" id="tabbar" aria-label="Quick navigation"></nav>
+      </div>
+    </div>
+
+    <div class="drawer-scrim" id="drawer-scrim"></div>
+    <aside class="drawer" id="drawer" aria-label="Planner menu">
+      <div class="drawer-head">
+        <span>Slow Ink</span>
+        <button id="drawer-close" aria-label="Close menu">✕</button>
+      </div>
+      <div class="drawer-section" id="drawer-sections"></div>
+      <div class="drawer-divider"></div>
+      <div class="drawer-section drawer-actions">
+        <button class="drawer-link" id="drawer-theme">
+          <span class="drawer-icon" id="drawer-theme-icon"></span><span id="drawer-theme-label">Switch to Soft Black</span>
+        </button>
+        <button class="drawer-link" id="drawer-today">Jump to Today</button>
+        <button class="drawer-link" id="drawer-export">Export Planner JSON</button>
+        <label class="drawer-link" id="drawer-import-label">
+          Import Planner JSON
+          <input type="file" id="input-import" accept="application/json" hidden />
+        </label>
+        <button class="drawer-link drawer-danger" id="drawer-reset">Reset Planner</button>
+      </div>
+    </aside>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
