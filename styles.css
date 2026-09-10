@@ -29,22 +29,22 @@
   --data-fill-neg: rgba(63, 23, 15, .55);
   --hair: rgba(63, 23, 15, .18);
   --hair-soft: rgba(63, 23, 15, .1);
-  --rule: #A99793;
+  --rule: #8FA3A6;
   --fill-1: rgba(63, 23, 15, .04);
   --fill-2: rgba(63, 23, 15, .08);
   --fill-3: rgba(115, 68, 50, .28);
-  --weekend: rgba(115, 68, 50, .32);
+  --weekend: rgba(169, 189, 190, .38);
   --card-1: #F7F4EB;
   --card-2: #DAD1BE;
   --rail: #3F170F;
   --rail-ink: #F1EBDB;
   --rail-active-bg: rgba(115, 68, 50, .28);
   --rail-active-ink: #926D5F;
-  --focus: #3F170F;
+  --focus: #4A6570;
   --shadow: 0 24px 54px -24px rgba(63, 23, 15, .34), 0 2px 8px rgba(63, 23, 15, .1);
   --scrim: rgba(63, 23, 15, .38);
-  --positive: #736756;
-  --positive-subtle: rgba(115, 103, 86, .14);
+  --positive: #4A6570;
+  --positive-subtle: rgba(74, 101, 112, .14);
   --negative: #3F170F;
   --negative-subtle: rgba(63, 23, 15, .12);
   --swatch-1: #3F170F;
@@ -642,7 +642,7 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 }
 .habit-mark.on { background: var(--accent); border-color: var(--accent-deep); }
 .habit-mark.partial { background: var(--accent-subtle); border-color: var(--accent); }
-.habit-mark.weekend-col { background-color: var(--weekend); }
+.habit-table td.weekend-col, .habit-table th.weekend-col { background-color: var(--weekend); }
 .habit-del { border: none; background: transparent; color: var(--ink-faint); cursor: pointer; font-size: 15px; }
 .habit-del:hover { color: var(--accent-text); }
 .habit-row-empty { color: var(--ink-faint); font-size: 13px; padding: 20px 0; text-align: center; }
