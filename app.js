@@ -59,9 +59,20 @@
       goals: [],
       reading: [],
       finance: [],
-      notes: []
+      notes: [],
+      meals: {},
+      groceryList: [],
+      recipes: [],
+      travelBucketList: [],
+      destinations: [],
+      travelChecklist: []
     };
   }
+
+  var GROCERY_CATEGORIES = [
+    "Meat & Poultry", "Seafood", "Frozen Foods", "Dry Food", "Dairy",
+    "Fruits & Vegetables", "Bakery", "Drinks", "Cans/Jars", "Household/Personal", "Pantry", "Other"
+  ];
 
   var SELF_CARE_HABITS = [
     "Water", "Meals", "Movement", "Sleep", "Vitamins", "Skincare", "Breaks",
@@ -136,6 +147,15 @@
     var key = "W" + idx;
     if (!state.weekTodos[key]) state.weekTodos[key] = [];
     return state.weekTodos[key];
+  }
+
+  function getMealsWeek(idx) {
+    var key = "W" + idx;
+    if (!state.meals[key]) state.meals[key] = {};
+    for (var i = 0; i < 7; i++) {
+      if (!state.meals[key][i]) state.meals[key][i] = { breakfast: "", lunch: "", dinner: "", snack: "" };
+    }
+    return state.meals[key];
   }
 
   function uid() {
@@ -264,6 +284,22 @@
     });
   }
 
+  /* ------------------------------------------------------------- shared: sub-navigation within a section */
+
+  function subtabsHtml(tabs) {
+    var html = "";
+    tabs.forEach(function (t) {
+      html += '<button class="subtab-pill' + (t.active ? " active" : "") + '" data-goto="' + t.href + '">' + t.label + "</button>";
+    });
+    return '<div class="subtabs">' + html + "</div>";
+  }
+
+  function bindSubtabs() {
+    document.querySelectorAll(".subtabs [data-goto]").forEach(function (el) {
+      el.addEventListener("click", function () { go(el.dataset.goto); });
+    });
+  }
+
   /* ------------------------------------------------------------- shared: expandable card toggle */
 
   var expandedCards = {};
@@ -374,7 +410,9 @@
     weatherStormy: '<path d="M7 13a4 4 0 0 1-.3-7.98A5.5 5.5 0 0 1 17.5 4.5 4.5 4.5 0 0 1 17 13H7z"/><path d="M13 13l-3 5h3l-2 4"/>',
     starFilled: '<path d="M12 3.5l2.47 5.24 5.78.67-4.3 4.02 1.13 5.7L12 16.9l-5.08 2.23 1.13-5.7-4.3-4.02 5.78-.67L12 3.5z" fill="currentColor"/>',
     starOutline: '<path d="M12 3.5l2.47 5.24 5.78.67-4.3 4.02 1.13 5.7L12 16.9l-5.08 2.23 1.13-5.7-4.3-4.02 5.78-.67L12 3.5z"/>',
-    chevron: '<path d="M7 9.5l5 5 5-5"/>'
+    chevron: '<path d="M7 9.5l5 5 5-5"/>',
+    meals: '<path d="M7.5 3v6a2 2 0 0 0 4 0V3"/><path d="M9.5 3v18"/><path d="M17 3c2 1.6 2 6.4 0 8-.6.4-1 1.1-1 1.9V21"/>',
+    travel: '<rect x="4" y="8" width="16" height="12" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M4 13h16"/>'
   };
 
   function icon(name) {
@@ -393,13 +431,15 @@
     { id: "goals", label: "Goals" },
     { id: "reading", label: "Reading" },
     { id: "finance", label: "Finance" },
-    { id: "notes", label: "Notes" }
+    { id: "notes", label: "Notes" },
+    { id: "meals", label: "Meal Planner" },
+    { id: "travel", label: "Travel Planner" }
   ];
 
   var TITLES = {
     cover: "Slow Ink", year: "Year Overview", month: "Monthly", week: "Weekly",
     day: "Daily", habits: "Habit Tracker", goals: "Goals", reading: "Reading",
-    finance: "Finance", notes: "Notes"
+    finance: "Finance", notes: "Notes", meals: "Meal Planner", travel: "Travel Planner"
   };
 
   var TAB_ITEMS = [
@@ -468,6 +508,7 @@
     if (section === "month") return "#/month/" + (now.getFullYear() === YEAR ? now.getMonth() : 0);
     if (section === "week") return "#/week/" + weekIndexForToday();
     if (section === "day") return "#/day/" + clampDayKey();
+    if (section === "meals") return "#/meals/grid-" + weekIndexForToday();
     return "#/" + section;
   }
 
@@ -514,7 +555,9 @@
     goals: renderGoals,
     reading: renderReading,
     finance: renderFinance,
-    notes: renderNotes
+    notes: renderNotes,
+    meals: renderMeals,
+    travel: renderTravel
   };
 
   var BINDERS = {
@@ -523,6 +566,8 @@
     week: bindWeek,
     day: bindDay,
     habits: bindHabits,
+    meals: bindMeals,
+    travel: bindTravel,
     goals: bindGoals,
     reading: bindReading,
     finance: bindFinance,
@@ -1497,6 +1542,284 @@
         saveState();
         render();
       });
+    });
+  }
+
+  /* ---- meal planner ---- */
+
+  function renderMeals(param) {
+    param = param || ("grid-" + weekIndexForToday());
+    var view = "grid";
+    var weekIdx = weekIndexForToday();
+    if (param.indexOf("grid-") === 0) { weekIdx = clampWeek(param.slice(5)); }
+    else if (param === "grocery") view = "grocery";
+    else if (param === "recipes") view = "recipes";
+
+    var tabs = subtabsHtml([
+      { label: "Weekly Grid", href: "#/meals/grid-" + weekIdx, active: view === "grid" },
+      { label: "Grocery List", href: "#/meals/grocery", active: view === "grocery" },
+      { label: "Recipes", href: "#/meals/recipes", active: view === "recipes" }
+    ]);
+    var head = '<div class="view-head"><div><h1>Meal Planner</h1><div class="sub">Plan meals, shop smart, keep favorite recipes</div></div></div>' + tabs;
+    if (view === "grid") return head + renderMealsGrid(weekIdx);
+    if (view === "grocery") return head + renderGroceryList();
+    return head + renderRecipeBox();
+  }
+
+  function renderMealsGrid(weekIdx) {
+    var wk = WEEKS[weekIdx - 1];
+    var mdata = getMealsWeek(weekIdx);
+    var cols = "";
+    wk.days.forEach(function (dd, i) {
+      var md = mdata[i];
+      var fields = "";
+      MEAL_FIELDS.forEach(function (mf) {
+        fields += '<div><span class="field-label">' + mf.label + '</span><input type="text" data-meal-field="' + mf.id + '" data-day="' + i + '" value="' + escapeHtml(md[mf.id] || "") + '" /></div>';
+      });
+      cols += '<div class="card meal-day-card"><div class="meal-day-head">' + DOW_ABBR[i] + " · " + MONTH_ABBR[dd.m] + " " + dd.d + "</div>" + fields + "</div>";
+    });
+    return (
+      '<div class="nav-strip" style="margin:16px 0;">' +
+        '<button id="meals-week-prev" ' + (weekIdx === 1 ? "disabled" : "") + '>‹</button>' +
+        '<span class="label">Week ' + weekIdx + "</span>" +
+        '<button id="meals-week-next" ' + (weekIdx === WEEKS.length ? "disabled" : "") + '>›</button>' +
+      "</div>" +
+      '<div class="meal-week-grid">' + cols + "</div>"
+    );
+  }
+
+  function renderGroceryList() {
+    var groups = "";
+    GROCERY_CATEGORIES.forEach(function (cat) {
+      var items = state.groceryList.filter(function (it) { return it.category === cat; });
+      groups += (
+        '<div class="card" style="margin-bottom:14px;">' +
+          "<h3>" + cat + "</h3>" +
+          '<div class="habit-toolbar" style="margin-top:10px;">' +
+            '<input type="text" class="new-grocery-item" placeholder="Add item" />' +
+            '<button class="add-grocery-item" data-cat="' + escapeHtml(cat) + '">Add</button>' +
+          "</div>" +
+          checklistHtml(items) +
+        "</div>"
+      );
+    });
+    return '<div id="grocery-groups" style="margin-top:16px;">' + groups + "</div>";
+  }
+
+  var DIETARY_TAGS = [
+    { id: "vegetarian", label: "Vegetarian" }, { id: "vegan", label: "Vegan" },
+    { id: "glutenFree", label: "Gluten-free" }, { id: "dairyFree", label: "Dairy-free" },
+    { id: "lowCarb", label: "Low-carb" }, { id: "lowCalorie", label: "Low-calorie" }
+  ];
+
+  function normalizeRecipe(r) {
+    if (!r.ingredients) r.ingredients = [];
+    if (r.directions === undefined) r.directions = "";
+    if (!r.dietaryTags) r.dietaryTags = { vegetarian: false, vegan: false, glutenFree: false, dairyFree: false, lowCarb: false, lowCalorie: false };
+    if (r.prepTime === undefined) r.prepTime = "";
+    if (r.cookTime === undefined) r.cookTime = "";
+    if (r.cookTemp === undefined) r.cookTemp = "";
+    if (r.calories === undefined) r.calories = "";
+    if (r.serves === undefined) r.serves = "";
+    if (r.rating === undefined) r.rating = 0;
+    if (r.difficulty === undefined) r.difficulty = "";
+    if (r.tips === undefined) r.tips = "";
+    if (r.date === undefined) r.date = "";
+    return r;
+  }
+
+  function renderRecipeBox() {
+    var cards = "";
+    state.recipes.forEach(function (r) {
+      normalizeRecipe(r);
+      var expandId = "recipe-expand-" + r.id;
+      var tagPills = "";
+      DIETARY_TAGS.forEach(function (t) {
+        tagPills += '<button class="status-pill' + (r.dietaryTags[t.id] ? " active" : "") + '" data-diet="' + t.id + '" data-recipe="' + r.id + '">' + t.label + "</button>";
+      });
+      cards += (
+        '<div class="card book-card" data-recipe-card="' + r.id + '">' +
+          '<button class="habit-del" style="align-self:flex-end;" data-del-recipe="' + r.id + '" title="Delete recipe">✕</button>' +
+          '<input type="text" class="title-input" data-field="title" data-recipe="' + r.id + '" placeholder="Recipe title" value="' + escapeHtml(r.title || "") + '" />' +
+          '<input type="date" class="line-input" data-field="date" data-recipe="' + r.id + '" value="' + escapeHtml(r.date) + '" />' +
+          starsHtml(r.rating, "rate", r.id) +
+          '<button class="card-expand-toggle' + expandClass(expandId) + '" data-expand-toggle="' + expandId + '">' + icon("chevron") + " More details</button>" +
+          '<div class="card-expand-body' + expandClass(expandId) + '" id="' + expandId + '">' +
+            '<span class="field-label">Ingredients (one per line)</span>' +
+            '<textarea rows="4" data-field="ingredients" data-recipe="' + r.id + '">' + escapeHtml((r.ingredients || []).join("\n")) + "</textarea>" +
+            '<span class="field-label" style="margin-top:10px;">Directions</span>' +
+            '<textarea rows="4" data-field="directions" data-recipe="' + r.id + '">' + escapeHtml(r.directions) + "</textarea>" +
+            '<div class="field-grid-2" style="margin-top:10px;">' +
+              '<input type="text" data-field="prepTime" data-recipe="' + r.id + '" placeholder="Prep time" value="' + escapeHtml(r.prepTime) + '" />' +
+              '<input type="text" data-field="cookTime" data-recipe="' + r.id + '" placeholder="Cook time" value="' + escapeHtml(r.cookTime) + '" />' +
+              '<input type="text" data-field="cookTemp" data-recipe="' + r.id + '" placeholder="Cook temp" value="' + escapeHtml(r.cookTemp) + '" />' +
+              '<input type="number" min="0" data-field="calories" data-recipe="' + r.id + '" placeholder="Calories" value="' + escapeHtml(r.calories) + '" />' +
+              '<input type="text" data-field="serves" data-recipe="' + r.id + '" placeholder="Serves" value="' + escapeHtml(r.serves) + '" />' +
+              '<input type="text" data-field="difficulty" data-recipe="' + r.id + '" placeholder="Difficulty" value="' + escapeHtml(r.difficulty) + '" />' +
+            "</div>" +
+            '<span class="field-label" style="margin-top:10px;">Dietary tags</span>' +
+            '<div class="status-row" style="margin-top:6px;flex-wrap:wrap;">' + tagPills + "</div>" +
+            '<span class="field-label" style="margin-top:10px;">Tips</span>' +
+            '<textarea rows="2" data-field="tips" data-recipe="' + r.id + '">' + escapeHtml(r.tips) + "</textarea>" +
+          "</div>" +
+        "</div>"
+      );
+    });
+    return (
+      '<div class="habit-toolbar" style="max-width:260px;margin-top:16px;"><button id="add-recipe" style="width:100%;">Add a recipe</button></div>' +
+      '<div class="grid-3">' + (cards || '<div class="empty-state">No recipes yet — add one above.</div>') + "</div>"
+    );
+  }
+
+  function bindMeals(param) {
+    bindSubtabs();
+    param = param || ("grid-" + weekIndexForToday());
+    if (param.indexOf("grid-") === 0) bindMealsGrid(clampWeek(param.slice(5)));
+    else if (param === "grocery") bindGroceryList();
+    else if (param === "recipes") bindRecipeBox();
+  }
+
+  function bindMealsGrid(weekIdx) {
+    var mdata = getMealsWeek(weekIdx);
+    var prev = document.getElementById("meals-week-prev");
+    var next = document.getElementById("meals-week-next");
+    if (prev) prev.addEventListener("click", function () { if (weekIdx > 1) go("#/meals/grid-" + (weekIdx - 1)); });
+    if (next) next.addEventListener("click", function () { if (weekIdx < WEEKS.length) go("#/meals/grid-" + (weekIdx + 1)); });
+    document.querySelectorAll("[data-meal-field]").forEach(function (el) {
+      el.addEventListener("input", function () {
+        mdata[el.dataset.day][el.dataset.mealField] = el.value;
+        saveState();
+      });
+    });
+  }
+
+  function bindGroceryList() {
+    document.querySelectorAll(".add-grocery-item").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var input = el.parentElement.querySelector(".new-grocery-item");
+        var val = input.value.trim();
+        if (!val) return;
+        state.groceryList.push({ id: uid(), category: el.dataset.cat, text: val, done: false });
+        saveState();
+        render();
+      });
+    });
+    document.querySelectorAll(".new-grocery-item").forEach(function (input) {
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          var btn = input.parentElement.querySelector(".add-grocery-item");
+          if (btn) btn.click();
+        }
+      });
+    });
+    bindChecklist(document.getElementById("grocery-groups"), state.groceryList);
+  }
+
+  function bindRecipeBox() {
+    var addBtn = document.getElementById("add-recipe");
+    if (addBtn) addBtn.addEventListener("click", function () {
+      state.recipes.push(normalizeRecipe({ id: uid(), title: "" }));
+      saveState();
+      render();
+    });
+    document.querySelectorAll("[data-field][data-recipe]").forEach(function (el) {
+      el.addEventListener("input", function () {
+        var r = state.recipes.find(function (x) { return x.id === el.dataset.recipe; });
+        if (!r) return;
+        var field = el.dataset.field;
+        if (field === "ingredients") r[field] = el.value.split("\n");
+        else if (field === "calories") r[field] = parseInt(el.value, 10) || 0;
+        else r[field] = el.value;
+        saveState();
+      });
+    });
+    document.querySelectorAll("[data-diet]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var r = state.recipes.find(function (x) { return x.id === el.dataset.recipe; });
+        if (r) { r.dietaryTags[el.dataset.diet] = !r.dietaryTags[el.dataset.diet]; saveState(); render(); }
+      });
+    });
+    document.querySelectorAll("[data-del-recipe]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        state.recipes = state.recipes.filter(function (x) { return x.id !== el.dataset.delRecipe; });
+        saveState();
+        render();
+      });
+    });
+    state.recipes.forEach(function (r) {
+      var card = document.querySelector('[data-recipe-card="' + r.id + '"]');
+      if (!card) return;
+      bindStars(card.querySelector(".star-row"), "rate", function (v) { r.rating = v; saveState(); render(); });
+    });
+    bindExpandToggles();
+  }
+
+  /* ---- travel planner ---- */
+
+  function renderTravel() {
+    var bucket = checklistHtml(state.travelBucketList);
+    var packing = checklistHtml(state.travelChecklist);
+    var destCards = "";
+    state.destinations.forEach(function (d) {
+      destCards += (
+        '<div class="card" data-dest-card="' + d.id + '">' +
+          '<button class="habit-del" style="align-self:flex-end;" data-del-dest="' + d.id + '" title="Delete destination">✕</button>' +
+          '<input type="text" class="title-input" data-field="destination" data-dest="' + d.id + '" placeholder="Destination" value="' + escapeHtml(d.destination || "") + '" />' +
+          '<input type="text" class="line-input" data-field="countryCity" data-dest="' + d.id + '" placeholder="Country / City" value="' + escapeHtml(d.countryCity || "") + '" />' +
+          '<span class="field-label" style="margin-top:8px;">Priority</span>' +
+          starsHtml(d.priority, "rate", d.id) +
+          '<textarea rows="2" data-field="why" data-dest="' + d.id + '" placeholder="Why here?" style="margin-top:8px;">' + escapeHtml(d.why || "") + "</textarea>" +
+          '<input type="text" data-field="bestTime" data-dest="' + d.id + '" placeholder="Best time to go" value="' + escapeHtml(d.bestTime || "") + '" style="margin-top:8px;" />' +
+          '<textarea rows="2" data-field="notes" data-dest="' + d.id + '" placeholder="Notes" style="margin-top:8px;">' + escapeHtml(d.notes || "") + "</textarea>" +
+        "</div>"
+      );
+    });
+    return (
+      '<div class="view-head"><div><h1>Travel Planner</h1><div class="sub">Where to next</div></div></div>' +
+      '<div class="grid-2">' +
+        '<div class="panel"><h3>Travel bucket list</h3>' +
+          '<div class="habit-toolbar" style="margin-top:12px;"><input type="text" id="new-travel-bucket" placeholder="Add a place or experience" /><button id="add-travel-bucket">Add</button></div>' +
+          '<div id="travel-bucket-list">' + bucket + "</div>" +
+        "</div>" +
+        '<div class="panel"><h3>Packing &amp; documents checklist</h3>' +
+          '<div class="habit-toolbar" style="margin-top:12px;"><input type="text" id="new-travel-check" placeholder="Add an item" /><button id="add-travel-check">Add</button></div>' +
+          '<div id="travel-checklist-list">' + packing + "</div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="view-head" style="margin-top:24px;"><div><h2>Destinations</h2></div></div>' +
+      '<div class="habit-toolbar" style="max-width:260px;"><button id="add-destination" style="width:100%;">Add a destination</button></div>' +
+      '<div class="grid-3" style="margin-top:16px;">' + (destCards || '<div class="empty-state">No destinations yet.</div>') + "</div>"
+    );
+  }
+
+  function bindTravel() {
+    bindChecklistAdd("add-travel-bucket", "new-travel-bucket", state.travelBucketList);
+    bindChecklist(document.getElementById("travel-bucket-list"), state.travelBucketList);
+    bindChecklistAdd("add-travel-check", "new-travel-check", state.travelChecklist);
+    bindChecklist(document.getElementById("travel-checklist-list"), state.travelChecklist);
+    var addDest = document.getElementById("add-destination");
+    if (addDest) addDest.addEventListener("click", function () {
+      state.destinations.push({ id: uid(), destination: "", countryCity: "", why: "", bestTime: "", priority: 0, notes: "" });
+      saveState();
+      render();
+    });
+    document.querySelectorAll("[data-field][data-dest]").forEach(function (el) {
+      el.addEventListener("input", function () {
+        var d = state.destinations.find(function (x) { return x.id === el.dataset.dest; });
+        if (d) { d[el.dataset.field] = el.value; saveState(); }
+      });
+    });
+    document.querySelectorAll("[data-del-dest]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        state.destinations = state.destinations.filter(function (x) { return x.id !== el.dataset.delDest; });
+        saveState();
+        render();
+      });
+    });
+    state.destinations.forEach(function (d) {
+      var card = document.querySelector('[data-dest-card="' + d.id + '"]');
+      if (!card) return;
+      bindStars(card.querySelector(".star-row"), "rate", function (v) { d.priority = v; saveState(); render(); });
     });
   }
 

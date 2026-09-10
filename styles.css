@@ -791,6 +791,27 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 .sticky .note-del { position: absolute; top: 10px; right: 10px; border: none; background: transparent; color: var(--ink-faint); cursor: pointer; }
 .empty-state { color: var(--ink-faint); font-size: 13.5px; padding: 30px 0; text-align: center; }
 
+/* ---------------------------------------------------------------- shared: sub-nav */
+
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0 4px; }
+.subtab-pill {
+  border: 1px solid var(--hair);
+  background: var(--card-2);
+  color: var(--ink-mute);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.subtab-pill.active { border-color: var(--accent); background: var(--accent-subtle); color: var(--accent-text); }
+
+/* ---------------------------------------------------------------- meal planner */
+
+.meal-week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+@media (max-width: 900px) { .meal-week-grid { grid-template-columns: repeat(2, 1fr); } }
+.meal-day-card { display: flex; flex-direction: column; gap: 8px; }
+.meal-day-head { font-family: var(--font-display); font-size: 14px; margin-bottom: 2px; }
+
 /* ---------------------------------------------------------------- toast */
 
 .toast {
