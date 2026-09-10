@@ -7,8 +7,9 @@
 (function () {
   "use strict";
 
-  var YEAR = 2027;
-  var STORAGE_KEY = "slow-ink-2027-planner-v1";
+  var YEAR = 2027; // synced from state.currentYear once state loads; kept as a plain var so existing YEAR references stay untouched
+  var STORAGE_KEY = "slow-ink-planner-v2";
+  var LEGACY_STORAGE_KEY = "slow-ink-2027-planner-v1";
 
   var MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   var MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -46,21 +47,24 @@
 
   function defaultState() {
     return {
+      currentYear: 2027,
       theme: "greek-marble",
-      monthlyFocus: {},
-      monthPriorities: {},
-      monthTodos: {},
-      weekly: {},
-      weekTodos: {},
+      // year-scoped (reset per year, see multi-year architecture)
+      monthlyFocusByYear: {},
+      monthPrioritiesByYear: {},
+      monthTodosByYear: {},
+      weeklyByYear: {},
+      weekTodosByYear: {},
+      habitsByYear: {},
+      habitsReflectionByYear: {},
+      financeByYear: {},
+      mealsByYear: {},
+      // date-keyed (already year-safe: keys are full YYYY-MM-DD)
       daily: {},
-      habits: [],
-      habitsReflection: { focus: "", proud: "" },
-      seededSelfCare: false,
+      // evergreen (continuous across years)
       goals: [],
       reading: [],
-      finance: [],
       notes: [],
-      meals: {},
       groceryList: [],
       recipes: [],
       travelBucketList: [],
@@ -79,19 +83,44 @@
     "Reading", "Gratitude", "Outside time", "Journaling", "Meditation", "Hobby", "Connection"
   ];
 
-  function seedSelfCare(s) {
-    if (s.seededSelfCare) return;
+  function seedSelfCare(habitsArr) {
     SELF_CARE_HABITS.forEach(function (name) {
-      s.habits.push({ id: uid(), name: name, mode: "three-state", marks: {} });
+      habitsArr.push({ id: uid(), name: name, mode: "three-state", marks: {} });
     });
-    s.seededSelfCare = true;
   }
+
+  // One-time migration: the app shipped with a single flat 2027 state before
+  // multi-year support existed. Fold that flat data into the 2027 year slot.
+  function migrateToMultiYear(s, legacy) {
+    if (!legacy) return s;
+    var FIRST_YEAR = 2027;
+    if (legacy.habits && legacy.habits.length && !s.habitsByYear[FIRST_YEAR]) s.habitsByYear[FIRST_YEAR] = legacy.habits;
+    if (legacy.habitsReflection && !s.habitsReflectionByYear[FIRST_YEAR]) s.habitsReflectionByYear[FIRST_YEAR] = legacy.habitsReflection;
+    if (legacy.finance && legacy.finance.length && !s.financeByYear[FIRST_YEAR]) s.financeByYear[FIRST_YEAR] = legacy.finance;
+    if (legacy.monthlyFocus && !s.monthlyFocusByYear[FIRST_YEAR]) s.monthlyFocusByYear[FIRST_YEAR] = legacy.monthlyFocus;
+    if (legacy.monthPriorities && !s.monthPrioritiesByYear[FIRST_YEAR]) s.monthPrioritiesByYear[FIRST_YEAR] = legacy.monthPriorities;
+    if (legacy.monthTodos && !s.monthTodosByYear[FIRST_YEAR]) s.monthTodosByYear[FIRST_YEAR] = legacy.monthTodos;
+    if (legacy.weekly && !s.weeklyByYear[FIRST_YEAR]) s.weeklyByYear[FIRST_YEAR] = legacy.weekly;
+    if (legacy.weekTodos && !s.weekTodosByYear[FIRST_YEAR]) s.weekTodosByYear[FIRST_YEAR] = legacy.weekTodos;
+    if (legacy.meals && !s.mealsByYear[FIRST_YEAR]) s.mealsByYear[FIRST_YEAR] = legacy.meals;
+    return s;
+  }
+
+  var STALE_LEGACY_KEYS = [
+    "habits", "habitsReflection", "finance", "monthlyFocus",
+    "monthPriorities", "monthTodos", "weekly", "weekTodos", "meals", "seededSelfCare"
+  ];
 
   function loadState() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
-      var s = raw ? Object.assign(defaultState(), JSON.parse(raw)) : defaultState();
-      seedSelfCare(s);
+      if (raw) return Object.assign(defaultState(), JSON.parse(raw));
+      var legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (!legacyRaw) return defaultState();
+      var legacy = JSON.parse(legacyRaw);
+      var s = Object.assign(defaultState(), legacy);
+      migrateToMultiYear(s, legacy);
+      STALE_LEGACY_KEYS.forEach(function (k) { delete s[k]; });
       return s;
     } catch (e) {
       return defaultState();
@@ -99,9 +128,33 @@
   }
 
   var state = loadState();
+  YEAR = state.currentYear || 2027;
 
   function saveState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function getHabits() {
+    if (!state.habitsByYear[YEAR]) {
+      state.habitsByYear[YEAR] = [];
+      seedSelfCare(state.habitsByYear[YEAR]);
+    }
+    return state.habitsByYear[YEAR];
+  }
+
+  function getHabitsReflection() {
+    if (!state.habitsReflectionByYear[YEAR]) state.habitsReflectionByYear[YEAR] = { focus: "", proud: "" };
+    return state.habitsReflectionByYear[YEAR];
+  }
+
+  function getFinance() {
+    if (!state.financeByYear[YEAR]) state.financeByYear[YEAR] = [];
+    return state.financeByYear[YEAR];
+  }
+
+  function getMonthlyFocusMap() {
+    if (!state.monthlyFocusByYear[YEAR]) state.monthlyFocusByYear[YEAR] = {};
+    return state.monthlyFocusByYear[YEAR];
   }
 
   function getDay(key) {
@@ -126,36 +179,41 @@
   }
 
   function getWeek(idx) {
+    if (!state.weeklyByYear[YEAR]) state.weeklyByYear[YEAR] = {};
     var key = "W" + idx;
-    if (!state.weekly[key]) {
-      state.weekly[key] = { top3: ["", "", ""], notes: "" };
+    if (!state.weeklyByYear[YEAR][key]) {
+      state.weeklyByYear[YEAR][key] = { top3: ["", "", ""], notes: "" };
     }
-    return state.weekly[key];
+    return state.weeklyByYear[YEAR][key];
   }
 
   function getMonthPriorities(m) {
-    if (!state.monthPriorities[m]) state.monthPriorities[m] = [];
-    return state.monthPriorities[m];
+    if (!state.monthPrioritiesByYear[YEAR]) state.monthPrioritiesByYear[YEAR] = {};
+    if (!state.monthPrioritiesByYear[YEAR][m]) state.monthPrioritiesByYear[YEAR][m] = [];
+    return state.monthPrioritiesByYear[YEAR][m];
   }
 
   function getMonthTodos(m) {
-    if (!state.monthTodos[m]) state.monthTodos[m] = [];
-    return state.monthTodos[m];
+    if (!state.monthTodosByYear[YEAR]) state.monthTodosByYear[YEAR] = {};
+    if (!state.monthTodosByYear[YEAR][m]) state.monthTodosByYear[YEAR][m] = [];
+    return state.monthTodosByYear[YEAR][m];
   }
 
   function getWeekTodos(idx) {
+    if (!state.weekTodosByYear[YEAR]) state.weekTodosByYear[YEAR] = {};
     var key = "W" + idx;
-    if (!state.weekTodos[key]) state.weekTodos[key] = [];
-    return state.weekTodos[key];
+    if (!state.weekTodosByYear[YEAR][key]) state.weekTodosByYear[YEAR][key] = [];
+    return state.weekTodosByYear[YEAR][key];
   }
 
   function getMealsWeek(idx) {
+    if (!state.mealsByYear[YEAR]) state.mealsByYear[YEAR] = {};
     var key = "W" + idx;
-    if (!state.meals[key]) state.meals[key] = {};
+    if (!state.mealsByYear[YEAR][key]) state.mealsByYear[YEAR][key] = {};
     for (var i = 0; i < 7; i++) {
-      if (!state.meals[key][i]) state.meals[key][i] = { breakfast: "", lunch: "", dinner: "", snack: "" };
+      if (!state.mealsByYear[YEAR][key][i]) state.mealsByYear[YEAR][key][i] = { breakfast: "", lunch: "", dinner: "", snack: "" };
     }
-    return state.meals[key];
+    return state.mealsByYear[YEAR][key];
   }
 
   function uid() {
@@ -604,13 +662,20 @@
     var totalGoals = state.goals.length;
     var doneGoals = state.goals.filter(function (g) { return g.done; }).length;
     return (
-      '<div class="view-head"><div><h1>Year Overview</h1><div class="sub">' + YEAR + " at a glance</div></div></div>" +
+      '<div class="view-head">' +
+        '<div><h1>Year Overview</h1><div class="sub">' + YEAR + " at a glance</div></div>" +
+        '<div class="nav-strip">' +
+          '<button id="year-prev">‹</button>' +
+          '<span class="label">' + YEAR + "</span>" +
+          '<button id="year-next">›</button>' +
+        "</div>" +
+      "</div>" +
       '<div class="year-grid">' + cards + "</div>" +
       '<div class="year-summary panel">' +
         '<h3>' + YEAR + " in numbers</h3>" +
         '<div class="chip-row">' +
           '<span class="chip">' + doneGoals + " / " + totalGoals + " goals complete</span>" +
-          '<span class="chip">' + state.habits.length + " habits tracked</span>" +
+          '<span class="chip">' + getHabits().length + " habits tracked</span>" +
           '<span class="chip">' + state.reading.length + " books logged</span>" +
           '<span class="chip">' + state.notes.length + " notes kept</span>" +
         "</div>" +
@@ -647,6 +712,19 @@
     document.querySelectorAll(".mini-month").forEach(function (el) {
       el.addEventListener("click", function () { go("#/month/" + el.dataset.month); });
     });
+    var prev = document.getElementById("year-prev");
+    var next = document.getElementById("year-next");
+    if (prev) prev.addEventListener("click", function () { setCurrentYear(YEAR - 1); });
+    if (next) next.addEventListener("click", function () { setCurrentYear(YEAR + 1); });
+  }
+
+  function setCurrentYear(y) {
+    YEAR = y;
+    state.currentYear = y;
+    WEEKS = buildWeeks(YEAR);
+    saveState();
+    updatePageMeta();
+    render();
   }
 
   /* ---- month ---- */
@@ -667,7 +745,7 @@
       var day = state.daily[key];
       if (day && day.top3.some(function (t) { return t.trim(); })) dots += '<span class="dot"></span>';
       if (day && day.notes && day.notes.trim()) dots += '<span class="dot"></span>';
-      if (state.habits.some(function (h) { return h.marks[key]; })) dots += '<span class="dot"></span>';
+      if (getHabits().some(function (h) { return h.marks[key]; })) dots += '<span class="dot"></span>';
       cells += (
         '<div class="month-cell' + (isW ? " weekend" : "") + (isT ? " today" : "") + '" data-day="' + d + '">' +
           '<div class="num">' + d + "</div>" +
@@ -675,7 +753,7 @@
         "</div>"
       );
     }
-    var focus = state.monthlyFocus[m] || "";
+    var focus = getMonthlyFocusMap()[m] || "";
     var filled = 0;
     for (var dd = 1; dd <= dim; dd++) {
       var k = dateKey(YEAR, m, dd);
@@ -733,7 +811,7 @@
     });
     var focus = document.getElementById("month-focus");
     if (focus) focus.addEventListener("input", function () {
-      state.monthlyFocus[m] = focus.value;
+      getMonthlyFocusMap()[m] = focus.value;
       saveState();
     });
     var priorities = getMonthPriorities(m);
@@ -999,10 +1077,11 @@
       head += '<th' + (dow >= 5 ? ' class="weekend-col"' : "") + ">" + d + "</th>";
     }
     var rows = "";
-    if (!state.habits.length) {
+    var habitsList = getHabits();
+    if (!habitsList.length) {
       rows = '<tr><td class="habit-row-empty" colspan="' + (dim + 1) + '">No habits yet — add one above.</td></tr>';
     } else {
-      state.habits.forEach(function (h) {
+      habitsList.forEach(function (h) {
         var streak = currentStreak(h, m);
         var cells = '<td class="habit-name-cell">' +
           '<button class="habit-mode-toggle" data-mode-toggle="' + h.id + '" title="Switch tracking mode">' + (h.mode === "three-state" ? "3-state" : "simple") + "</button> " +
@@ -1023,7 +1102,7 @@
         rows += "<tr>" + cells + "</tr>";
       });
     }
-    var refl = state.habitsReflection;
+    var refl = getHabitsReflection();
     return (
       '<div class="view-head"><div><h1>Habit Tracker</h1><div class="sub">' + MONTH_NAMES[m] + " " + YEAR + "</div></div></div>" +
       '<div class="panel">' +
@@ -1060,7 +1139,7 @@
     function addHabit() {
       var name = input.value.trim();
       if (!name) return;
-      state.habits.push({ id: uid(), name: name, mode: "simple", marks: {} });
+      getHabits().push({ id: uid(), name: name, mode: "simple", marks: {} });
       saveState();
       render();
     }
@@ -1068,7 +1147,7 @@
     if (input) input.addEventListener("keydown", function (e) { if (e.key === "Enter") addHabit(); });
     document.querySelectorAll(".habit-mark").forEach(function (el) {
       el.addEventListener("click", function () {
-        var h = state.habits.find(function (x) { return x.id === el.dataset.habit; });
+        var h = getHabits().find(function (x) { return x.id === el.dataset.habit; });
         if (!h) return;
         var key = el.dataset.key;
         if (h.mode === "three-state") {
@@ -1087,7 +1166,7 @@
     document.querySelectorAll(".habit-mode-toggle").forEach(function (el) {
       el.addEventListener("click", function (e) {
         e.stopPropagation();
-        var h = state.habits.find(function (x) { return x.id === el.dataset.modeToggle; });
+        var h = getHabits().find(function (x) { return x.id === el.dataset.modeToggle; });
         if (!h) return;
         h.mode = h.mode === "three-state" ? "simple" : "three-state";
         saveState();
@@ -1096,15 +1175,15 @@
     });
     document.querySelectorAll(".habit-del").forEach(function (el) {
       el.addEventListener("click", function () {
-        state.habits = state.habits.filter(function (x) { return x.id !== el.dataset.del; });
+        state.habitsByYear[YEAR] = getHabits().filter(function (x) { return x.id !== el.dataset.del; });
         saveState();
         render();
       });
     });
     var focusEl = document.getElementById("habits-focus");
-    if (focusEl) focusEl.addEventListener("input", function () { state.habitsReflection.focus = focusEl.value; saveState(); });
+    if (focusEl) focusEl.addEventListener("input", function () { getHabitsReflection().focus = focusEl.value; saveState(); });
     var proudEl = document.getElementById("habits-proud");
-    if (proudEl) proudEl.addEventListener("input", function () { state.habitsReflection.proud = proudEl.value; saveState(); });
+    if (proudEl) proudEl.addEventListener("input", function () { getHabitsReflection().proud = proudEl.value; saveState(); });
   }
 
   /* ---- goals ---- */
@@ -1405,10 +1484,10 @@
 
   function renderFinance() {
     var income = 0, expense = 0;
-    state.finance.forEach(function (e) { if (e.kind === "income") income += e.amount; else expense += e.amount; });
+    getFinance().forEach(function (e) { if (e.kind === "income") income += e.amount; else expense += e.amount; });
     var monthly = [];
     for (var m = 0; m < 12; m++) monthly.push(0);
-    state.finance.forEach(function (e) {
+    getFinance().forEach(function (e) {
       var mm = parseInt((e.date || "").slice(5, 7), 10) - 1;
       if (mm >= 0 && mm < 12) monthly[mm] += e.kind === "income" ? e.amount : -e.amount;
     });
@@ -1422,7 +1501,7 @@
       );
     });
     var rows = "";
-    state.finance.slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); }).forEach(function (e) {
+    getFinance().slice().sort(function (a, b) { return (b.date || "").localeCompare(a.date || ""); }).forEach(function (e) {
       rows += (
         "<tr>" +
           "<td>" + escapeHtml(e.date || "") + "</td>" +
@@ -1472,13 +1551,13 @@
       var category = document.getElementById("new-entry-category").value.trim();
       var amount = parseFloat(document.getElementById("new-entry-amount").value);
       if (!amount || amount <= 0) return;
-      state.finance.push({ id: uid(), date: date, category: category, amount: amount, kind: financeKind });
+      getFinance().push({ id: uid(), date: date, category: category, amount: amount, kind: financeKind });
       saveState();
       render();
     });
     document.querySelectorAll("[data-del-entry]").forEach(function (el) {
       el.addEventListener("click", function () {
-        state.finance = state.finance.filter(function (x) { return x.id !== el.dataset.delEntry; });
+        state.financeByYear[YEAR] = getFinance().filter(function (x) { return x.id !== el.dataset.delEntry; });
         saveState();
         render();
       });
@@ -1846,6 +1925,20 @@
     closeDrawer();
   }
 
+  /* ------------------------------------------------------------- page meta */
+
+  function updatePageMeta() {
+    document.title = "Slow Ink — " + YEAR + " Digital Planner";
+    var m = document.querySelector('meta[name="description"]');
+    if (m) {
+      m.setAttribute("content",
+        "Slow Ink is an interactive " + YEAR + " digital planner — yearly overview, monthly, weekly and daily pages, " +
+        "habit tracker, goals, reading log, finance ledger and notes, in two hand-mixed colour palettes. " +
+        "Built with plain HTML5, CSS and JavaScript."
+      );
+    }
+  }
+
   /* ------------------------------------------------------------- theme */
 
   function applyTheme() {
@@ -1908,8 +2001,11 @@
       try {
         var parsed = JSON.parse(reader.result);
         state = Object.assign(defaultState(), parsed);
+        YEAR = state.currentYear || 2027;
+        WEEKS = buildWeeks(YEAR);
         saveState();
         applyTheme();
+        updatePageMeta();
         render();
         toast("Data imported");
       } catch (err) {
@@ -1923,8 +2019,11 @@
   document.getElementById("drawer-reset").addEventListener("click", function () {
     if (!confirm("Reset the planner? This clears everything saved in this browser.")) return;
     state = defaultState();
+    YEAR = state.currentYear;
+    WEEKS = buildWeeks(YEAR);
     saveState();
     applyTheme();
+    updatePageMeta();
     go("#/cover");
     toast("Planner reset");
   });
@@ -1934,6 +2033,7 @@
   buildTabbar();
   buildDrawer();
   applyTheme();
+  updatePageMeta();
   if (!location.hash) location.hash = "#/cover";
   window.addEventListener("hashchange", render);
   render();
