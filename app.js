@@ -192,6 +192,98 @@
     if (input) input.addEventListener("keydown", function (e) { if (e.key === "Enter") add(); });
   }
 
+  /* ------------------------------------------------------------- shared: star rating widget */
+
+  function starsHtml(value, attr, ownerId) {
+    value = parseInt(value, 10) || 0;
+    var html = '<div class="star-row" data-owner="' + ownerId + '">';
+    for (var i = 1; i <= 5; i++) {
+      html += '<button class="star-btn" data-' + attr + '="' + i + '" title="' + i + " star" + (i > 1 ? "s" : "") + '">' + icon(i <= value ? "starFilled" : "starOutline") + "</button>";
+    }
+    return html + "</div>";
+  }
+
+  function bindStars(containerEl, attr, onSet) {
+    if (!containerEl) return;
+    containerEl.querySelectorAll("[data-" + attr + "]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        onSet(parseInt(el.dataset[attr], 10));
+      });
+    });
+  }
+
+  /* ------------------------------------------------------------- shared: rich list editor pattern */
+
+  function listEditorHtml(items, fields) {
+    if (!items.length) return '<div class="empty-state">Nothing here yet.</div>';
+    var html = "";
+    items.forEach(function (it) {
+      html += '<div class="list-editor-row" data-item="' + it.id + '">';
+      fields.forEach(function (f) {
+        if (f.type === "textarea") {
+          html += '<textarea rows="' + (f.rows || 2) + '" data-field="' + f.key + '" placeholder="' + f.placeholder + '">' + escapeHtml(it[f.key] || "") + "</textarea>";
+        } else if (f.type === "checkbox") {
+          html += '<label class="check-field"><input type="checkbox" data-field="' + f.key + '" ' + (it[f.key] ? "checked" : "") + ' /> ' + (f.placeholder || "") + "</label>";
+        } else {
+          html += '<input type="' + (f.type || "text") + '" data-field="' + f.key + '" placeholder="' + f.placeholder + '" value="' + escapeHtml(it[f.key] || "") + '" />';
+        }
+      });
+      html += '<button class="habit-del" data-del title="Delete">✕</button></div>';
+    });
+    return html;
+  }
+
+  function bindListEditor(containerEl, items) {
+    if (!containerEl) return;
+    containerEl.querySelectorAll("[data-item]").forEach(function (row) {
+      var id = row.dataset.item;
+      row.querySelectorAll("[data-field]").forEach(function (el) {
+        var evt = el.type === "checkbox" ? "change" : "input";
+        el.addEventListener(evt, function () {
+          var it = items.find(function (x) { return x.id === id; });
+          if (!it) return;
+          it[el.dataset.field] = el.type === "checkbox" ? el.checked : el.value;
+          saveState();
+          if (el.type === "checkbox") render();
+        });
+      });
+      var del = row.querySelector("[data-del]");
+      if (del) del.addEventListener("click", function () {
+        var idx = items.findIndex(function (x) { return x.id === id; });
+        if (idx > -1) { items.splice(idx, 1); saveState(); render(); }
+      });
+    });
+  }
+
+  function bindListEditorAdd(addBtnId, items, defaults) {
+    var btn = document.getElementById(addBtnId);
+    if (btn) btn.addEventListener("click", function () {
+      items.push(Object.assign({ id: uid() }, defaults));
+      saveState();
+      render();
+    });
+  }
+
+  /* ------------------------------------------------------------- shared: expandable card toggle */
+
+  var expandedCards = {};
+
+  function expandClass(expandId) {
+    return expandedCards[expandId] ? " open" : "";
+  }
+
+  function bindExpandToggles() {
+    document.querySelectorAll("[data-expand-toggle]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var id = el.dataset.expandToggle;
+        expandedCards[id] = !expandedCards[id];
+        var body = document.getElementById(id);
+        if (body) body.classList.toggle("open", expandedCards[id]);
+        el.classList.toggle("open", expandedCards[id]);
+      });
+    });
+  }
+
   /* ------------------------------------------------------------- date helpers */
 
   function pad(n) { return String(n).padStart(2, "0"); }
@@ -279,7 +371,10 @@
     weatherCloudy: '<path d="M7 18a4 4 0 0 1-.3-7.98A5.5 5.5 0 0 1 17.5 9.5 4.5 4.5 0 0 1 17 18H7z"/>',
     weatherRainy: '<path d="M7 14a4 4 0 0 1-.3-7.98A5.5 5.5 0 0 1 17.5 5.5 4.5 4.5 0 0 1 17 14H7z"/><path d="M8 17.5l-1 3M12.5 17.5l-1 3M17 17.5l-1 3"/>',
     weatherSnowy: '<path d="M7 14a4 4 0 0 1-.3-7.98A5.5 5.5 0 0 1 17.5 5.5 4.5 4.5 0 0 1 17 14H7z"/><circle cx="8" cy="19" r=".9" fill="currentColor" stroke="none"/><circle cx="12.5" cy="19" r=".9" fill="currentColor" stroke="none"/><circle cx="17" cy="19" r=".9" fill="currentColor" stroke="none"/>',
-    weatherStormy: '<path d="M7 13a4 4 0 0 1-.3-7.98A5.5 5.5 0 0 1 17.5 4.5 4.5 4.5 0 0 1 17 13H7z"/><path d="M13 13l-3 5h3l-2 4"/>'
+    weatherStormy: '<path d="M7 13a4 4 0 0 1-.3-7.98A5.5 5.5 0 0 1 17.5 4.5 4.5 4.5 0 0 1 17 13H7z"/><path d="M13 13l-3 5h3l-2 4"/>',
+    starFilled: '<path d="M12 3.5l2.47 5.24 5.78.67-4.3 4.02 1.13 5.7L12 16.9l-5.08 2.23 1.13-5.7-4.3-4.02 5.78-.67L12 3.5z" fill="currentColor"/>',
+    starOutline: '<path d="M12 3.5l2.47 5.24 5.78.67-4.3 4.02 1.13 5.7L12 16.9l-5.08 2.23 1.13-5.7-4.3-4.02 5.78-.67L12 3.5z"/>',
+    chevron: '<path d="M7 9.5l5 5 5-5"/>'
   };
 
   function icon(name) {
@@ -969,30 +1064,93 @@
 
   /* ---- goals ---- */
 
+  function normalizeGoal(g) {
+    if (g.targetDate === undefined) g.targetDate = "";
+    if (g.definitionOfDone === undefined) g.definitionOfDone = "";
+    if (g.why === undefined) g.why = "";
+    if (!g.steps) g.steps = [];
+    if (g.challenges === undefined) g.challenges = "";
+    if (g.howToOvercome === undefined) g.howToOvercome = "";
+    if (!g.milestones) g.milestones = [];
+    if (g.supportingHabits === undefined) g.supportingHabits = "";
+    if (g.accountability === undefined) g.accountability = "";
+    if (!g.actionSteps) g.actionSteps = [];
+    return g;
+  }
+
+  function goalProgressPct(g) {
+    var all = g.steps.concat(g.actionSteps);
+    if (!all.length) return 0;
+    var done = all.filter(function (s) { return s.done; }).length;
+    return Math.round((done / all.length) * 100);
+  }
+
   function renderGoals() {
-    var rows = "";
+    var cards = "";
     if (!state.goals.length) {
-      rows = '<div class="empty-state">No goals yet. What do you want ' + YEAR + " to hold?</div>";
+      cards = '<div class="empty-state">No goals yet. What do you want ' + YEAR + " to hold?</div>";
     } else {
       state.goals.forEach(function (g) {
-        rows += (
-          '<div class="goal-item' + (g.done ? " done" : "") + '">' +
-            '<button class="goal-check' + (g.done ? " done" : "") + '" data-check="' + g.id + '">' + (g.done ? "✓" : "") + "</button>" +
-            '<span class="goal-title">' + escapeHtml(g.title) + "</span>" +
-            '<button class="habit-del" data-del="' + g.id + '" title="Delete goal">✕</button>' +
+        normalizeGoal(g);
+        var pct = goalProgressPct(g);
+        var expandId = "goal-expand-" + g.id;
+        cards += (
+          '<div class="card goal-card" data-goal-card="' + g.id + '">' +
+            '<div class="goal-item' + (g.done ? " done" : "") + '">' +
+              '<button class="goal-check' + (g.done ? " done" : "") + '" data-check="' + g.id + '">' + (g.done ? "✓" : "") + "</button>" +
+              '<span class="goal-title">' + escapeHtml(g.title) + "</span>" +
+              '<button class="habit-del" data-del="' + g.id + '" title="Delete goal">✕</button>' +
+            "</div>" +
+            '<div class="progress-bar"><div style="width:' + pct + '%"></div></div>' +
+            '<button class="card-expand-toggle' + expandClass(expandId) + '" data-expand-toggle="' + expandId + '">' + icon("chevron") + " More details</button>" +
+            '<div class="card-expand-body' + expandClass(expandId) + '" id="' + expandId + '">' +
+              '<div class="field-grid-2">' +
+                '<div><span class="field-label">Target date</span><input type="date" data-field="targetDate" data-goal="' + g.id + '" value="' + escapeHtml(g.targetDate) + '" /></div>' +
+                '<div><span class="field-label">Accountability</span><input type="text" data-field="accountability" data-goal="' + g.id + '" placeholder="Who\'s holding you to this?" value="' + escapeHtml(g.accountability) + '" /></div>' +
+              "</div>" +
+              '<span class="field-label" style="margin-top:12px;">Definition of done</span>' +
+              '<textarea rows="2" data-field="definitionOfDone" data-goal="' + g.id + '">' + escapeHtml(g.definitionOfDone) + "</textarea>" +
+              '<span class="field-label" style="margin-top:12px;">Why this matters</span>' +
+              '<textarea rows="2" data-field="why" data-goal="' + g.id + '">' + escapeHtml(g.why) + "</textarea>" +
+              '<span class="field-label" style="margin-top:12px;">Steps</span>' +
+              '<div class="habit-toolbar" style="margin-top:6px;"><button data-add-step="' + g.id + '">Add step</button></div>' +
+              '<div class="list-editor" data-steps-list="' + g.id + '">' + listEditorHtml(g.steps, [
+                { key: "text", placeholder: "Step" },
+                { key: "resource", placeholder: "Resource" },
+                { key: "deadline", placeholder: "Deadline", type: "date" },
+                { key: "done", placeholder: "Done", type: "checkbox" }
+              ]) + "</div>" +
+              '<span class="field-label" style="margin-top:12px;">Challenges</span>' +
+              '<textarea rows="2" data-field="challenges" data-goal="' + g.id + '">' + escapeHtml(g.challenges) + "</textarea>" +
+              '<span class="field-label" style="margin-top:12px;">How I\'ll overcome them</span>' +
+              '<textarea rows="2" data-field="howToOvercome" data-goal="' + g.id + '">' + escapeHtml(g.howToOvercome) + "</textarea>" +
+              '<span class="field-label" style="margin-top:12px;">Milestones</span>' +
+              '<div class="habit-toolbar" style="margin-top:6px;"><button data-add-milestone="' + g.id + '">Add milestone</button></div>' +
+              '<div class="list-editor" data-milestones-list="' + g.id + '">' + listEditorHtml(g.milestones, [
+                { key: "month", placeholder: "Month" },
+                { key: "target", placeholder: "Target" }
+              ]) + "</div>" +
+              '<span class="field-label" style="margin-top:12px;">Supporting habits</span>' +
+              '<textarea rows="2" data-field="supportingHabits" data-goal="' + g.id + '" placeholder="Habits that support this goal">' + escapeHtml(g.supportingHabits) + "</textarea>" +
+              '<span class="field-label" style="margin-top:12px;">Action steps</span>' +
+              '<div class="habit-toolbar" style="margin-top:6px;"><button data-add-action="' + g.id + '">Add action step</button></div>' +
+              '<div class="list-editor" data-actions-list="' + g.id + '">' + listEditorHtml(g.actionSteps, [
+                { key: "step", placeholder: "Action step" },
+                { key: "when", placeholder: "When" },
+                { key: "done", placeholder: "Done", type: "checkbox" }
+              ]) + "</div>" +
+            "</div>" +
           "</div>"
         );
       });
     }
     return (
       '<div class="view-head"><div><h1>Goals</h1><div class="sub">' + YEAR + " ambitions, kept in view</div></div></div>" +
-      '<div class="panel">' +
-        '<div class="habit-toolbar">' +
-          '<input type="text" id="new-goal-title" placeholder="Goal title" />' +
-          '<button id="add-goal">Add goal</button>' +
-        "</div>" +
-        rows +
-      "</div>"
+      '<div class="habit-toolbar" style="max-width:260px;">' +
+        '<input type="text" id="new-goal-title" placeholder="Goal title" />' +
+        '<button id="add-goal">Add goal</button>' +
+      "</div>" +
+      '<div class="grid-3">' + cards + "</div>"
     );
   }
 
@@ -1002,7 +1160,7 @@
     function addGoal() {
       var title = input.value.trim();
       if (!title) return;
-      state.goals.push({ id: uid(), title: title, done: false });
+      state.goals.push(normalizeGoal({ id: uid(), title: title, done: false }));
       saveState();
       render();
     }
@@ -1021,20 +1179,75 @@
         render();
       });
     });
+    document.querySelectorAll("[data-field][data-goal]").forEach(function (el) {
+      el.addEventListener("input", function () {
+        var g = state.goals.find(function (x) { return x.id === el.dataset.goal; });
+        if (g) { g[el.dataset.field] = el.value; saveState(); }
+      });
+    });
+    document.querySelectorAll("[data-add-step]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var g = state.goals.find(function (x) { return x.id === el.dataset.addStep; });
+        if (g) { g.steps.push({ id: uid(), text: "", resource: "", deadline: "", done: false }); saveState(); render(); }
+      });
+    });
+    document.querySelectorAll("[data-add-milestone]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var g = state.goals.find(function (x) { return x.id === el.dataset.addMilestone; });
+        if (g) { g.milestones.push({ id: uid(), month: "", target: "" }); saveState(); render(); }
+      });
+    });
+    document.querySelectorAll("[data-add-action]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var g = state.goals.find(function (x) { return x.id === el.dataset.addAction; });
+        if (g) { g.actionSteps.push({ id: uid(), step: "", when: "", done: false }); saveState(); render(); }
+      });
+    });
+    state.goals.forEach(function (g) {
+      var card = document.querySelector('[data-goal-card="' + g.id + '"]');
+      if (!card) return;
+      bindListEditor(card.querySelector('[data-steps-list="' + g.id + '"]'), g.steps);
+      bindListEditor(card.querySelector('[data-milestones-list="' + g.id + '"]'), g.milestones);
+      bindListEditor(card.querySelector('[data-actions-list="' + g.id + '"]'), g.actionSteps);
+    });
+    bindExpandToggles();
   }
 
   /* ---- reading ---- */
 
   var READ_STATUSES = [{ id: "want", label: "Want" }, { id: "reading", label: "Reading" }, { id: "done", label: "Finished" }];
+  var RECOMMEND_OPTS = [{ id: "yes", label: "Yes" }, { id: "no", label: "No" }];
+
+  function normalizeBook(b) {
+    if (b.genre === undefined) b.genre = "";
+    if (b.series === undefined) b.series = "";
+    if (b.edition === undefined) b.edition = "";
+    if (b.publisher === undefined) b.publisher = "";
+    if (b.startDate === undefined) b.startDate = "";
+    if (b.finishDate === undefined) b.finishDate = "";
+    if (b.link === undefined) b.link = "";
+    if (b.rating === undefined) b.rating = 0;
+    if (!b.keyTakeaways) b.keyTakeaways = [];
+    if (!b.favoriteQuotes) b.favoriteQuotes = [];
+    if (b.thoughts === undefined) b.thoughts = "";
+    if (b.recommend === undefined) b.recommend = "";
+    return b;
+  }
 
   function renderReading() {
     var cards = "";
     state.reading.forEach(function (b) {
+      normalizeBook(b);
       var pct = b.totalPages > 0 ? Math.min(100, Math.round((b.pagesRead / b.totalPages) * 100)) : 0;
       var pills = "";
       READ_STATUSES.forEach(function (s) {
         pills += '<button class="status-pill' + (b.status === s.id ? " active" : "") + '" data-status="' + s.id + '" data-book="' + b.id + '">' + s.label + "</button>";
       });
+      var recPills = "";
+      RECOMMEND_OPTS.forEach(function (r) {
+        recPills += '<button class="status-pill' + (b.recommend === r.id ? " active" : "") + '" data-recommend="' + r.id + '" data-book="' + b.id + '">' + r.label + "</button>";
+      });
+      var expandId = "book-expand-" + b.id;
       cards += (
         '<div class="card book-card" data-book-card="' + b.id + '">' +
           '<button class="habit-del" style="align-self:flex-end;" data-del-book="' + b.id + '" title="Delete book">✕</button>' +
@@ -1046,6 +1259,34 @@
             '<input type="number" min="0" data-field="totalPages" data-book="' + b.id + '" value="' + (b.totalPages || 0) + '" /> pages' +
           "</div>" +
           '<div class="progress-bar"><div style="width:' + pct + '%"></div></div>' +
+          '<button class="card-expand-toggle' + expandClass(expandId) + '" data-expand-toggle="' + expandId + '">' + icon("chevron") + " More details</button>" +
+          '<div class="card-expand-body' + expandClass(expandId) + '" id="' + expandId + '">' +
+            '<div class="field-grid-2">' +
+              '<input type="text" data-field="genre" data-book="' + b.id + '" placeholder="Genre" value="' + escapeHtml(b.genre) + '" />' +
+              '<input type="text" data-field="series" data-book="' + b.id + '" placeholder="Series" value="' + escapeHtml(b.series) + '" />' +
+              '<input type="text" data-field="edition" data-book="' + b.id + '" placeholder="Edition / format" value="' + escapeHtml(b.edition) + '" />' +
+              '<input type="text" data-field="publisher" data-book="' + b.id + '" placeholder="Publisher" value="' + escapeHtml(b.publisher) + '" />' +
+            "</div>" +
+            '<div class="field-grid-2" style="margin-top:10px;">' +
+              '<div><span class="field-label">Start date</span><input type="date" data-field="startDate" data-book="' + b.id + '" value="' + escapeHtml(b.startDate) + '" /></div>' +
+              '<div><span class="field-label">Finish date</span><input type="date" data-field="finishDate" data-book="' + b.id + '" value="' + escapeHtml(b.finishDate) + '" /></div>' +
+            "</div>" +
+            '<input type="text" data-field="link" data-book="' + b.id + '" placeholder="Link" value="' + escapeHtml(b.link) + '" style="margin-top:10px;" />' +
+            '<span class="field-label" style="margin-top:12px;">Rating</span>' +
+            starsHtml(b.rating, "rate", b.id) +
+            '<span class="field-label" style="margin-top:12px;">Key takeaways (one per line)</span>' +
+            '<textarea rows="3" data-field="keyTakeaways" data-book="' + b.id + '">' + escapeHtml((b.keyTakeaways || []).join("\n")) + "</textarea>" +
+            '<span class="field-label" style="margin-top:12px;">Favorite quotes</span>' +
+            '<div class="habit-toolbar" style="margin-top:6px;"><button data-add-quote="' + b.id + '">Add quote</button></div>' +
+            '<div class="list-editor" data-quotes-list="' + b.id + '">' + listEditorHtml(b.favoriteQuotes, [
+              { key: "quote", placeholder: "Quote", type: "textarea", rows: 2 },
+              { key: "chapter", placeholder: "Chapter" }
+            ]) + "</div>" +
+            '<span class="field-label" style="margin-top:12px;">Thoughts</span>' +
+            '<textarea rows="3" data-field="thoughts" data-book="' + b.id + '">' + escapeHtml(b.thoughts) + "</textarea>" +
+            '<span class="field-label" style="margin-top:12px;">Would you recommend it?</span>' +
+            '<div class="status-row" style="margin-top:6px;">' + recPills + "</div>" +
+          "</div>" +
         "</div>"
       );
     });
@@ -1063,16 +1304,18 @@
   function bindReading() {
     var addBtn = document.getElementById("add-book");
     if (addBtn) addBtn.addEventListener("click", function () {
-      state.reading.push({ id: uid(), title: "", author: "", status: "want", pagesRead: 0, totalPages: 0 });
+      state.reading.push(normalizeBook({ id: uid(), title: "", author: "", status: "want", pagesRead: 0, totalPages: 0 }));
       saveState();
       render();
     });
-    document.querySelectorAll("[data-field]").forEach(function (el) {
+    document.querySelectorAll("[data-field][data-book]").forEach(function (el) {
       el.addEventListener("input", function () {
         var b = state.reading.find(function (x) { return x.id === el.dataset.book; });
         if (!b) return;
         var field = el.dataset.field;
-        b[field] = (field === "pagesRead" || field === "totalPages") ? (parseInt(el.value, 10) || 0) : el.value;
+        if (field === "pagesRead" || field === "totalPages") b[field] = parseInt(el.value, 10) || 0;
+        else if (field === "keyTakeaways") b[field] = el.value.split("\n");
+        else b[field] = el.value;
         saveState();
         if (field === "pagesRead" || field === "totalPages") render();
       });
@@ -1083,6 +1326,12 @@
         if (b) { b.status = el.dataset.status; saveState(); render(); }
       });
     });
+    document.querySelectorAll("[data-recommend]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var b = state.reading.find(function (x) { return x.id === el.dataset.book; });
+        if (b) { b.recommend = b.recommend === el.dataset.recommend ? "" : el.dataset.recommend; saveState(); render(); }
+      });
+    });
     document.querySelectorAll("[data-del-book]").forEach(function (el) {
       el.addEventListener("click", function () {
         state.reading = state.reading.filter(function (x) { return x.id !== el.dataset.delBook; });
@@ -1090,6 +1339,19 @@
         render();
       });
     });
+    document.querySelectorAll("[data-add-quote]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var b = state.reading.find(function (x) { return x.id === el.dataset.addQuote; });
+        if (b) { b.favoriteQuotes.push({ id: uid(), quote: "", chapter: "" }); saveState(); render(); }
+      });
+    });
+    state.reading.forEach(function (b) {
+      var card = document.querySelector('[data-book-card="' + b.id + '"]');
+      if (!card) return;
+      bindStars(card.querySelector(".star-row"), "rate", function (v) { b.rating = v; saveState(); render(); });
+      bindListEditor(card.querySelector('[data-quotes-list="' + b.id + '"]'), b.favoriteQuotes);
+    });
+    bindExpandToggles();
   }
 
   /* ---- finance ---- */

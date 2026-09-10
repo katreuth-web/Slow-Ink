@@ -378,6 +378,44 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
   padding: 6px 2px;
 }
 
+/* ---------------------------------------------------------------- shared: field grids, expandable cards, list editor, stars */
+
+.field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 500px) { .field-grid-2 { grid-template-columns: 1fr; } }
+
+.card-expand-toggle {
+  display: flex; align-items: center; gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--ink-mute);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-top: 4px;
+}
+.card-expand-toggle svg { width: 14px; height: 14px; transition: transform var(--dur) var(--ease); }
+.card-expand-toggle.open svg { transform: rotate(180deg); }
+.card-expand-toggle:hover { color: var(--accent-text); }
+.card-expand-body { display: none; flex-direction: column; gap: 4px; margin-top: 6px; }
+.card-expand-body.open { display: flex; }
+
+.list-editor { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.list-editor-row {
+  display: flex; flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px dotted var(--hair);
+}
+.list-editor-row input, .list-editor-row textarea { flex: 1; min-width: 90px; }
+.check-field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-mute); flex: 0 0 auto; }
+.check-field input { width: auto; accent-color: var(--accent); }
+
+.star-row { display: flex; gap: 4px; margin-top: 6px; }
+.star-btn { border: none; background: transparent; color: var(--ink-faint); cursor: pointer; padding: 0; }
+.star-btn svg { width: 20px; height: 20px; }
+.star-btn:hover { color: var(--accent); }
+
 /* ---------------------------------------------------------------- cover */
 
 .cover {
@@ -623,14 +661,13 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 
 /* ---------------------------------------------------------------- goals */
 
+.goal-card { display: flex; flex-direction: column; }
 .goal-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 4px;
-  border-bottom: 1px solid var(--hair-soft);
+  padding: 0 0 10px;
 }
-.goal-item:last-child { border-bottom: none; }
 .goal-check {
   width: 20px; height: 20px;
   border-radius: 5px;
