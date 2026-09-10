@@ -36,7 +36,7 @@
 
   function defaultState() {
     return {
-      theme: "tuscan-rose",
+      theme: "greek-marble",
       monthlyFocus: {},
       daily: {},
       weekly: {},
@@ -237,10 +237,10 @@
     bar.appendChild(moonBtn);
     var sunBtn = document.createElement("button");
     sunBtn.className = "tab-btn theme-btn";
-    sunBtn.dataset.theme = "tuscan-rose";
-    sunBtn.title = "Tuscan Rose (light)";
+    sunBtn.dataset.theme = "greek-marble";
+    sunBtn.title = "Greek Marble (light)";
     sunBtn.innerHTML = icon("sunTheme");
-    sunBtn.addEventListener("click", function () { setTheme("tuscan-rose"); });
+    sunBtn.addEventListener("click", function () { setTheme("greek-marble"); });
     bar.appendChild(sunBtn);
   }
 
@@ -1047,11 +1047,11 @@
 
   function applyTheme() {
     document.documentElement.setAttribute("data-theme", state.theme);
-    var isLight = state.theme === "tuscan-rose";
+    var isLight = state.theme === "greek-marble";
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", isLight ? "#FEFFF1" : "#232323");
+    if (meta) meta.setAttribute("content", isLight ? "#F1EBDB" : "#232323");
     var label = document.getElementById("drawer-theme-label");
-    if (label) label.textContent = isLight ? "Switch to Soft Black" : "Switch to Tuscan Rose";
+    if (label) label.textContent = isLight ? "Switch to Soft Black" : "Switch to Greek Marble";
     var icoEl = document.getElementById("drawer-theme-icon");
     if (icoEl) icoEl.innerHTML = icon(isLight ? "moon" : "sunTheme");
     document.querySelectorAll(".tab-btn.theme-btn").forEach(function (el) {
@@ -1066,7 +1066,7 @@
   }
 
   document.getElementById("drawer-theme").addEventListener("click", function () {
-    setTheme(state.theme === "tuscan-rose" ? "soft-black" : "tuscan-rose");
+    setTheme(state.theme === "greek-marble" ? "soft-black" : "greek-marble");
   });
 
   /* ------------------------------------------------------------- nav chrome */

@@ -9,7 +9,7 @@ Cover · Year Overview · Monthly · Weekly · Daily · Habit Tracker · Goals �
 ## Features
 
 - Full 2027 calendar logic (year/month/week/day views, all linked together)
-- Two hand-mixed colour themes — **Ivory Lace** (light) and **Green Velvet** (dark) — toggle in the toolbar
+- Two hand-mixed colour themes — **Greek Marble** (light) and **Soft Black** (dark) — toggle in the drawer menu
 - Everything is saved automatically to `localStorage` in your browser
 - Export/import your planner as a JSON file, or reset it entirely
 - Responsive layout for smaller screens
