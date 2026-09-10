@@ -79,8 +79,28 @@
       cyclePeriodDays: {},
       cycleLengths: {},
       cycleNotes: "",
-      doctorQuestions: []
+      doctorQuestions: [],
+      notebookPages: [],
+      ikigai: { answers: { love: "", good: "", world: "", paid: "" }, questions: ["", "", "", "", "", "", "", "", "", ""] },
+      wheelOfLife: defaultWheelOfLife(),
+      stoicChange: [],
+      stoicAccept: [],
+      stoicPremeditation: { goWrong: "", handle: "" },
+      stoicReframingLog: [],
+      stoicEveningReview: { p1: "", p2: "", p3: "", p4: "", p5: "" },
+      lifeInventory: [],
+      dailyReflection: {},
+      weeklyReflectionByYear: {},
+      monthlyReflectionByYear: {},
+      yearlyReflectionByYear: {},
+      eisenhowerMatrix: { q1: "", q2: "", q3: "", q4: "" },
+      mindMaps: []
     };
+  }
+
+  var WHEEL_AREAS = ["Health", "Finance", "Career", "Relationships", "Self-Development", "Recreation", "Home", "Friends"];
+  function defaultWheelOfLife() {
+    return WHEEL_AREAS.map(function (name) { return { id: uid(), name: name, rating: 0 }; });
   }
 
   var GROCERY_CATEGORIES = [
@@ -176,6 +196,49 @@
   function getMonthlyFocusMap() {
     if (!state.monthlyFocusByYear[YEAR]) state.monthlyFocusByYear[YEAR] = {};
     return state.monthlyFocusByYear[YEAR];
+  }
+
+  function getYearlyReflection() {
+    if (!state.yearlyReflectionByYear[YEAR]) {
+      state.yearlyReflectionByYear[YEAR] = {
+        accomplishments: "", highlights: "", setbacks: "", thingsToLearn: "", thingsToChange: "",
+        start: "", stop: "", continue: "", nextYearPriorities: ""
+      };
+    }
+    return state.yearlyReflectionByYear[YEAR];
+  }
+
+  function getMonthlyReflection(m) {
+    if (!state.monthlyReflectionByYear[YEAR]) state.monthlyReflectionByYear[YEAR] = {};
+    if (!state.monthlyReflectionByYear[YEAR][m]) {
+      state.monthlyReflectionByYear[YEAR][m] = {
+        wins: "", feelings: "", challenges: "", improve: "", goalsAchieved: "", goalsInProgress: "", goalsNextMonth: "",
+        habitsKept: "", habitsLetGo: "", habitsBuilding: "", thankful: ["", "", ""], lessons: "", oneWord: "", rating: 0
+      };
+    }
+    return state.monthlyReflectionByYear[YEAR][m];
+  }
+
+  function getWeeklyReflection(idx) {
+    if (!state.weeklyReflectionByYear[YEAR]) state.weeklyReflectionByYear[YEAR] = {};
+    var key = "W" + idx;
+    if (!state.weeklyReflectionByYear[YEAR][key]) {
+      state.weeklyReflectionByYear[YEAR][key] = {
+        howWasWeek: "", gratefulFor: "", thingsToCelebrate: "", areasToImprove: "", wentWell: "", didntWork: "",
+        tasksWorkingOn: "", nextWeekFocus: "", notes: ""
+      };
+    }
+    return state.weeklyReflectionByYear[YEAR][key];
+  }
+
+  function getDailyReflection(key) {
+    if (!state.dailyReflection[key]) {
+      state.dailyReflection[key] = {
+        morningIntention: "", eveningHowDidItGo: "", eveningWentWell: "", eveningCouldImprove: "",
+        eveningLearned: "", highlight: "", noteToSelf: ""
+      };
+    }
+    return state.dailyReflection[key];
   }
 
   function getDay(key) {
@@ -448,6 +511,26 @@
     });
   }
 
+  /* ------------------------------------------------------------- shared: simple fields form (label + textarea) */
+
+  function fieldsFormHtml(obj, fields) {
+    var html = "";
+    fields.forEach(function (f) {
+      html += (
+        '<span class="field-label" style="margin-top:12px;">' + f.label + "</span>" +
+        '<textarea rows="' + (f.rows || 2) + '" data-field="' + f.key + '">' + escapeHtml(obj[f.key] || "") + "</textarea>"
+      );
+    });
+    return html;
+  }
+
+  function bindFieldsForm(containerEl, obj) {
+    if (!containerEl) return;
+    containerEl.querySelectorAll("[data-field]").forEach(function (el) {
+      el.addEventListener("input", function () { obj[el.dataset.field] = el.value; saveState(); });
+    });
+  }
+
   /* ------------------------------------------------------------- shared: expandable card toggle */
 
   var expandedCards = {};
@@ -561,7 +644,8 @@
     chevron: '<path d="M7 9.5l5 5 5-5"/>',
     meals: '<path d="M7.5 3v6a2 2 0 0 0 4 0V3"/><path d="M9.5 3v18"/><path d="M17 3c2 1.6 2 6.4 0 8-.6.4-1 1.1-1 1.9V21"/>',
     travel: '<rect x="4" y="8" width="16" height="12" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M4 13h16"/>',
-    fitness: '<path d="M12 20c-4-2-6-6-6-9 2 1 4 3 6 7 2-4 4-6 6-7 0 3-2 7-6 9z"/><path d="M12 20c-3-3-4-7-4-11 2 2 3 5 4 9 1-4 2-7 4-9 0 4-1 8-4 11z"/><path d="M6 15c-2-1-4-3-4-5 2 0 4 1 6 3M18 15c2-1 4-3 4-5-2 0-4 1-6 3"/>'
+    fitness: '<path d="M12 20c-4-2-6-6-6-9 2 1 4 3 6 7 2-4 4-6 6-7 0 3-2 7-6 9z"/><path d="M12 20c-3-3-4-7-4-11 2 2 3 5 4 9 1-4 2-7 4-9 0 4-1 8-4 11z"/><path d="M6 15c-2-1-4-3-4-5 2 0 4 1 6 3M18 15c2-1 4-3 4-5-2 0-4 1-6 3"/>',
+    reflections: '<circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5l-2.2 5-5 2.2 2.2-5 5-2.2z"/>'
   };
 
   function icon(name) {
@@ -583,14 +667,15 @@
     { id: "notes", label: "Notes" },
     { id: "meals", label: "Meal Planner" },
     { id: "travel", label: "Travel Planner" },
-    { id: "fitness", label: "Fitness & Wellness" }
+    { id: "fitness", label: "Fitness & Wellness" },
+    { id: "reflections", label: "Reflections" }
   ];
 
   var TITLES = {
     cover: "Slow Ink", year: "Year Overview", month: "Monthly", week: "Weekly",
     day: "Daily", habits: "Habit Tracker", goals: "Goals", reading: "Reading",
     finance: "Finance", notes: "Notes", meals: "Meal Planner", travel: "Travel Planner",
-    fitness: "Fitness & Wellness"
+    fitness: "Fitness & Wellness", reflections: "Reflections"
   };
 
   var TAB_ITEMS = [
@@ -709,7 +794,8 @@
     notes: renderNotes,
     meals: renderMeals,
     travel: renderTravel,
-    fitness: renderFitness
+    fitness: renderFitness,
+    reflections: renderReflections
   };
 
   var BINDERS = {
@@ -721,6 +807,7 @@
     meals: bindMeals,
     travel: bindTravel,
     fitness: bindFitness,
+    reflections: bindReflections,
     goals: bindGoals,
     reading: bindReading,
     finance: bindFinance,
@@ -1927,7 +2014,23 @@
 
   /* ---- notes ---- */
 
-  function renderNotes() {
+  var NOTES_TABS = [{ id: "sticky", label: "Sticky Notes" }, { id: "pages", label: "Notebook Pages" }];
+
+  function renderNotes(param) {
+    var view = param === "pages" ? "pages" : "sticky";
+    var tabs = subtabsHtml(NOTES_TABS.map(function (t) { return { label: t.label, href: "#/notes/" + t.id, active: t.id === view }; }));
+    var head = '<div class="view-head"><div><h1>Notes</h1><div class="sub">Loose pages, kept together</div></div></div>' + tabs;
+    if (view === "pages") return head + renderNotebookPages();
+    return head + renderNotesSticky();
+  }
+
+  function bindNotes(param) {
+    bindSubtabs();
+    if (param === "pages") bindNotebookPages();
+    else bindNotesSticky();
+  }
+
+  function renderNotesSticky() {
     var cards = "";
     state.notes.forEach(function (n) {
       var tints = "";
@@ -1944,8 +2047,7 @@
       );
     });
     return (
-      '<div class="view-head"><div><h1>Notes</h1><div class="sub">Loose pages, kept together</div></div></div>' +
-      '<div class="notes-toolbar"><button id="add-note">Write a note</button></div>' +
+      '<div class="notes-toolbar" style="margin-top:16px;"><button id="add-note">Write a note</button></div>' +
       '<div class="notes-grid">' + (cards || '<div class="empty-state">No notes yet.</div>') + "</div>"
     );
   }
@@ -1957,7 +2059,7 @@
     return t === "card" ? "var(--card-2)" : "var(--swatch-" + t + "-wash)";
   }
 
-  function bindNotes() {
+  function bindNotesSticky() {
     var addBtn = document.getElementById("add-note");
     if (addBtn) addBtn.addEventListener("click", function () {
       state.notes.unshift({ id: uid(), title: "", body: "", tint: "card" });
@@ -1979,6 +2081,77 @@
     document.querySelectorAll("[data-del-note]").forEach(function (el) {
       el.addEventListener("click", function () {
         state.notes = state.notes.filter(function (x) { return x.id !== el.dataset.delNote; });
+        saveState();
+        render();
+      });
+    });
+  }
+
+  var PAPER_STYLES = ["blank", "lined", "grid", "dot"];
+
+  function renderNotebookPages() {
+    var sections = {};
+    var order = [];
+    state.notebookPages.forEach(function (p) {
+      var key = p.sectionLabel || "";
+      if (!sections[key]) { sections[key] = []; order.push(key); }
+      sections[key].push(p);
+    });
+    function pageCard(p) {
+      var paperPills = "";
+      PAPER_STYLES.forEach(function (ps) {
+        paperPills += '<button class="status-pill' + (p.paper === ps ? " active" : "") + '" data-paper="' + ps + '" data-page="' + p.id + '">' + ps + "</button>";
+      });
+      return (
+        '<div class="card" data-page-card="' + p.id + '">' +
+          '<button class="habit-del" style="align-self:flex-end;" data-del-page="' + p.id + '" title="Delete page">✕</button>' +
+          '<input type="text" class="title-input" data-field="title" data-page="' + p.id + '" placeholder="Page title" value="' + escapeHtml(p.title || "") + '" />' +
+          '<div class="field-grid-2">' +
+            '<input type="date" data-field="date" data-page="' + p.id + '" value="' + escapeHtml(p.date || "") + '" />' +
+            '<input type="text" data-field="sectionLabel" data-page="' + p.id + '" placeholder="Section (optional)" value="' + escapeHtml(p.sectionLabel || "") + '" />' +
+          "</div>" +
+          '<div class="status-row" style="margin-top:8px;">' + paperPills + "</div>" +
+          '<textarea rows="8" class="notebook-paper paper-' + (p.paper || "blank") + '" data-field="content" data-page="' + p.id + '" placeholder="Write…" style="margin-top:8px;">' + escapeHtml(p.content || "") + "</textarea>" +
+        "</div>"
+      );
+    }
+    var html = "";
+    order.forEach(function (key) {
+      if (key) html += "<h2 style=\"margin:22px 0 12px;\">" + escapeHtml(key) + "</h2>";
+      html += '<div class="grid-3">' + sections[key].map(pageCard).join("") + "</div>";
+    });
+    return (
+      '<div class="habit-toolbar" style="max-width:260px;margin-top:16px;"><button id="add-page" style="width:100%;">Add a page</button></div>' +
+      (html || '<div class="empty-state">No pages yet.</div>')
+    );
+  }
+
+  function bindNotebookPages() {
+    var addBtn = document.getElementById("add-page");
+    if (addBtn) addBtn.addEventListener("click", function () {
+      state.notebookPages.unshift({ id: uid(), sectionLabel: "", title: "", date: "", paper: "blank", content: "" });
+      saveState();
+      render();
+    });
+    document.querySelectorAll("[data-field][data-page]").forEach(function (el) {
+      el.addEventListener("input", function () {
+        var p = state.notebookPages.find(function (x) { return x.id === el.dataset.page; });
+        if (!p) return;
+        var field = el.dataset.field;
+        p[field] = el.value;
+        saveState();
+        if (field === "sectionLabel") render();
+      });
+    });
+    document.querySelectorAll("[data-paper]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var p = state.notebookPages.find(function (x) { return x.id === el.dataset.page; });
+        if (p) { p.paper = el.dataset.paper; saveState(); render(); }
+      });
+    });
+    document.querySelectorAll("[data-del-page]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        state.notebookPages = state.notebookPages.filter(function (x) { return x.id !== el.dataset.delPage; });
         saveState();
         render();
       });
@@ -2469,6 +2642,490 @@
   function bindFitnessDoctor() {
     bindChecklistAdd("add-doctor-question", "new-doctor-question", state.doctorQuestions);
     bindChecklist(document.getElementById("doctor-questions-list"), state.doctorQuestions);
+  }
+
+  /* ---- reflections ---- */
+
+  var REFLECTIONS_TABS = [
+    { id: "ikigai", label: "Ikigai" }, { id: "wheel", label: "Wheel of Life" }, { id: "stoic", label: "Stoic Mindset" },
+    { id: "inventory", label: "Life Inventory" }, { id: "daily", label: "Daily" }, { id: "weekly", label: "Weekly" },
+    { id: "monthly", label: "Monthly" }, { id: "yearly", label: "Yearly" }, { id: "eisenhower", label: "Eisenhower Matrix" },
+    { id: "mindmap", label: "Mind Map" }
+  ];
+
+  function reflectionsView(param) {
+    param = param || "ikigai";
+    if (param.indexOf("daily") === 0) return "daily";
+    if (param.indexOf("weekly") === 0) return "weekly";
+    if (param.indexOf("monthly") === 0) return "monthly";
+    var found = REFLECTIONS_TABS.some(function (t) { return t.id === param; });
+    return found ? param : "ikigai";
+  }
+
+  function renderReflections(param) {
+    var view = reflectionsView(param);
+    var dayKey = param && param.indexOf("daily-") === 0 ? param.slice(6) : clampDayKey();
+    var weekIdx = param && param.indexOf("weekly-") === 0 ? clampWeek(param.slice(7)) : weekIndexForToday();
+    var monthIdx = param && param.indexOf("monthly-") === 0 ? clampMonth(param.slice(8)) : (now.getFullYear() === YEAR ? now.getMonth() : 0);
+    var tabs = subtabsHtml(REFLECTIONS_TABS.map(function (t) {
+      var href = "#/reflections/" + t.id;
+      if (t.id === "daily") href = "#/reflections/daily-" + dayKey;
+      if (t.id === "weekly") href = "#/reflections/weekly-" + weekIdx;
+      if (t.id === "monthly") href = "#/reflections/monthly-" + monthIdx;
+      return { label: t.label, href: href, active: t.id === view };
+    }));
+    var head = '<div class="view-head"><div><h1>Reflections</h1><div class="sub">Occasional-use worksheets for stepping back</div></div></div>' + tabs;
+    if (view === "wheel") return head + renderReflWheel();
+    if (view === "stoic") return head + renderReflStoic();
+    if (view === "inventory") return head + renderReflInventory();
+    if (view === "daily") return head + renderReflDaily(dayKey);
+    if (view === "weekly") return head + renderReflWeekly(weekIdx);
+    if (view === "monthly") return head + renderReflMonthly(monthIdx);
+    if (view === "yearly") return head + renderReflYearly();
+    if (view === "eisenhower") return head + renderReflEisenhower();
+    if (view === "mindmap") return head + renderReflMindMap();
+    return head + renderReflIkigai();
+  }
+
+  function bindReflections(param) {
+    bindSubtabs();
+    var view = reflectionsView(param);
+    var dayKey = param && param.indexOf("daily-") === 0 ? param.slice(6) : clampDayKey();
+    var weekIdx = param && param.indexOf("weekly-") === 0 ? clampWeek(param.slice(7)) : weekIndexForToday();
+    var monthIdx = param && param.indexOf("monthly-") === 0 ? clampMonth(param.slice(8)) : (now.getFullYear() === YEAR ? now.getMonth() : 0);
+    if (view === "wheel") bindReflWheel();
+    else if (view === "stoic") bindReflStoic();
+    else if (view === "inventory") bindReflInventory();
+    else if (view === "daily") bindReflDaily(dayKey);
+    else if (view === "weekly") bindReflWeekly(weekIdx);
+    else if (view === "monthly") bindReflMonthly(monthIdx);
+    else if (view === "yearly") bindReflYearly();
+    else if (view === "eisenhower") bindReflEisenhower();
+    else if (view === "mindmap") bindReflMindMap();
+    else bindReflIkigai();
+  }
+
+  function renderReflIkigai() {
+    var ik = state.ikigai;
+    var questionsHtml = "";
+    ik.questions.forEach(function (q, i) {
+      questionsHtml += (
+        '<li><span class="idx">' + (i + 1) + "</span>" +
+        '<input type="text" class="line-input" data-question="' + i + '" value="' + escapeHtml(q || "") + '" placeholder="Guided question ' + (i + 1) + '" /></li>'
+      );
+    });
+    return (
+      '<div class="panel" style="margin-top:16px;">' +
+        "<h3>Ikigai</h3>" +
+        '<svg viewBox="0 0 190 200" class="ikigai-svg" style="margin-top:12px;">' +
+          '<circle cx="63" cy="70" r="48" fill="var(--swatch-1-wash)" stroke="var(--accent)" stroke-width="1"/>' +
+          '<circle cx="127" cy="70" r="48" fill="var(--swatch-2-wash)" stroke="var(--accent)" stroke-width="1"/>' +
+          '<circle cx="63" cy="130" r="48" fill="var(--swatch-3-wash)" stroke="var(--accent)" stroke-width="1"/>' +
+          '<circle cx="127" cy="130" r="48" fill="var(--accent-subtle)" stroke="var(--accent)" stroke-width="1"/>' +
+          '<text x="63" y="14" font-size="9" text-anchor="middle" fill="var(--ink-mute)">Love</text>' +
+          '<text x="127" y="14" font-size="9" text-anchor="middle" fill="var(--ink-mute)">Good at</text>' +
+          '<text x="63" y="194" font-size="9" text-anchor="middle" fill="var(--ink-mute)">World needs</text>' +
+          '<text x="127" y="194" font-size="9" text-anchor="middle" fill="var(--ink-mute)">Paid for</text>' +
+        "</svg>" +
+        '<div class="field-grid-2" style="margin-top:14px;">' +
+          '<div><span class="field-label">What I love</span><textarea rows="3" data-ikigai="love">' + escapeHtml(ik.answers.love || "") + "</textarea></div>" +
+          '<div><span class="field-label">What I\'m good at</span><textarea rows="3" data-ikigai="good">' + escapeHtml(ik.answers.good || "") + "</textarea></div>" +
+          '<div><span class="field-label">What the world needs</span><textarea rows="3" data-ikigai="world">' + escapeHtml(ik.answers.world || "") + "</textarea></div>" +
+          '<div><span class="field-label">What I can be paid for</span><textarea rows="3" data-ikigai="paid">' + escapeHtml(ik.answers.paid || "") + "</textarea></div>" +
+        "</div>" +
+        '<h3 style="margin-top:18px;">Guided questions</h3>' +
+        '<ul class="top3-list" style="margin-top:12px;">' + questionsHtml + "</ul>" +
+      "</div>"
+    );
+  }
+
+  function bindReflIkigai() {
+    document.querySelectorAll("[data-ikigai]").forEach(function (el) {
+      el.addEventListener("input", function () { state.ikigai.answers[el.dataset.ikigai] = el.value; saveState(); });
+    });
+    document.querySelectorAll("[data-question]").forEach(function (el) {
+      el.addEventListener("input", function () { state.ikigai.questions[parseInt(el.dataset.question, 10)] = el.value; saveState(); });
+    });
+  }
+
+  function wheelOfLifeSvg(areas) {
+    var cx = 110, cy = 110, maxR = 80, n = areas.length;
+    var svg = '<svg viewBox="-35 -10 290 240" class="wheel-svg">';
+    for (var ring = 2; ring <= 10; ring += 2) {
+      svg += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (maxR * ring / 10).toFixed(1) + '" fill="none" stroke="var(--hair)" stroke-width="1"/>';
+    }
+    for (var i2 = 0; i2 < n; i2++) {
+      var ang = (i2 / n) * 2 * Math.PI - Math.PI / 2;
+      svg += '<line x1="' + cx + '" y1="' + cy + '" x2="' + (cx + maxR * Math.cos(ang)).toFixed(1) + '" y2="' + (cy + maxR * Math.sin(ang)).toFixed(1) + '" stroke="var(--hair)" stroke-width="1"/>';
+    }
+    areas.forEach(function (a, i) {
+      var rating = a.rating || 0;
+      var r = maxR * (rating / 10);
+      var a0 = (i / n) * 2 * Math.PI - Math.PI / 2;
+      var a1 = ((i + 1) / n) * 2 * Math.PI - Math.PI / 2;
+      var x0 = (cx + r * Math.cos(a0)).toFixed(1), y0 = (cy + r * Math.sin(a0)).toFixed(1);
+      var x1 = (cx + r * Math.cos(a1)).toFixed(1), y1 = (cy + r * Math.sin(a1)).toFixed(1);
+      var largeArc = (a1 - a0) > Math.PI ? 1 : 0;
+      if (r > 0.5) {
+        svg += '<path d="M' + cx + " " + cy + " L" + x0 + " " + y0 + " A" + r.toFixed(1) + " " + r.toFixed(1) + " 0 " + largeArc + " 1 " + x1 + " " + y1 + ' Z" fill="var(--accent-subtle)" stroke="var(--accent)" stroke-width="1"/>';
+      }
+      var midAng = (a0 + a1) / 2;
+      var cosMid = Math.cos(midAng);
+      var lx = (cx + (maxR + 16) * cosMid).toFixed(1), ly = (cy + (maxR + 16) * Math.sin(midAng)).toFixed(1);
+      var anchor = cosMid > 0.35 ? "start" : cosMid < -0.35 ? "end" : "middle";
+      svg += '<text x="' + lx + '" y="' + ly + '" font-size="8.5" fill="var(--ink-mute)" text-anchor="' + anchor + '">' + escapeHtml(a.name) + "</text>";
+    });
+    return svg + "</svg>";
+  }
+
+  function renderReflWheel() {
+    var rows = state.wheelOfLife.map(function (a) {
+      var levels = "";
+      for (var lv = 1; lv <= 10; lv++) levels += '<button class="mood-opt' + (a.rating === lv ? " active" : "") + '" data-wheel="' + a.id + '" data-lv="' + lv + '">' + lv + "</button>";
+      return '<div style="margin-bottom:14px;"><span class="field-label">' + escapeHtml(a.name) + '</span><div class="mood-row">' + levels + "</div></div>";
+    }).join("");
+    return (
+      '<div class="panel" style="margin-top:16px;">' +
+        "<h3>Wheel of Life</h3>" +
+        '<div class="wheel-wrap" style="margin-top:12px;">' + wheelOfLifeSvg(state.wheelOfLife) + "</div>" +
+        '<div style="margin-top:18px;">' + rows + "</div>" +
+      "</div>"
+    );
+  }
+
+  function bindReflWheel() {
+    document.querySelectorAll("[data-wheel]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var a = state.wheelOfLife.find(function (x) { return x.id === el.dataset.wheel; });
+        if (a) { a.rating = parseInt(el.dataset.lv, 10); saveState(); render(); }
+      });
+    });
+  }
+
+  function renderReflStoic() {
+    return (
+      '<div class="grid-2" style="margin-top:16px;">' +
+        '<div class="panel"><h3>Things I can change</h3>' +
+          '<div class="habit-toolbar" style="margin-top:12px;"><input type="text" id="new-stoic-change" placeholder="Add an item" /><button id="add-stoic-change">Add</button></div>' +
+          '<div id="stoic-change-list">' + checklistHtml(state.stoicChange, { noCheck: true }) + "</div>" +
+        "</div>" +
+        '<div class="panel"><h3>Things I must accept</h3>' +
+          '<div class="habit-toolbar" style="margin-top:12px;"><input type="text" id="new-stoic-accept" placeholder="Add an item" /><button id="add-stoic-accept">Add</button></div>' +
+          '<div id="stoic-accept-list">' + checklistHtml(state.stoicAccept, { noCheck: true }) + "</div>" +
+        "</div>" +
+      "</div>" +
+      '<div class="panel" id="stoic-premeditation" style="margin-top:16px;"><h3>Premeditation of evils</h3>' +
+        fieldsFormHtml(state.stoicPremeditation, [
+          { key: "goWrong", label: "What could go wrong?" },
+          { key: "handle", label: "How would I handle it?" }
+        ]) +
+      "</div>" +
+      '<div class="panel" style="margin-top:16px;"><h3>Reframing log</h3>' +
+        '<div class="habit-toolbar" style="margin-top:12px;"><button id="add-reframe">Add entry</button></div>' +
+        '<div class="list-editor" id="reframing-log">' + listEditorHtml(state.stoicReframingLog, [
+          { key: "event", placeholder: "Event" }, { key: "initialReaction", placeholder: "Initial reaction" },
+          { key: "benefits", placeholder: "Possible benefits" }, { key: "howStronger", placeholder: "How this makes me stronger" }
+        ]) + "</div>" +
+      "</div>" +
+      '<div class="panel" id="stoic-evening-review" style="margin-top:16px;"><h3>Evening review</h3>' +
+        fieldsFormHtml(state.stoicEveningReview, [
+          { key: "p1", label: "What did I do well today?" },
+          { key: "p2", label: "What did I do wrong?" },
+          { key: "p3", label: "What could I have done better?" },
+          { key: "p4", label: "Did I act with virtue?" },
+          { key: "p5", label: "What will I do differently tomorrow?" }
+        ]) +
+      "</div>"
+    );
+  }
+
+  function bindReflStoic() {
+    bindChecklistAdd("add-stoic-change", "new-stoic-change", state.stoicChange);
+    bindChecklist(document.getElementById("stoic-change-list"), state.stoicChange);
+    bindChecklistAdd("add-stoic-accept", "new-stoic-accept", state.stoicAccept);
+    bindChecklist(document.getElementById("stoic-accept-list"), state.stoicAccept);
+    bindFieldsForm(document.getElementById("stoic-premeditation"), state.stoicPremeditation);
+    bindFieldsForm(document.getElementById("stoic-evening-review"), state.stoicEveningReview);
+    bindListEditor(document.getElementById("reframing-log"), state.stoicReframingLog);
+    var addReframe = document.getElementById("add-reframe");
+    if (addReframe) addReframe.addEventListener("click", function () {
+      state.stoicReframingLog.push({ id: uid(), event: "", initialReaction: "", benefits: "", howStronger: "" });
+      saveState();
+      render();
+    });
+  }
+
+  function renderReflInventory() {
+    var cards = state.lifeInventory.map(function (c) {
+      var levels = "";
+      for (var lv = 1; lv <= 10; lv++) levels += '<button class="mood-opt' + (c.rating === lv ? " active" : "") + '" data-inv-lv="' + c.id + '" data-lv="' + lv + '">' + lv + "</button>";
+      return (
+        '<div class="card" data-inv-card="' + c.id + '">' +
+          '<button class="habit-del" style="align-self:flex-end;" data-del-inv="' + c.id + '" title="Delete">✕</button>' +
+          '<input type="text" class="title-input" data-field="name" data-inv="' + c.id + '" placeholder="Category" value="' + escapeHtml(c.name || "") + '" />' +
+          '<div class="mood-row" style="margin-top:8px;">' + levels + "</div>" +
+          '<textarea rows="2" data-field="notes" data-inv="' + c.id + '" placeholder="Notes" style="margin-top:8px;">' + escapeHtml(c.notes || "") + "</textarea>" +
+        "</div>"
+      );
+    }).join("");
+    return (
+      '<div class="habit-toolbar" style="max-width:260px;margin-top:16px;"><button id="add-inventory" style="width:100%;">Add a category</button></div>' +
+      '<div class="grid-3">' + (cards || '<div class="empty-state">No categories yet.</div>') + "</div>"
+    );
+  }
+
+  function bindReflInventory() {
+    var addBtn = document.getElementById("add-inventory");
+    if (addBtn) addBtn.addEventListener("click", function () {
+      state.lifeInventory.push({ id: uid(), name: "", rating: 0, notes: "" });
+      saveState();
+      render();
+    });
+    document.querySelectorAll("[data-field][data-inv]").forEach(function (el) {
+      el.addEventListener("input", function () {
+        var c = state.lifeInventory.find(function (x) { return x.id === el.dataset.inv; });
+        if (c) { c[el.dataset.field] = el.value; saveState(); }
+      });
+    });
+    document.querySelectorAll("[data-inv-lv]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var c = state.lifeInventory.find(function (x) { return x.id === el.dataset.invLv; });
+        if (c) { c.rating = parseInt(el.dataset.lv, 10); saveState(); render(); }
+      });
+    });
+    document.querySelectorAll("[data-del-inv]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        state.lifeInventory = state.lifeInventory.filter(function (x) { return x.id !== el.dataset.delInv; });
+        saveState();
+        render();
+      });
+    });
+  }
+
+  function renderReflDaily(key) {
+    var y = parseInt(key.slice(0, 4), 10), m = parseInt(key.slice(5, 7), 10) - 1, d = parseInt(key.slice(8, 10), 10);
+    var d0 = new Date(YEAR, 0, 1), d1 = new Date(YEAR, 11, 31), cur = new Date(y, m, d);
+    var r = getDailyReflection(key);
+    return (
+      '<div class="nav-strip" style="margin:16px 0;">' +
+        '<button id="refl-day-prev" ' + (cur <= d0 ? "disabled" : "") + '>‹</button>' +
+        '<span class="label">' + MONTH_ABBR[m] + " " + d + "</span>" +
+        '<button id="refl-day-next" ' + (cur >= d1 ? "disabled" : "") + '>›</button>' +
+      "</div>" +
+      '<div class="panel" id="reflection-form"><h3>Daily Reflection</h3>' +
+        fieldsFormHtml(r, [
+          { key: "morningIntention", label: "Morning intention" },
+          { key: "eveningHowDidItGo", label: "Evening: how did it go?" },
+          { key: "eveningWentWell", label: "Evening: what went well?" },
+          { key: "eveningCouldImprove", label: "Evening: what could improve?" },
+          { key: "eveningLearned", label: "Evening: what did I learn?" },
+          { key: "highlight", label: "Today's highlight" },
+          { key: "noteToSelf", label: "Note to self" }
+        ]) +
+      "</div>"
+    );
+  }
+
+  function bindReflDaily(key) {
+    var y = parseInt(key.slice(0, 4), 10), m = parseInt(key.slice(5, 7), 10) - 1, d = parseInt(key.slice(8, 10), 10);
+    var prev = document.getElementById("refl-day-prev");
+    var next = document.getElementById("refl-day-next");
+    if (prev) prev.addEventListener("click", function () {
+      var pd = new Date(y, m, d - 1);
+      if (pd.getFullYear() === YEAR) go("#/reflections/daily-" + dateKey(pd.getFullYear(), pd.getMonth(), pd.getDate()));
+    });
+    if (next) next.addEventListener("click", function () {
+      var nd = new Date(y, m, d + 1);
+      if (nd.getFullYear() === YEAR) go("#/reflections/daily-" + dateKey(nd.getFullYear(), nd.getMonth(), nd.getDate()));
+    });
+    bindFieldsForm(document.getElementById("reflection-form"), getDailyReflection(key));
+  }
+
+  function renderReflWeekly(idx) {
+    var r = getWeeklyReflection(idx);
+    return (
+      '<div class="nav-strip" style="margin:16px 0;">' +
+        '<button id="refl-week-prev" ' + (idx === 1 ? "disabled" : "") + '>‹</button>' +
+        '<span class="label">Week ' + idx + "</span>" +
+        '<button id="refl-week-next" ' + (idx === WEEKS.length ? "disabled" : "") + '>›</button>' +
+      "</div>" +
+      '<div class="panel" id="reflection-form"><h3>Weekly Reflection</h3>' +
+        fieldsFormHtml(r, [
+          { key: "howWasWeek", label: "How was this week?" },
+          { key: "gratefulFor", label: "Grateful for" },
+          { key: "thingsToCelebrate", label: "Things to celebrate" },
+          { key: "areasToImprove", label: "Areas to improve" },
+          { key: "wentWell", label: "What went well" },
+          { key: "didntWork", label: "What didn't work" },
+          { key: "tasksWorkingOn", label: "Tasks I'm working on" },
+          { key: "nextWeekFocus", label: "Next week's focus" },
+          { key: "notes", label: "Notes" }
+        ]) +
+      "</div>"
+    );
+  }
+
+  function bindReflWeekly(idx) {
+    var prev = document.getElementById("refl-week-prev");
+    var next = document.getElementById("refl-week-next");
+    if (prev) prev.addEventListener("click", function () { if (idx > 1) go("#/reflections/weekly-" + (idx - 1)); });
+    if (next) next.addEventListener("click", function () { if (idx < WEEKS.length) go("#/reflections/weekly-" + (idx + 1)); });
+    bindFieldsForm(document.getElementById("reflection-form"), getWeeklyReflection(idx));
+  }
+
+  function renderReflMonthly(m) {
+    var r = getMonthlyReflection(m);
+    var thankfulHtml = "";
+    for (var i = 0; i < 3; i++) {
+      thankfulHtml += '<input type="text" class="line-input" data-thankful="' + i + '" value="' + escapeHtml(r.thankful[i] || "") + '" placeholder="Grateful for #' + (i + 1) + '" style="margin-bottom:6px;display:block;width:100%;" />';
+    }
+    var ratingRow = "";
+    for (var lv = 1; lv <= 10; lv++) ratingRow += '<button class="mood-opt' + (r.rating === lv ? " active" : "") + '" data-month-rating="' + lv + '">' + lv + "</button>";
+    return (
+      '<div class="nav-strip" style="margin:16px 0;">' +
+        '<button id="refl-month-prev" ' + (m === 0 ? "disabled" : "") + '>‹</button>' +
+        '<span class="label">' + MONTH_NAMES[m] + "</span>" +
+        '<button id="refl-month-next" ' + (m === 11 ? "disabled" : "") + '>›</button>' +
+      "</div>" +
+      '<div class="panel" id="reflection-form"><h3>Monthly Reflection</h3>' +
+        fieldsFormHtml(r, [
+          { key: "wins", label: "Wins this month" }, { key: "feelings", label: "How did I feel?" },
+          { key: "challenges", label: "Challenges" }, { key: "improve", label: "What can I improve?" },
+          { key: "goalsAchieved", label: "Goals achieved" }, { key: "goalsInProgress", label: "Goals in progress" },
+          { key: "goalsNextMonth", label: "Goals for next month" },
+          { key: "habitsKept", label: "Habits I kept" }, { key: "habitsLetGo", label: "Habits I let go" }, { key: "habitsBuilding", label: "Habits I'm building" },
+          { key: "lessons", label: "Lessons learned" }, { key: "oneWord", label: "One word for this month", rows: 1 }
+        ]) +
+        '<span class="field-label" style="margin-top:12px;">Grateful for</span>' + thankfulHtml +
+        '<span class="field-label" style="margin-top:8px;">Rate this month</span><div class="mood-row" style="margin-top:6px;">' + ratingRow + "</div>" +
+      "</div>"
+    );
+  }
+
+  function bindReflMonthly(m) {
+    var r = getMonthlyReflection(m);
+    var prev = document.getElementById("refl-month-prev");
+    var next = document.getElementById("refl-month-next");
+    if (prev) prev.addEventListener("click", function () { if (m > 0) go("#/reflections/monthly-" + (m - 1)); });
+    if (next) next.addEventListener("click", function () { if (m < 11) go("#/reflections/monthly-" + (m + 1)); });
+    bindFieldsForm(document.getElementById("reflection-form"), r);
+    document.querySelectorAll("[data-thankful]").forEach(function (el) {
+      el.addEventListener("input", function () { r.thankful[parseInt(el.dataset.thankful, 10)] = el.value; saveState(); });
+    });
+    document.querySelectorAll("[data-month-rating]").forEach(function (el) {
+      el.addEventListener("click", function () { r.rating = parseInt(el.dataset.monthRating, 10); saveState(); render(); });
+    });
+  }
+
+  function renderReflYearly() {
+    var r = getYearlyReflection();
+    return (
+      '<div class="panel" id="reflection-form" style="margin-top:16px;"><h3>Yearly Reflection — ' + YEAR + "</h3>" +
+        fieldsFormHtml(r, [
+          { key: "accomplishments", label: "Accomplishments" }, { key: "highlights", label: "Highlights" },
+          { key: "setbacks", label: "Setbacks" }, { key: "thingsToLearn", label: "Things to learn" },
+          { key: "thingsToChange", label: "Things to change" }, { key: "start", label: "Start doing" },
+          { key: "stop", label: "Stop doing" }, { key: "continue", label: "Continue doing" },
+          { key: "nextYearPriorities", label: "Next year's priorities" }
+        ]) +
+      "</div>"
+    );
+  }
+
+  function bindReflYearly() {
+    bindFieldsForm(document.getElementById("reflection-form"), getYearlyReflection());
+  }
+
+  function renderReflEisenhower() {
+    var e = state.eisenhowerMatrix;
+    return (
+      '<div class="panel" id="eisenhower-form" style="margin-top:16px;"><h3>Eisenhower Matrix</h3>' +
+        '<div class="grid-2" style="margin-top:12px;">' +
+          '<div><span class="field-label">Urgent &amp; Important — Do first</span><textarea rows="6" data-field="q1">' + escapeHtml(e.q1 || "") + "</textarea></div>" +
+          '<div><span class="field-label">Not Urgent &amp; Important — Schedule</span><textarea rows="6" data-field="q2">' + escapeHtml(e.q2 || "") + "</textarea></div>" +
+          '<div><span class="field-label">Urgent &amp; Not Important — Delegate</span><textarea rows="6" data-field="q3">' + escapeHtml(e.q3 || "") + "</textarea></div>" +
+          '<div><span class="field-label">Not Urgent &amp; Not Important — Delete</span><textarea rows="6" data-field="q4">' + escapeHtml(e.q4 || "") + "</textarea></div>" +
+        "</div>" +
+      "</div>"
+    );
+  }
+
+  function bindReflEisenhower() {
+    bindFieldsForm(document.getElementById("eisenhower-form"), state.eisenhowerMatrix);
+  }
+
+  var MINDMAP_POSITIONS = [
+    { row: 1, col: 1 }, { row: 1, col: 2 }, { row: 1, col: 3 },
+    { row: 2, col: 1 }, { row: 2, col: 3 },
+    { row: 3, col: 1 }, { row: 3, col: 2 }, { row: 3, col: 3 }
+  ];
+
+  function mindMapConnectorsSvg() {
+    var center = [50, 50];
+    var points = [[16.67, 16.67], [50, 16.67], [83.33, 16.67], [16.67, 50], [83.33, 50], [16.67, 83.33], [50, 83.33], [83.33, 83.33]];
+    var lines = points.map(function (p) {
+      return '<line x1="' + center[0] + '" y1="' + center[1] + '" x2="' + p[0] + '" y2="' + p[1] + '" stroke="var(--hair)" stroke-width="0.6"/>';
+    }).join("");
+    return '<svg viewBox="0 0 100 100" preserveAspectRatio="none" class="mindmap-lines">' + lines + "</svg>";
+  }
+
+  function renderMindMapCard(mm) {
+    var cells = MINDMAP_POSITIONS.map(function (pos, i) {
+      return (
+        '<div class="mindmap-cell" style="grid-row:' + pos.row + ";grid-column:" + pos.col + ';">' +
+          '<textarea rows="2" data-branch="' + i + '" data-mindmap="' + mm.id + '" placeholder="Branch ' + (i + 1) + '">' + escapeHtml(mm.branches[i] || "") + "</textarea>" +
+        "</div>"
+      );
+    }).join("");
+    return (
+      '<div class="card" data-mindmap-card="' + mm.id + '">' +
+        '<button class="habit-del" style="align-self:flex-end;" data-del-mindmap="' + mm.id + '" title="Delete mind map">✕</button>' +
+        '<input type="text" class="title-input" data-field="title" data-mindmap="' + mm.id + '" placeholder="Mind map title" value="' + escapeHtml(mm.title || "") + '" />' +
+        '<div class="mindmap-grid" style="margin-top:14px;">' +
+          mindMapConnectorsSvg() +
+          cells +
+          '<div class="mindmap-cell mindmap-center" style="grid-row:2;grid-column:2;">' +
+            '<textarea rows="2" data-field="center" data-mindmap="' + mm.id + '" placeholder="Central topic">' + escapeHtml(mm.center || "") + "</textarea>" +
+          "</div>" +
+        "</div>" +
+      "</div>"
+    );
+  }
+
+  function renderReflMindMap() {
+    var cards = state.mindMaps.map(renderMindMapCard).join("");
+    return (
+      '<div class="habit-toolbar" style="max-width:260px;margin-top:16px;"><button id="add-mindmap" style="width:100%;">Add a mind map</button></div>' +
+      '<div style="display:flex;flex-direction:column;gap:20px;">' + (cards || '<div class="empty-state">No mind maps yet.</div>') + "</div>"
+    );
+  }
+
+  function bindReflMindMap() {
+    var addBtn = document.getElementById("add-mindmap");
+    if (addBtn) addBtn.addEventListener("click", function () {
+      state.mindMaps.unshift({ id: uid(), title: "", center: "", branches: ["", "", "", "", "", "", "", ""] });
+      saveState();
+      render();
+    });
+    document.querySelectorAll('[data-field="title"][data-mindmap], [data-field="center"][data-mindmap]').forEach(function (el) {
+      el.addEventListener("input", function () {
+        var mm = state.mindMaps.find(function (x) { return x.id === el.dataset.mindmap; });
+        if (mm) { mm[el.dataset.field] = el.value; saveState(); }
+      });
+    });
+    document.querySelectorAll("[data-branch]").forEach(function (el) {
+      el.addEventListener("input", function () {
+        var mm = state.mindMaps.find(function (x) { return x.id === el.dataset.mindmap; });
+        if (mm) { mm.branches[parseInt(el.dataset.branch, 10)] = el.value; saveState(); }
+      });
+    });
+    document.querySelectorAll("[data-del-mindmap]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        state.mindMaps = state.mindMaps.filter(function (x) { return x.id !== el.dataset.delMindmap; });
+        saveState();
+        render();
+      });
+    });
   }
 
   /* ------------------------------------------------------------- misc */
