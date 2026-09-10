@@ -3171,7 +3171,7 @@
     document.documentElement.setAttribute("data-theme", state.theme);
     var isLight = state.theme === "greek-marble";
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", isLight ? "#F1EBDB" : "#232323");
+    if (meta) meta.setAttribute("content", isLight ? "#F2E9D8" : "#232323");
     var label = document.getElementById("drawer-theme-label");
     if (label) label.textContent = isLight ? "Switch to Soft Black" : "Switch to Greek Marble";
     var icoEl = document.getElementById("drawer-theme-icon");
