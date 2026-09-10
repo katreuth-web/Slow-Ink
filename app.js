@@ -73,7 +73,13 @@
       budgetCategories: defaultBudgetCategories(),
       savingsGoals: [],
       bills: [],
-      debts: []
+      debts: [],
+      workouts: [],
+      measurements: [],
+      cyclePeriodDays: {},
+      cycleLengths: {},
+      cycleNotes: "",
+      doctorQuestions: []
     };
   }
 
@@ -554,7 +560,8 @@
     starOutline: '<path d="M12 3.5l2.47 5.24 5.78.67-4.3 4.02 1.13 5.7L12 16.9l-5.08 2.23 1.13-5.7-4.3-4.02 5.78-.67L12 3.5z"/>',
     chevron: '<path d="M7 9.5l5 5 5-5"/>',
     meals: '<path d="M7.5 3v6a2 2 0 0 0 4 0V3"/><path d="M9.5 3v18"/><path d="M17 3c2 1.6 2 6.4 0 8-.6.4-1 1.1-1 1.9V21"/>',
-    travel: '<rect x="4" y="8" width="16" height="12" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M4 13h16"/>'
+    travel: '<rect x="4" y="8" width="16" height="12" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M4 13h16"/>',
+    fitness: '<path d="M12 20c-4-2-6-6-6-9 2 1 4 3 6 7 2-4 4-6 6-7 0 3-2 7-6 9z"/><path d="M12 20c-3-3-4-7-4-11 2 2 3 5 4 9 1-4 2-7 4-9 0 4-1 8-4 11z"/><path d="M6 15c-2-1-4-3-4-5 2 0 4 1 6 3M18 15c2-1 4-3 4-5-2 0-4 1-6 3"/>'
   };
 
   function icon(name) {
@@ -575,13 +582,15 @@
     { id: "finance", label: "Finance" },
     { id: "notes", label: "Notes" },
     { id: "meals", label: "Meal Planner" },
-    { id: "travel", label: "Travel Planner" }
+    { id: "travel", label: "Travel Planner" },
+    { id: "fitness", label: "Fitness & Wellness" }
   ];
 
   var TITLES = {
     cover: "Slow Ink", year: "Year Overview", month: "Monthly", week: "Weekly",
     day: "Daily", habits: "Habit Tracker", goals: "Goals", reading: "Reading",
-    finance: "Finance", notes: "Notes", meals: "Meal Planner", travel: "Travel Planner"
+    finance: "Finance", notes: "Notes", meals: "Meal Planner", travel: "Travel Planner",
+    fitness: "Fitness & Wellness"
   };
 
   var TAB_ITEMS = [
@@ -699,7 +708,8 @@
     finance: renderFinance,
     notes: renderNotes,
     meals: renderMeals,
-    travel: renderTravel
+    travel: renderTravel,
+    fitness: renderFitness
   };
 
   var BINDERS = {
@@ -710,6 +720,7 @@
     habits: bindHabits,
     meals: bindMeals,
     travel: bindTravel,
+    fitness: bindFitness,
     goals: bindGoals,
     reading: bindReading,
     finance: bindFinance,
@@ -2250,6 +2261,214 @@
       if (!card) return;
       bindStars(card.querySelector(".star-row"), "rate", function (v) { d.priority = v; saveState(); render(); });
     });
+  }
+
+  /* ---- fitness & wellness ---- */
+
+  var FITNESS_TABS = [
+    { id: "workouts", label: "Workouts" }, { id: "measurements", label: "Body Measurements" },
+    { id: "cycle", label: "Cycle Tracker" }, { id: "doctor", label: "Doctor Questions" }
+  ];
+
+  function renderFitness(param) {
+    param = param || "workouts";
+    var view = param.indexOf("cycle") === 0 ? "cycle" : (FITNESS_TABS.some(function (t) { return t.id === param; }) ? param : "workouts");
+    var monthIdx = view === "cycle" ? clampMonth(param.indexOf("cycle-") === 0 ? param.slice(6) : (now.getFullYear() === YEAR ? now.getMonth() : 0)) : 0;
+    var tabs = subtabsHtml(FITNESS_TABS.map(function (t) {
+      return { label: t.label, href: t.id === "cycle" ? "#/fitness/cycle-" + monthIdx : "#/fitness/" + t.id, active: t.id === view };
+    }));
+    var head = '<div class="view-head"><div><h1>Fitness &amp; Wellness</h1><div class="sub">Movement, measurements, and cycle awareness</div></div></div>' + tabs;
+    if (view === "measurements") return head + renderFitnessMeasurements();
+    if (view === "cycle") return head + renderFitnessCycle(monthIdx);
+    if (view === "doctor") return head + renderFitnessDoctor();
+    return head + renderFitnessWorkouts();
+  }
+
+  function bindFitness(param) {
+    bindSubtabs();
+    param = param || "workouts";
+    var view = param.indexOf("cycle") === 0 ? "cycle" : (FITNESS_TABS.some(function (t) { return t.id === param; }) ? param : "workouts");
+    if (view === "measurements") bindFitnessMeasurements();
+    else if (view === "cycle") bindFitnessCycle(clampMonth(param.indexOf("cycle-") === 0 ? param.slice(6) : (now.getFullYear() === YEAR ? now.getMonth() : 0)));
+    else if (view === "doctor") bindFitnessDoctor();
+    else bindFitnessWorkouts();
+  }
+
+  function renderFitnessWorkouts() {
+    var cards = "";
+    state.workouts.forEach(function (w) {
+      cards += (
+        '<div class="card" data-workout-card="' + w.id + '">' +
+          '<button class="habit-del" style="align-self:flex-end;" data-del-workout="' + w.id + '" title="Delete workout">✕</button>' +
+          '<div class="field-grid-2">' +
+            '<input type="date" data-field="date" data-workout="' + w.id + '" value="' + escapeHtml(w.date || "") + '" />' +
+            '<input type="text" data-field="activity" data-workout="' + w.id + '" placeholder="Activity" value="' + escapeHtml(w.activity || "") + '" />' +
+            '<input type="text" data-field="duration" data-workout="' + w.id + '" placeholder="Duration" value="' + escapeHtml(w.duration || "") + '" />' +
+            '<input type="number" min="1" max="10" data-field="rpe" data-workout="' + w.id + '" placeholder="RPE (1-10)" value="' + (w.rpe || "") + '" />' +
+          "</div>" +
+          '<textarea rows="2" data-field="detail" data-workout="' + w.id + '" placeholder="Sets / reps / weight" style="margin-top:8px;">' + escapeHtml(w.detail || "") + "</textarea>" +
+          '<textarea rows="2" data-field="notes" data-workout="' + w.id + '" placeholder="Notes" style="margin-top:8px;">' + escapeHtml(w.notes || "") + "</textarea>" +
+        "</div>"
+      );
+    });
+    return (
+      '<div class="habit-toolbar" style="max-width:260px;margin-top:16px;"><button id="add-workout" style="width:100%;">Log a workout</button></div>' +
+      '<div class="grid-3">' + (cards || '<div class="empty-state">No workouts logged yet.</div>') + "</div>"
+    );
+  }
+
+  function bindFitnessWorkouts() {
+    var addBtn = document.getElementById("add-workout");
+    if (addBtn) addBtn.addEventListener("click", function () {
+      state.workouts.unshift({ id: uid(), date: "", activity: "", duration: "", rpe: "", detail: "", notes: "" });
+      saveState();
+      render();
+    });
+    document.querySelectorAll("[data-field][data-workout]").forEach(function (el) {
+      el.addEventListener("input", function () {
+        var w = state.workouts.find(function (x) { return x.id === el.dataset.workout; });
+        if (!w) return;
+        var field = el.dataset.field;
+        w[field] = field === "rpe" ? (parseInt(el.value, 10) || "") : el.value;
+        saveState();
+      });
+    });
+    document.querySelectorAll("[data-del-workout]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        state.workouts = state.workouts.filter(function (x) { return x.id !== el.dataset.delWorkout; });
+        saveState();
+        render();
+      });
+    });
+  }
+
+  function renderFitnessMeasurements() {
+    var cards = "";
+    state.measurements.forEach(function (m) {
+      cards += (
+        '<div class="card">' +
+          '<button class="habit-del" style="align-self:flex-end;" data-del-measurement="' + m.id + '" title="Delete entry">✕</button>' +
+          '<input type="date" data-field="date" data-measurement="' + m.id + '" value="' + escapeHtml(m.date || "") + '" />' +
+          '<div class="field-grid-2" style="margin-top:8px;">' +
+            '<input type="number" min="0" step="0.1" data-field="weight" data-measurement="' + m.id + '" placeholder="Weight" value="' + (m.weight || "") + '" />' +
+            '<input type="number" min="0" step="0.1" data-field="waist" data-measurement="' + m.id + '" placeholder="Waist" value="' + (m.waist || "") + '" />' +
+            '<input type="number" min="0" step="0.1" data-field="chest" data-measurement="' + m.id + '" placeholder="Chest" value="' + (m.chest || "") + '" />' +
+            '<input type="number" min="0" step="0.1" data-field="hips" data-measurement="' + m.id + '" placeholder="Hips" value="' + (m.hips || "") + '" />' +
+            '<input type="number" min="0" step="0.1" data-field="arms" data-measurement="' + m.id + '" placeholder="Arms" value="' + (m.arms || "") + '" />' +
+          "</div>" +
+          '<textarea rows="2" data-field="notes" data-measurement="' + m.id + '" placeholder="Notes" style="margin-top:8px;">' + escapeHtml(m.notes || "") + "</textarea>" +
+        "</div>"
+      );
+    });
+    return (
+      '<div class="habit-toolbar" style="max-width:260px;margin-top:16px;"><button id="add-measurement" style="width:100%;">Log measurements</button></div>' +
+      '<div class="grid-3">' + (cards || '<div class="empty-state">No measurements logged yet.</div>') + "</div>"
+    );
+  }
+
+  function bindFitnessMeasurements() {
+    var addBtn = document.getElementById("add-measurement");
+    if (addBtn) addBtn.addEventListener("click", function () {
+      state.measurements.unshift({ id: uid(), date: "", weight: "", waist: "", chest: "", hips: "", arms: "", notes: "" });
+      saveState();
+      render();
+    });
+    document.querySelectorAll("[data-field][data-measurement]").forEach(function (el) {
+      el.addEventListener("input", function () {
+        var m = state.measurements.find(function (x) { return x.id === el.dataset.measurement; });
+        if (!m) return;
+        var field = el.dataset.field;
+        m[field] = (field === "date" || field === "notes") ? el.value : (parseFloat(el.value) || "");
+        saveState();
+      });
+    });
+    document.querySelectorAll("[data-del-measurement]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        state.measurements = state.measurements.filter(function (x) { return x.id !== el.dataset.delMeasurement; });
+        saveState();
+        render();
+      });
+    });
+  }
+
+  function renderFitnessCycle(m) {
+    var dim = daysInMonth(YEAR, m);
+    var startDow = firstWeekdayMon(YEAR, m);
+    var cells = "";
+    DOW_ABBR.forEach(function (dl) { cells += '<div class="month-dow">' + dl + "</div>"; });
+    for (var i = 0; i < startDow; i++) cells += '<div class="month-cell empty"></div>';
+    for (var d = 1; d <= dim; d++) {
+      var dow = (startDow + d - 1) % 7;
+      var key = dateKey(YEAR, m, d);
+      var isW = dow >= 5;
+      var isT = isToday(YEAR, m, d);
+      var on = !!state.cyclePeriodDays[key];
+      cells += (
+        '<div class="month-cell' + (isW ? " weekend" : "") + (isT ? " today" : "") + '" data-cycle-day="' + key + '">' +
+          '<div class="num">' + d + "</div>" +
+          '<div class="dot-row">' + (on ? '<span class="dot" style="width:8px;height:8px;"></span>' : "") + "</div>" +
+        "</div>"
+      );
+    }
+    var monthKey = YEAR + "-" + pad(m + 1);
+    return (
+      '<div class="nav-strip" style="margin:16px 0;">' +
+        '<button id="cycle-prev" ' + (m === 0 ? "disabled" : "") + '>‹</button>' +
+        '<span class="label">' + MONTH_NAMES[m] + "</span>" +
+        '<button id="cycle-next" ' + (m === 11 ? "disabled" : "") + '>›</button>' +
+      "</div>" +
+      '<div class="grid-2">' +
+        '<div class="panel"><h3>Tap a day to mark your period</h3><div class="month-grid">' + cells + "</div></div>" +
+        '<div class="panel">' +
+          '<span class="field-label">Cycle length this month (days)</span>' +
+          '<input type="number" min="0" id="cycle-length" value="' + (state.cycleLengths[monthKey] || "") + '" style="margin-top:6px;" />' +
+          '<span class="field-label" style="margin-top:14px;">Notes</span>' +
+          '<textarea rows="6" id="cycle-notes" style="margin-top:6px;">' + escapeHtml(state.cycleNotes || "") + "</textarea>" +
+        "</div>" +
+      "</div>"
+    );
+  }
+
+  function bindFitnessCycle(m) {
+    var prev = document.getElementById("cycle-prev");
+    var next = document.getElementById("cycle-next");
+    if (prev) prev.addEventListener("click", function () { if (m > 0) go("#/fitness/cycle-" + (m - 1)); });
+    if (next) next.addEventListener("click", function () { if (m < 11) go("#/fitness/cycle-" + (m + 1)); });
+    document.querySelectorAll("[data-cycle-day]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var key = el.dataset.cycleDay;
+        if (state.cyclePeriodDays[key]) delete state.cyclePeriodDays[key];
+        else state.cyclePeriodDays[key] = true;
+        saveState();
+        render();
+      });
+    });
+    var lengthEl = document.getElementById("cycle-length");
+    if (lengthEl) lengthEl.addEventListener("input", function () {
+      var monthKey = YEAR + "-" + pad(m + 1);
+      state.cycleLengths[monthKey] = parseInt(lengthEl.value, 10) || 0;
+      saveState();
+    });
+    var notesEl = document.getElementById("cycle-notes");
+    if (notesEl) notesEl.addEventListener("input", function () { state.cycleNotes = notesEl.value; saveState(); });
+  }
+
+  function renderFitnessDoctor() {
+    return (
+      '<div class="panel" style="margin-top:16px;">' +
+        '<h3>Questions for my doctor</h3>' +
+        '<div class="habit-toolbar" style="margin-top:12px;">' +
+          '<input type="text" id="new-doctor-question" placeholder="Add a question" />' +
+          '<button id="add-doctor-question">Add</button>' +
+        "</div>" +
+        '<div id="doctor-questions-list">' + checklistHtml(state.doctorQuestions) + "</div>" +
+      "</div>"
+    );
+  }
+
+  function bindFitnessDoctor() {
+    bindChecklistAdd("add-doctor-question", "new-doctor-question", state.doctorQuestions);
+    bindChecklist(document.getElementById("doctor-questions-list"), state.doctorQuestions);
   }
 
   /* ------------------------------------------------------------- misc */
