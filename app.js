@@ -69,7 +69,11 @@
       recipes: [],
       travelBucketList: [],
       destinations: [],
-      travelChecklist: []
+      travelChecklist: [],
+      budgetCategories: defaultBudgetCategories(),
+      savingsGoals: [],
+      bills: [],
+      debts: []
     };
   }
 
@@ -77,6 +81,17 @@
     "Meat & Poultry", "Seafood", "Frozen Foods", "Dry Food", "Dairy",
     "Fruits & Vegetables", "Bakery", "Drinks", "Cans/Jars", "Household/Personal", "Pantry", "Other"
   ];
+
+  var BUDGET_DEFAULTS = [
+    { name: "Rent/Mortgage", type: "fixed" }, { name: "Utilities", type: "fixed" }, { name: "Internet/Phone", type: "fixed" },
+    { name: "Subscriptions", type: "fixed" }, { name: "Insurance", type: "fixed" }, { name: "Other", type: "fixed" },
+    { name: "Groceries", type: "variable" }, { name: "Eating Out", type: "variable" }, { name: "Transport", type: "variable" },
+    { name: "Shopping", type: "variable" }, { name: "Entertainment", type: "variable" }, { name: "Health", type: "variable" }, { name: "Other", type: "variable" }
+  ];
+
+  function defaultBudgetCategories() {
+    return BUDGET_DEFAULTS.map(function (b) { return { id: uid(), name: b.name, type: b.type, budget: 0, actual: 0 }; });
+  }
 
   var SELF_CARE_HABITS = [
     "Water", "Meals", "Movement", "Sleep", "Vitamins", "Skincare", "Breaks",
@@ -288,6 +303,75 @@
         onSet(parseInt(el.dataset[attr], 10));
       });
     });
+  }
+
+  /* ------------------------------------------------------------- shared: budgeted-vs-actual row */
+
+  function budgetActualFields(item) {
+    var diff = (parseFloat(item.budget) || 0) - (parseFloat(item.actual) || 0);
+    var diffClass = diff >= 0 ? "positive" : "negative";
+    var diffLabel = (diff >= 0 ? "+$" : "-$") + Math.abs(diff).toFixed(2);
+    return (
+      '<input type="number" min="0" step="0.01" data-field="budget" placeholder="Budget" value="' + (item.budget || 0) + '" />' +
+      '<input type="number" min="0" step="0.01" data-field="actual" placeholder="Actual" value="' + (item.actual || 0) + '" />' +
+      '<span class="budget-diff ' + diffClass + '">' + diffLabel + "</span>"
+    );
+  }
+
+  function bindBudgetActualFields(containerEl, items) {
+    if (!containerEl) return;
+    containerEl.querySelectorAll("[data-item]").forEach(function (row) {
+      var id = row.dataset.item;
+      row.querySelectorAll('[data-field="budget"], [data-field="actual"]').forEach(function (el) {
+        el.addEventListener("input", function () {
+          var it = items.find(function (x) { return x.id === id; });
+          if (!it) return;
+          it[el.dataset.field] = parseFloat(el.value) || 0;
+          saveState();
+          var diffEl = row.querySelector(".budget-diff");
+          if (diffEl) {
+            var diff = (it.budget || 0) - (it.actual || 0);
+            diffEl.className = "budget-diff " + (diff >= 0 ? "positive" : "negative");
+            diffEl.textContent = (diff >= 0 ? "+$" : "-$") + Math.abs(diff).toFixed(2);
+          }
+        });
+      });
+    });
+  }
+
+  /* ------------------------------------------------------------- shared: donut chart */
+
+  var DONUT_COLORS = ["var(--swatch-1)", "var(--swatch-2)", "var(--swatch-3)", "var(--accent)", "var(--ink-mute)", "var(--rule)"];
+
+  function donutChartHtml(segments) {
+    var total = segments.reduce(function (s, x) { return s + x.value; }, 0);
+    if (!total) return '<div class="empty-state">No spending yet.</div>';
+    var r = 15.9155, circumference = 2 * Math.PI * r;
+    var offsetPct = 0;
+    var arcs = "";
+    var legend = "";
+    segments.forEach(function (s, i) {
+      if (!s.value) return;
+      var pct = (s.value / total) * 100;
+      var dash = (pct / 100) * circumference;
+      var color = DONUT_COLORS[i % DONUT_COLORS.length];
+      arcs += (
+        '<circle cx="21" cy="21" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="6" ' +
+        'stroke-dasharray="' + dash + " " + (circumference - dash) + '" ' +
+        'stroke-dashoffset="' + (-(offsetPct / 100) * circumference) + '" transform="rotate(-90 21 21)"/>'
+      );
+      legend += (
+        '<div class="donut-legend-row"><span class="donut-dot" style="background:' + color + '"></span>' +
+        escapeHtml(s.label) + ' <span class="donut-amt">$' + s.value.toFixed(2) + "</span></div>"
+      );
+      offsetPct += pct;
+    });
+    return (
+      '<div class="donut-wrap">' +
+        '<svg viewBox="0 0 42 42" class="donut-svg">' + arcs + "</svg>" +
+        '<div class="donut-legend">' + legend + "</div>" +
+      "</div>"
+    );
   }
 
   /* ------------------------------------------------------------- shared: rich list editor pattern */
@@ -1481,10 +1565,39 @@
   /* ---- finance ---- */
 
   var financeKind = "expense";
+  var FINANCE_TABS = [
+    { id: "ledger", label: "Ledger" }, { id: "budget", label: "Budget" }, { id: "savings", label: "Savings" },
+    { id: "bills", label: "Bills" }, { id: "debt", label: "Debt" }
+  ];
 
-  function renderFinance() {
+  function renderFinance(param) {
+    var view = FINANCE_TABS.some(function (t) { return t.id === param; }) ? param : "ledger";
+    var tabs = subtabsHtml(FINANCE_TABS.map(function (t) { return { label: t.label, href: "#/finance/" + t.id, active: t.id === view }; }));
+    var head = '<div class="view-head"><div><h1>Finance</h1><div class="sub">A quiet ledger for ' + YEAR + "</div></div></div>" + tabs;
+    if (view === "budget") return head + renderFinanceBudget();
+    if (view === "savings") return head + renderFinanceSavings();
+    if (view === "bills") return head + renderFinanceBills();
+    if (view === "debt") return head + renderFinanceDebt();
+    return head + renderFinanceLedger();
+  }
+
+  function bindFinance(param) {
+    bindSubtabs();
+    var view = FINANCE_TABS.some(function (t) { return t.id === param; }) ? param : "ledger";
+    if (view === "budget") bindFinanceBudget();
+    else if (view === "savings") bindFinanceSavings();
+    else if (view === "bills") bindFinanceBills();
+    else if (view === "debt") bindFinanceDebt();
+    else bindFinanceLedger();
+  }
+
+  function renderFinanceLedger() {
     var income = 0, expense = 0;
-    getFinance().forEach(function (e) { if (e.kind === "income") income += e.amount; else expense += e.amount; });
+    var byCategory = {};
+    getFinance().forEach(function (e) {
+      if (e.kind === "income") income += e.amount;
+      else { expense += e.amount; byCategory[e.category || "Other"] = (byCategory[e.category || "Other"] || 0) + e.amount; }
+    });
     var monthly = [];
     for (var m = 0; m < 12; m++) monthly.push(0);
     getFinance().forEach(function (e) {
@@ -1511,16 +1624,18 @@
         "</tr>"
       );
     });
+    var donutSegments = Object.keys(byCategory).map(function (cat) { return { label: cat, value: byCategory[cat] }; });
     return (
-      '<div class="view-head"><div><h1>Finance</h1><div class="sub">A quiet ledger for ' + YEAR + "</div></div></div>" +
-      '<div class="finance-summary">' +
+      '<div class="finance-summary" style="margin-top:16px;">' +
         '<div class="stat income"><div class="label">Income</div><div class="value">$' + income.toFixed(2) + "</div></div>" +
         '<div class="stat expense"><div class="label">Expenses</div><div class="value">$' + expense.toFixed(2) + "</div></div>" +
         '<div class="stat"><div class="label">Balance</div><div class="value">$' + (income - expense).toFixed(2) + "</div></div>" +
       "</div>" +
-      '<div class="panel" style="margin-bottom:20px;">' +
-        '<h3>Net balance for each month of ' + YEAR + "</h3>" +
-        '<div class="chart">' + bars + "</div>" +
+      '<div class="grid-2" style="margin-bottom:20px;">' +
+        '<div class="panel"><h3>Net balance for each month of ' + YEAR + "</h3>" +
+          '<div class="chart">' + bars + "</div>" +
+        "</div>" +
+        '<div class="panel"><h3>Spending by category</h3>' + donutChartHtml(donutSegments) + "</div>" +
       "</div>" +
       '<div class="panel">' +
         '<h3>Add an entry</h3>' +
@@ -1541,7 +1656,7 @@
     );
   }
 
-  function bindFinance() {
+  function bindFinanceLedger() {
     var ki = document.getElementById("kind-income"), ke = document.getElementById("kind-expense");
     if (ki) ki.addEventListener("click", function () { financeKind = "income"; render(); });
     if (ke) ke.addEventListener("click", function () { financeKind = "expense"; render(); });
@@ -1561,6 +1676,241 @@
         saveState();
         render();
       });
+    });
+  }
+
+  function renderFinanceBudget() {
+    var fixed = state.budgetCategories.filter(function (c) { return c.type === "fixed"; });
+    var variable = state.budgetCategories.filter(function (c) { return c.type === "variable"; });
+    function group(list) {
+      var html = "";
+      list.forEach(function (c) {
+        html += (
+          '<div class="list-editor-row" data-item="' + c.id + '">' +
+            '<input type="text" data-field="name" value="' + escapeHtml(c.name) + '" />' +
+            budgetActualFields(c) +
+            '<button class="habit-del" data-del title="Delete">✕</button>' +
+          "</div>"
+        );
+      });
+      return html || '<div class="empty-state">No categories yet.</div>';
+    }
+    return (
+      '<div class="panel" style="margin-top:16px;">' +
+        '<h3>Fixed expenses</h3>' +
+        '<div class="habit-toolbar" style="margin-top:12px;"><input type="text" id="new-budget-fixed" placeholder="Category name" /><button id="add-budget-fixed">Add</button></div>' +
+        '<div class="list-editor" id="budget-fixed-list">' + group(fixed) + "</div>" +
+      "</div>" +
+      '<div class="panel" style="margin-top:16px;">' +
+        '<h3>Variable expenses</h3>' +
+        '<div class="habit-toolbar" style="margin-top:12px;"><input type="text" id="new-budget-variable" placeholder="Category name" /><button id="add-budget-variable">Add</button></div>' +
+        '<div class="list-editor" id="budget-variable-list">' + group(variable) + "</div>" +
+      "</div>"
+    );
+  }
+
+  function bindFinanceBudget() {
+    var fixedList = document.getElementById("budget-fixed-list");
+    var varList = document.getElementById("budget-variable-list");
+    [fixedList, varList].forEach(function (container) {
+      if (!container) return;
+      container.querySelectorAll("[data-item]").forEach(function (row) {
+        var id = row.dataset.item;
+        var nameEl = row.querySelector('[data-field="name"]');
+        if (nameEl) nameEl.addEventListener("input", function () {
+          var c = state.budgetCategories.find(function (x) { return x.id === id; });
+          if (c) { c.name = nameEl.value; saveState(); }
+        });
+        var del = row.querySelector("[data-del]");
+        if (del) del.addEventListener("click", function () {
+          state.budgetCategories = state.budgetCategories.filter(function (x) { return x.id !== id; });
+          saveState();
+          render();
+        });
+      });
+      bindBudgetActualFields(container, state.budgetCategories);
+    });
+    var addFixed = document.getElementById("add-budget-fixed");
+    if (addFixed) addFixed.addEventListener("click", function () {
+      var input = document.getElementById("new-budget-fixed");
+      var val = input.value.trim();
+      if (!val) return;
+      state.budgetCategories.push({ id: uid(), name: val, type: "fixed", budget: 0, actual: 0 });
+      saveState();
+      render();
+    });
+    var addVar = document.getElementById("add-budget-variable");
+    if (addVar) addVar.addEventListener("click", function () {
+      var input = document.getElementById("new-budget-variable");
+      var val = input.value.trim();
+      if (!val) return;
+      state.budgetCategories.push({ id: uid(), name: val, type: "variable", budget: 0, actual: 0 });
+      saveState();
+      render();
+    });
+  }
+
+  function renderFinanceSavings() {
+    var cards = "";
+    state.savingsGoals.forEach(function (g) {
+      var totalSaved = g.contributions.reduce(function (s, c) { return s + (parseFloat(c.amount) || 0); }, 0);
+      var pct = g.targetAmount > 0 ? Math.min(100, Math.round((totalSaved / g.targetAmount) * 100)) : 0;
+      cards += (
+        '<div class="card" data-savings-card="' + g.id + '">' +
+          '<button class="habit-del" style="align-self:flex-end;" data-del-savings="' + g.id + '" title="Delete savings goal">✕</button>' +
+          '<input type="text" class="title-input" data-field="name" data-savings="' + g.id + '" placeholder="Savings goal" value="' + escapeHtml(g.name || "") + '" />' +
+          '<div class="field-grid-2">' +
+            '<div><span class="field-label">Target amount</span><input type="number" min="0" step="0.01" data-field="targetAmount" data-savings="' + g.id + '" value="' + (g.targetAmount || 0) + '" /></div>' +
+            '<div><span class="field-label">Target date</span><input type="date" data-field="targetDate" data-savings="' + g.id + '" value="' + escapeHtml(g.targetDate || "") + '" /></div>' +
+          "</div>" +
+          '<div class="progress-bar" style="margin-top:10px;"><div style="width:' + pct + '%"></div></div>' +
+          '<div class="sub" style="margin-top:4px;">$' + totalSaved.toFixed(2) + " of $" + (parseFloat(g.targetAmount) || 0).toFixed(2) + "</div>" +
+          '<span class="field-label" style="margin-top:10px;">Contributions</span>' +
+          '<div class="habit-toolbar" style="margin-top:6px;"><button data-add-contribution="' + g.id + '">Add contribution</button></div>' +
+          '<div class="list-editor" data-contrib-list="' + g.id + '">' + listEditorHtml(g.contributions, [
+            { key: "date", placeholder: "Date", type: "date" },
+            { key: "amount", placeholder: "Amount", type: "number" },
+            { key: "note", placeholder: "Note" }
+          ]) + "</div>" +
+        "</div>"
+      );
+    });
+    return (
+      '<div class="habit-toolbar" style="max-width:260px;margin-top:16px;"><button id="add-savings-goal" style="width:100%;">Add a savings goal</button></div>' +
+      '<div class="grid-3">' + (cards || '<div class="empty-state">No savings goals yet.</div>') + "</div>"
+    );
+  }
+
+  function bindFinanceSavings() {
+    var addBtn = document.getElementById("add-savings-goal");
+    if (addBtn) addBtn.addEventListener("click", function () {
+      state.savingsGoals.push({ id: uid(), name: "", targetAmount: 0, targetDate: "", contributions: [] });
+      saveState();
+      render();
+    });
+    document.querySelectorAll("[data-field][data-savings]").forEach(function (el) {
+      el.addEventListener("input", function () {
+        var g = state.savingsGoals.find(function (x) { return x.id === el.dataset.savings; });
+        if (!g) return;
+        var field = el.dataset.field;
+        g[field] = field === "targetAmount" ? (parseFloat(el.value) || 0) : el.value;
+        saveState();
+        if (field === "targetAmount") render();
+      });
+    });
+    document.querySelectorAll("[data-del-savings]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        state.savingsGoals = state.savingsGoals.filter(function (x) { return x.id !== el.dataset.delSavings; });
+        saveState();
+        render();
+      });
+    });
+    document.querySelectorAll("[data-add-contribution]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        var g = state.savingsGoals.find(function (x) { return x.id === el.dataset.addContribution; });
+        if (g) { g.contributions.push({ id: uid(), date: "", amount: 0, note: "" }); saveState(); render(); }
+      });
+    });
+    state.savingsGoals.forEach(function (g) {
+      var card = document.querySelector('[data-savings-card="' + g.id + '"]');
+      if (!card) return;
+      var contribList = card.querySelector('[data-contrib-list="' + g.id + '"]');
+      bindListEditor(contribList, g.contributions);
+      if (contribList) contribList.querySelectorAll('[data-field="amount"]').forEach(function (el) {
+        el.addEventListener("input", function () { render(); });
+      });
+    });
+  }
+
+  function renderFinanceBills() {
+    var rows = "";
+    state.bills.forEach(function (b) {
+      rows += (
+        '<div class="list-editor-row" data-item="' + b.id + '">' +
+          '<input type="text" data-field="name" placeholder="Bill" value="' + escapeHtml(b.name || "") + '" />' +
+          '<input type="date" data-field="dueDate" value="' + escapeHtml(b.dueDate || "") + '" />' +
+          budgetActualFields(b) +
+          '<label class="check-field"><input type="checkbox" data-field="paid" ' + (b.paid ? "checked" : "") + ' /> Paid</label>' +
+          '<button class="habit-del" data-del title="Delete">✕</button>' +
+        "</div>"
+      );
+    });
+    return (
+      '<div class="panel" style="margin-top:16px;">' +
+        '<h3>Bills</h3>' +
+        '<div class="habit-toolbar" style="margin-top:12px;"><input type="text" id="new-bill-name" placeholder="Bill name" /><button id="add-bill">Add</button></div>' +
+        '<div class="list-editor" id="bills-list">' + (rows || '<div class="empty-state">No bills yet.</div>') + "</div>" +
+      "</div>"
+    );
+  }
+
+  function bindFinanceBills() {
+    var container = document.getElementById("bills-list");
+    if (container) {
+      container.querySelectorAll("[data-item]").forEach(function (row) {
+        var id = row.dataset.item;
+        row.querySelectorAll('[data-field="name"], [data-field="dueDate"]').forEach(function (el) {
+          el.addEventListener("input", function () {
+            var b = state.bills.find(function (x) { return x.id === id; });
+            if (b) { b[el.dataset.field] = el.value; saveState(); }
+          });
+        });
+        var paidEl = row.querySelector('[data-field="paid"]');
+        if (paidEl) paidEl.addEventListener("change", function () {
+          var b = state.bills.find(function (x) { return x.id === id; });
+          if (b) { b.paid = paidEl.checked; saveState(); }
+        });
+        var del = row.querySelector("[data-del]");
+        if (del) del.addEventListener("click", function () {
+          state.bills = state.bills.filter(function (x) { return x.id !== id; });
+          saveState();
+          render();
+        });
+      });
+      bindBudgetActualFields(container, state.bills);
+    }
+    var addBtn = document.getElementById("add-bill");
+    if (addBtn) addBtn.addEventListener("click", function () {
+      var input = document.getElementById("new-bill-name");
+      var val = input.value.trim();
+      if (!val) return;
+      state.bills.push({ id: uid(), name: val, dueDate: "", budget: 0, actual: 0, paid: false });
+      saveState();
+      render();
+    });
+  }
+
+  function renderFinanceDebt() {
+    var rows = "";
+    state.debts.forEach(function (d) {
+      rows += (
+        '<div class="list-editor-row" data-item="' + d.id + '">' +
+          '<input type="text" data-field="name" placeholder="Debt" value="' + escapeHtml(d.name || "") + '" />' +
+          '<input type="number" min="0" step="0.01" data-field="amount" placeholder="Original amount" value="' + (d.amount || 0) + '" />' +
+          '<input type="number" min="0" step="0.01" data-field="balance" placeholder="Remaining balance" value="' + (d.balance || 0) + '" />' +
+          '<button class="habit-del" data-del title="Delete">✕</button>' +
+        "</div>"
+      );
+    });
+    return (
+      '<div class="panel" style="margin-top:16px;">' +
+        '<h3>Debt</h3>' +
+        '<div class="habit-toolbar" style="margin-top:12px;"><input type="text" id="new-debt-name" placeholder="Debt name" /><button id="add-debt">Add</button></div>' +
+        '<div class="list-editor" id="debt-list">' + (rows || '<div class="empty-state">No debts tracked.</div>') + "</div>" +
+      "</div>"
+    );
+  }
+
+  function bindFinanceDebt() {
+    bindListEditor(document.getElementById("debt-list"), state.debts);
+    var addBtn = document.getElementById("add-debt");
+    if (addBtn) addBtn.addEventListener("click", function () {
+      var input = document.getElementById("new-debt-name");
+      var val = input.value.trim();
+      if (!val) return;
+      state.debts.push({ id: uid(), name: val, amount: 0, balance: 0 });
+      saveState();
+      render();
     });
   }
 

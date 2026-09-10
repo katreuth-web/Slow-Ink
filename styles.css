@@ -812,6 +812,19 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 .meal-day-card { display: flex; flex-direction: column; gap: 8px; }
 .meal-day-head { font-family: var(--font-display); font-size: 14px; margin-bottom: 2px; }
 
+/* ---------------------------------------------------------------- finance: budget / donut */
+
+.budget-diff { font-size: 12.5px; font-weight: 600; flex: 0 0 auto; min-width: 70px; text-align: right; }
+.budget-diff.positive { color: var(--positive); }
+.budget-diff.negative { color: var(--negative); }
+
+.donut-wrap { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 10px; }
+.donut-svg { width: 130px; height: 130px; flex: 0 0 auto; }
+.donut-legend { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--ink-mute); }
+.donut-legend-row { display: flex; align-items: center; gap: 8px; }
+.donut-dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+.donut-amt { color: var(--ink-faint); }
+
 /* ---------------------------------------------------------------- toast */
 
 .toast {
