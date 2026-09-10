@@ -29,6 +29,16 @@
     { id: "dinner", label: "Dinner" },
     { id: "snack", label: "Snack" }
   ];
+  var LEVELS_5 = ["1", "2", "3", "4", "5"];
+  var SCHEDULE_HOURS = [];
+  for (var _h = 6; _h <= 22; _h++) SCHEDULE_HOURS.push(_h);
+
+  function fmtHour(h) {
+    var period = h >= 12 ? "PM" : "AM";
+    var h12 = h % 12;
+    if (h12 === 0) h12 = 12;
+    return h12 + ":00 " + period;
+  }
 
   var now = new Date();
 
@@ -38,9 +48,14 @@
     return {
       theme: "greek-marble",
       monthlyFocus: {},
-      daily: {},
+      monthPriorities: {},
+      monthTodos: {},
       weekly: {},
+      weekTodos: {},
+      daily: {},
       habits: [],
+      habitsReflection: { focus: "", proud: "" },
+      seededSelfCare: false,
       goals: [],
       reading: [],
       finance: [],
@@ -48,12 +63,25 @@
     };
   }
 
+  var SELF_CARE_HABITS = [
+    "Water", "Meals", "Movement", "Sleep", "Vitamins", "Skincare", "Breaks",
+    "Reading", "Gratitude", "Outside time", "Journaling", "Meditation", "Hobby", "Connection"
+  ];
+
+  function seedSelfCare(s) {
+    if (s.seededSelfCare) return;
+    SELF_CARE_HABITS.forEach(function (name) {
+      s.habits.push({ id: uid(), name: name, mode: "three-state", marks: {} });
+    });
+    s.seededSelfCare = true;
+  }
+
   function loadState() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return defaultState();
-      var parsed = JSON.parse(raw);
-      return Object.assign(defaultState(), parsed);
+      var s = raw ? Object.assign(defaultState(), JSON.parse(raw)) : defaultState();
+      seedSelfCare(s);
+      return s;
     } catch (e) {
       return defaultState();
     }
@@ -77,6 +105,12 @@
     if (d.water === undefined) d.water = 0;
     if (d.sleep === undefined) d.sleep = 0;
     if (d.weather === undefined) d.weather = "";
+    if (d.wentWell === undefined) d.wentWell = d.worked || "";
+    if (d.improveNextTime === undefined) d.improveNextTime = "";
+    if (d.affirmation === undefined) d.affirmation = "";
+    if (d.energy === undefined) d.energy = "";
+    if (d.stress === undefined) d.stress = "";
+    if (!d.schedule) d.schedule = {};
     return d;
   }
 
@@ -88,8 +122,74 @@
     return state.weekly[key];
   }
 
+  function getMonthPriorities(m) {
+    if (!state.monthPriorities[m]) state.monthPriorities[m] = [];
+    return state.monthPriorities[m];
+  }
+
+  function getMonthTodos(m) {
+    if (!state.monthTodos[m]) state.monthTodos[m] = [];
+    return state.monthTodos[m];
+  }
+
+  function getWeekTodos(idx) {
+    var key = "W" + idx;
+    if (!state.weekTodos[key]) state.weekTodos[key] = [];
+    return state.weekTodos[key];
+  }
+
   function uid() {
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  /* ------------------------------------------------------------- shared: flat checklist pattern */
+
+  function checklistHtml(items, opts) {
+    opts = opts || {};
+    if (!items.length) return '<div class="empty-state">' + (opts.emptyLabel || "Nothing here yet.") + "</div>";
+    var html = "";
+    items.forEach(function (it) {
+      html += (
+        '<div class="goal-item' + (it.done ? " done" : "") + '" data-item="' + it.id + '">' +
+          (opts.noCheck ? "" : '<button class="goal-check' + (it.done ? " done" : "") + '" data-check>' + (it.done ? "✓" : "") + "</button>") +
+          '<span class="goal-title">' + escapeHtml(it.text) + "</span>" +
+          '<button class="habit-del" data-del title="Delete">✕</button>' +
+        "</div>"
+      );
+    });
+    return html;
+  }
+
+  function bindChecklist(containerEl, items) {
+    if (!containerEl) return;
+    containerEl.querySelectorAll("[data-item]").forEach(function (row) {
+      var id = row.dataset.item;
+      var check = row.querySelector("[data-check]");
+      var del = row.querySelector("[data-del]");
+      if (check) check.addEventListener("click", function () {
+        var it = items.find(function (x) { return x.id === id; });
+        if (it) { it.done = !it.done; saveState(); render(); }
+      });
+      if (del) del.addEventListener("click", function () {
+        var idx = items.findIndex(function (x) { return x.id === id; });
+        if (idx > -1) { items.splice(idx, 1); saveState(); render(); }
+      });
+    });
+  }
+
+  function bindChecklistAdd(addBtnId, inputId, items) {
+    var addBtn = document.getElementById(addBtnId);
+    var input = document.getElementById(inputId);
+    function add() {
+      var val = input.value.trim();
+      if (!val) return;
+      items.push({ id: uid(), text: val, done: false });
+      input.value = "";
+      saveState();
+      render();
+    }
+    if (addBtn) addBtn.addEventListener("click", add);
+    if (input) input.addEventListener("keydown", function (e) { if (e.key === "Enter") add(); });
   }
 
   /* ------------------------------------------------------------- date helpers */
@@ -442,6 +542,8 @@
       if (state.daily[k] && (state.daily[k].top3.some(function (t) { return t.trim(); }) || state.daily[k].notes.trim())) filled++;
     }
     var pct = Math.round((filled / dim) * 100);
+    var priorities = getMonthPriorities(m);
+    var todos = getMonthTodos(m);
     return (
       '<div class="view-head">' +
         '<div><h1>' + MONTH_NAMES[m] + "</h1><div class=\"sub\">" + YEAR + " · month completion " + pct + "%</div></div>" +
@@ -455,6 +557,24 @@
         '<div class="panel"><div class="month-grid">' + cells + "</div></div>" +
         '<div class="panel"><h3>Monthly focus</h3><p class="sub" style="margin:6px 0 10px;">What matters most this month</p>' +
           '<textarea id="month-focus" rows="10" placeholder="This month I want to…">' + escapeHtml(focus) + "</textarea>" +
+        "</div>" +
+      "</div>" +
+      '<div class="grid-2" style="margin-top:20px;">' +
+        '<div class="panel">' +
+          '<h3>Top priorities this month</h3>' +
+          '<div class="habit-toolbar" style="margin-top:12px;">' +
+            '<input type="text" id="new-month-priority" placeholder="Add a priority" />' +
+            '<button id="add-month-priority">Add</button>' +
+          "</div>" +
+          '<div id="month-priorities-list">' + checklistHtml(priorities, { noCheck: true, emptyLabel: "No priorities yet." }) + "</div>" +
+        "</div>" +
+        '<div class="panel">' +
+          '<h3>To-Do</h3>' +
+          '<div class="habit-toolbar" style="margin-top:12px;">' +
+            '<input type="text" id="new-month-todo" placeholder="Add a to-do" />' +
+            '<button id="add-month-todo">Add</button>' +
+          "</div>" +
+          '<div id="month-todos-list">' + checklistHtml(todos) + "</div>" +
         "</div>" +
       "</div>"
     );
@@ -476,6 +596,12 @@
       state.monthlyFocus[m] = focus.value;
       saveState();
     });
+    var priorities = getMonthPriorities(m);
+    bindChecklistAdd("add-month-priority", "new-month-priority", priorities);
+    bindChecklist(document.getElementById("month-priorities-list"), priorities);
+    var todos = getMonthTodos(m);
+    bindChecklistAdd("add-month-todo", "new-month-todo", todos);
+    bindChecklist(document.getElementById("month-todos-list"), todos);
   }
 
   /* ---- week ---- */
@@ -524,6 +650,14 @@
       '<div class="grid-2" style="margin-top:20px;">' +
         '<div class="panel"><h3>Top 3 priorities</h3><ul class="top3-list" style="margin-top:12px;">' + priorities + "</ul></div>" +
         '<div class="panel"><h3>Notes for this week</h3><textarea id="week-notes" rows="8" placeholder="Write a note…" style="margin-top:12px;">' + escapeHtml(wdata.notes || "") + "</textarea></div>" +
+      "</div>" +
+      '<div class="panel" style="margin-top:20px;">' +
+        '<h3>To-Do</h3>' +
+        '<div class="habit-toolbar" style="margin-top:12px;">' +
+          '<input type="text" id="new-week-todo" placeholder="Add a to-do" />' +
+          '<button id="add-week-todo">Add</button>' +
+        "</div>" +
+        '<div id="week-todos-list">' + checklistHtml(getWeekTodos(idx)) + "</div>" +
       "</div>"
     );
   }
@@ -546,6 +680,9 @@
     });
     var notes = document.getElementById("week-notes");
     if (notes) notes.addEventListener("input", function () { wdata.notes = notes.value; saveState(); });
+    var todos = getWeekTodos(idx);
+    bindChecklistAdd("add-week-todo", "new-week-todo", todos);
+    bindChecklist(document.getElementById("week-todos-list"), todos);
   }
 
   /* ---- day ---- */
@@ -565,6 +702,14 @@
     MOODS.forEach(function (em) {
       moods += '<button class="mood-opt' + (day.mood === em ? " active" : "") + '" data-mood="' + em + '">' + em + "</button>";
     });
+    var energies = "";
+    LEVELS_5.forEach(function (lv) {
+      energies += '<button class="mood-opt' + (day.energy === lv ? " active" : "") + '" data-energy="' + lv + '" title="Energy level ' + lv + '">' + lv + "</button>";
+    });
+    var stresses = "";
+    LEVELS_5.forEach(function (lv) {
+      stresses += '<button class="mood-opt' + (day.stress === lv ? " active" : "") + '" data-stress="' + lv + '" title="Stress level ' + lv + '">' + lv + "</button>";
+    });
     var weathers = "";
     WEATHERS.forEach(function (w) {
       weathers += '<button class="weather-opt' + (day.weather === w.id ? " active" : "") + '" data-weather="' + w.id + '" title="' + w.label + '">' + icon(w.icon) + "</button>";
@@ -574,6 +719,14 @@
       meals += (
         '<div><span class="field-label">' + mf.label + '</span>' +
         '<input type="text" data-meal="' + mf.id + '" placeholder="What did you eat?" value="' + escapeHtml(day.meals[mf.id] || "") + '" /></div>'
+      );
+    });
+    var schedule = "";
+    SCHEDULE_HOURS.forEach(function (h) {
+      schedule += (
+        '<div class="schedule-row">' +
+          '<span class="schedule-hour">' + fmtHour(h) + "</span>" +
+          '<input type="text" class="line-input" data-hour="' + h + '" value="' + escapeHtml(day.schedule[h] || "") + '" /></div>'
       );
     });
     var d0 = new Date(YEAR, 0, 1), d1 = new Date(YEAR, 11, 31);
@@ -590,16 +743,24 @@
       "</div>" +
       '<div class="grid-2">' +
         '<div class="panel">' +
-          '<h3>Top 3 priorities for today</h3>' +
+          '<h3>Today\'s affirmation</h3>' +
+          '<textarea id="day-affirmation" rows="2" placeholder="I am…" style="margin-top:10px;">' + escapeHtml(day.affirmation || "") + "</textarea>" +
+          '<h3 style="margin-top:18px;">Top 3 priorities for today</h3>' +
           '<ul class="top3-list" style="margin-top:12px;">' + priorities + "</ul>" +
           '<h3 style="margin-top:22px;">Mood</h3>' +
           '<div class="mood-row">' + moods + "</div>" +
+          '<h3 style="margin-top:18px;">Energy level</h3>' +
+          '<div class="mood-row">' + energies + "</div>" +
+          '<h3 style="margin-top:18px;">Stress level</h3>' +
+          '<div class="mood-row">' + stresses + "</div>" +
         "</div>" +
         '<div class="panel">' +
           '<h3>Gratitude</h3>' +
           '<textarea id="day-gratitude" rows="3" placeholder="Something I\'m grateful for…" style="margin-top:10px;">' + escapeHtml(day.gratitude || "") + "</textarea>" +
-          '<h3 style="margin-top:18px;">What worked today</h3>' +
-          '<textarea id="day-worked" rows="3" style="margin-top:10px;">' + escapeHtml(day.worked || "") + "</textarea>" +
+          '<h3 style="margin-top:18px;">What went well today?</h3>' +
+          '<textarea id="day-wentWell" rows="3" style="margin-top:10px;">' + escapeHtml(day.wentWell || "") + "</textarea>" +
+          '<h3 style="margin-top:18px;">What can I improve tomorrow?</h3>' +
+          '<textarea id="day-improveNextTime" rows="3" style="margin-top:10px;">' + escapeHtml(day.improveNextTime || "") + "</textarea>" +
           '<h3 style="margin-top:18px;">Notes</h3>' +
           '<textarea id="day-notes" rows="4" placeholder="Daily notes…" style="margin-top:10px;">' + escapeHtml(day.notes || "") + "</textarea>" +
         "</div>" +
@@ -615,6 +776,10 @@
           '<h3>Meals</h3>' +
           '<div class="meal-grid" style="margin-top:12px;">' + meals + "</div>" +
         "</div>" +
+      "</div>" +
+      '<div class="panel" style="margin-top:20px;">' +
+        '<h3>Today\'s schedule</h3>' +
+        '<div class="schedule-grid" style="margin-top:12px;">' + schedule + "</div>" +
       "</div>"
     );
   }
@@ -653,7 +818,21 @@
         render();
       });
     });
-    ["gratitude", "worked", "notes"].forEach(function (field) {
+    document.querySelectorAll("[data-energy]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        day.energy = day.energy === el.dataset.energy ? "" : el.dataset.energy;
+        saveState();
+        render();
+      });
+    });
+    document.querySelectorAll("[data-stress]").forEach(function (el) {
+      el.addEventListener("click", function () {
+        day.stress = day.stress === el.dataset.stress ? "" : el.dataset.stress;
+        saveState();
+        render();
+      });
+    });
+    ["gratitude", "wentWell", "improveNextTime", "notes", "affirmation"].forEach(function (field) {
       var el = document.getElementById("day-" + field);
       if (el) el.addEventListener("input", function () { day[field] = el.value; saveState(); });
     });
@@ -663,6 +842,9 @@
     if (sleepEl) sleepEl.addEventListener("input", function () { day.sleep = parseFloat(sleepEl.value) || 0; saveState(); });
     document.querySelectorAll("[data-meal]").forEach(function (el) {
       el.addEventListener("input", function () { day.meals[el.dataset.meal] = el.value; saveState(); });
+    });
+    document.querySelectorAll("[data-hour]").forEach(function (el) {
+      el.addEventListener("input", function () { day.schedule[el.dataset.hour] = el.value; saveState(); });
     });
   }
 
@@ -682,20 +864,26 @@
     } else {
       state.habits.forEach(function (h) {
         var streak = currentStreak(h, m);
-        var cells = '<td class="habit-name-cell">' + escapeHtml(h.name || "Unnamed habit") +
+        var cells = '<td class="habit-name-cell">' +
+          '<button class="habit-mode-toggle" data-mode-toggle="' + h.id + '" title="Switch tracking mode">' + (h.mode === "three-state" ? "3-state" : "simple") + "</button> " +
+          escapeHtml(h.name || "Unnamed habit") +
           (streak > 1 ? '<span class="streak">' + streak + "d streak</span>" : "") + "</td>";
         for (var dd = 1; dd <= dim; dd++) {
           var key = dateKey(YEAR, m, dd);
           var dow2 = (firstWeekdayMon(YEAR, m) + dd - 1) % 7;
-          var on = !!h.marks[key];
+          var val = h.marks[key];
+          var stateClass = h.mode === "three-state"
+            ? (val === "done" ? " on" : val === "partial" ? " partial" : "")
+            : (val ? " on" : "");
           cells += '<td' + (dow2 >= 5 ? ' class="weekend-col"' : "") + '>' +
-            '<button class="habit-mark' + (on ? " on" : "") + '" data-habit="' + h.id + '" data-key="' + key + '"></button>' +
+            '<button class="habit-mark' + stateClass + '" data-habit="' + h.id + '" data-key="' + key + '"></button>' +
           "</td>";
         }
         cells += '<td><button class="habit-del" data-del="' + h.id + '" title="Delete habit">✕</button></td>';
         rows += "<tr>" + cells + "</tr>";
       });
     }
+    var refl = state.habitsReflection;
     return (
       '<div class="view-head"><div><h1>Habit Tracker</h1><div class="sub">' + MONTH_NAMES[m] + " " + YEAR + "</div></div></div>" +
       '<div class="panel">' +
@@ -704,6 +892,14 @@
           '<button id="add-habit">New habit</button>' +
         "</div>" +
         '<div style="overflow-x:auto;"><table class="habit-table"><thead><tr>' + head + "<th></th></tr></thead><tbody>" + rows + "</tbody></table></div>" +
+      "</div>" +
+      '<div class="grid-2" style="margin-top:20px;">' +
+        '<div class="panel"><h3>This month I will focus on</h3>' +
+          '<textarea id="habits-focus" rows="4" style="margin-top:10px;">' + escapeHtml(refl.focus || "") + "</textarea>" +
+        "</div>" +
+        '<div class="panel"><h3>I am proud of</h3>' +
+          '<textarea id="habits-proud" rows="4" style="margin-top:10px;">' + escapeHtml(refl.proud || "") + "</textarea>" +
+        "</div>" +
       "</div>"
     );
   }
@@ -724,7 +920,7 @@
     function addHabit() {
       var name = input.value.trim();
       if (!name) return;
-      state.habits.push({ id: uid(), name: name, marks: {} });
+      state.habits.push({ id: uid(), name: name, mode: "simple", marks: {} });
       saveState();
       render();
     }
@@ -734,8 +930,26 @@
       el.addEventListener("click", function () {
         var h = state.habits.find(function (x) { return x.id === el.dataset.habit; });
         if (!h) return;
-        if (h.marks[el.dataset.key]) delete h.marks[el.dataset.key];
-        else h.marks[el.dataset.key] = true;
+        var key = el.dataset.key;
+        if (h.mode === "three-state") {
+          var val = h.marks[key];
+          if (val === "done") delete h.marks[key];
+          else if (val === "partial") h.marks[key] = "done";
+          else h.marks[key] = "partial";
+        } else {
+          if (h.marks[key]) delete h.marks[key];
+          else h.marks[key] = true;
+        }
+        saveState();
+        render();
+      });
+    });
+    document.querySelectorAll(".habit-mode-toggle").forEach(function (el) {
+      el.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var h = state.habits.find(function (x) { return x.id === el.dataset.modeToggle; });
+        if (!h) return;
+        h.mode = h.mode === "three-state" ? "simple" : "three-state";
         saveState();
         render();
       });
@@ -747,6 +961,10 @@
         render();
       });
     });
+    var focusEl = document.getElementById("habits-focus");
+    if (focusEl) focusEl.addEventListener("input", function () { state.habitsReflection.focus = focusEl.value; saveState(); });
+    var proudEl = document.getElementById("habits-proud");
+    if (proudEl) proudEl.addEventListener("input", function () { state.habitsReflection.proud = proudEl.value; saveState(); });
   }
 
   /* ---- goals ---- */

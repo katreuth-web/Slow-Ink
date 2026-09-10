@@ -557,6 +557,16 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 .meal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px; }
 @media (max-width: 500px) { .meal-grid { grid-template-columns: 1fr; } }
 
+.schedule-grid { display: flex; flex-direction: column; gap: 2px; }
+.schedule-row { display: flex; align-items: center; gap: 14px; }
+.schedule-row .line-input { flex: 1; }
+.schedule-hour {
+  flex: 0 0 auto;
+  width: 78px;
+  font-size: 11.5px;
+  color: var(--ink-faint);
+}
+
 /* ---------------------------------------------------------------- habits */
 
 .habit-toolbar { display: flex; gap: 10px; margin-bottom: 18px; }
@@ -593,10 +603,23 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
   padding: 0;
 }
 .habit-mark.on { background: var(--accent); border-color: var(--accent-deep); }
+.habit-mark.partial { background: var(--accent-subtle); border-color: var(--accent); }
 .habit-mark.weekend-col { background-color: var(--weekend); }
 .habit-del { border: none; background: transparent; color: var(--ink-faint); cursor: pointer; font-size: 15px; }
 .habit-del:hover { color: var(--accent-text); }
 .habit-row-empty { color: var(--ink-faint); font-size: 13px; padding: 20px 0; text-align: center; }
+.habit-mode-toggle {
+  border: 1px solid var(--hair);
+  background: var(--page-2);
+  color: var(--ink-mute);
+  border-radius: 999px;
+  font-size: 9.5px;
+  padding: 1px 7px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.habit-mode-toggle:hover { border-color: var(--accent); color: var(--accent-text); }
 
 /* ---------------------------------------------------------------- goals */
 
