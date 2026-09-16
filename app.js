@@ -51,6 +51,7 @@
       theme: "greek-marble",
       // year-scoped (reset per year, see multi-year architecture)
       monthlyFocusByYear: {},
+      keyDatesByYear: {},
       monthPrioritiesByYear: {},
       monthTodosByYear: {},
       weeklyByYear: {},
@@ -196,6 +197,11 @@
   function getMonthlyFocusMap() {
     if (!state.monthlyFocusByYear[YEAR]) state.monthlyFocusByYear[YEAR] = {};
     return state.monthlyFocusByYear[YEAR];
+  }
+
+  function getKeyDatesMap() {
+    if (!state.keyDatesByYear[YEAR]) state.keyDatesByYear[YEAR] = {};
+    return state.keyDatesByYear[YEAR];
   }
 
   function getYearlyReflection() {
@@ -886,13 +892,26 @@
       '<div class="mini-month" data-month="' + m + '">' +
         '<div class="mini-title"><span>' + MONTH_ABBR[m] + "</span><span class=\"pct\">" + pct + "%</span></div>" +
         '<div class="mini-grid">' + cells + "</div>" +
+        '<div class="mini-key-dates"><span class="mini-key-dates-label">Key Dates</span>' +
+          '<textarea rows="2" data-mini-key-dates="' + m + '" placeholder="…">' + escapeHtml(getKeyDatesMap()[m] || "") + "</textarea>" +
+        "</div>" +
       "</div>"
     );
   }
 
   function bindYear() {
     document.querySelectorAll(".mini-month").forEach(function (el) {
-      el.addEventListener("click", function () { go("#/month/" + el.dataset.month); });
+      el.addEventListener("click", function (e) {
+        if (e.target.closest(".mini-key-dates")) return;
+        go("#/month/" + el.dataset.month);
+      });
+    });
+    document.querySelectorAll("[data-mini-key-dates]").forEach(function (el) {
+      el.addEventListener("click", function (e) { e.stopPropagation(); });
+      el.addEventListener("input", function () {
+        getKeyDatesMap()[parseInt(el.dataset.miniKeyDates, 10)] = el.value;
+        saveState();
+      });
     });
     var prev = document.getElementById("year-prev");
     var next = document.getElementById("year-next");
@@ -959,6 +978,10 @@
           '<textarea id="month-focus" rows="10" placeholder="This month I want to…">' + escapeHtml(focus) + "</textarea>" +
         "</div>" +
       "</div>" +
+      '<div class="panel" style="margin-top:20px;">' +
+        '<h3>Key Dates</h3>' +
+        '<textarea id="month-key-dates" rows="4" placeholder="Important dates this month…" style="margin-top:10px;">' + escapeHtml(getKeyDatesMap()[m] || "") + "</textarea>" +
+      "</div>" +
       '<div class="grid-2" style="margin-top:20px;">' +
         '<div class="panel">' +
           '<h3>Top priorities this month</h3>' +
@@ -994,6 +1017,11 @@
     var focus = document.getElementById("month-focus");
     if (focus) focus.addEventListener("input", function () {
       getMonthlyFocusMap()[m] = focus.value;
+      saveState();
+    });
+    var keyDates = document.getElementById("month-key-dates");
+    if (keyDates) keyDates.addEventListener("input", function () {
+      getKeyDatesMap()[m] = keyDates.value;
       saveState();
     });
     var priorities = getMonthPriorities(m);

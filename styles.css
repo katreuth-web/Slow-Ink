@@ -4,8 +4,9 @@
    =================================================================== */
 
 :root {
-  --font-display: "Caladea", "Iowan Old Style", serif;
+  --font-display: "Questrial", "Avenir Next", sans-serif;
   --font-body: "Questrial", "Avenir Next", sans-serif;
+  --font-wordmark: "Montserrat", "Avenir Next", sans-serif;
   --dur: .22s;
   --ease: cubic-bezier(.22, .61, .36, 1);
   --r-card: 14px;
@@ -382,6 +383,7 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 
 .field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 500px) { .field-grid-2 { grid-template-columns: 1fr; } }
+.field-grid-2 input { height: 40px; }
 
 .card-expand-toggle {
   display: flex; align-items: center; gap: 6px;
@@ -436,7 +438,7 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 }
 .cover-mark svg { width: 28px; height: 28px; }
 .cover-year { color: var(--accent-text); letter-spacing: .3em; font-size: 13px; margin-bottom: 10px; }
-.cover-title { font-size: 56px; margin-bottom: 10px; }
+.cover-title { font-family: var(--font-wordmark); font-weight: 700; font-size: 56px; margin-bottom: 10px; }
 .cover-rule { width: 60px; height: 1px; background: var(--rule); margin: 26px auto; }
 .cover-tag {
   font-family: var(--font-display);
@@ -495,6 +497,22 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 .mini-day.weekend { background: var(--weekend); }
 .mini-day.today { background: var(--accent); color: var(--card-1); font-weight: 600; }
 .mini-day.empty { visibility: hidden; }
+
+.mini-key-dates { margin-top: 8px; }
+.mini-key-dates-label {
+  display: block;
+  font-size: 8.5px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ink-faint);
+  margin-bottom: 3px;
+}
+.mini-key-dates textarea {
+  background: var(--card-1);
+  font-size: 10.5px;
+  padding: 5px 6px;
+  resize: none;
+}
 
 .year-summary { margin-top: 26px; }
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
@@ -827,6 +845,11 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 
 /* ---------------------------------------------------------------- notebook pages: paper styles */
 
+[data-page-card] .title-input,
+[data-page-card] .field-grid-2 input {
+  background: var(--card-1);
+}
+.notebook-paper { background-color: var(--card-1); }
 .notebook-paper.paper-lined {
   background-image: repeating-linear-gradient(to bottom, transparent, transparent 23px, var(--hair) 24px);
   background-attachment: local;
