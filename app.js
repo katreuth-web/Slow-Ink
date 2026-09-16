@@ -651,7 +651,8 @@
     meals: '<path d="M7.5 3v6a2 2 0 0 0 4 0V3"/><path d="M9.5 3v18"/><path d="M17 3c2 1.6 2 6.4 0 8-.6.4-1 1.1-1 1.9V21"/>',
     travel: '<rect x="4" y="8" width="16" height="12" rx="2"/><path d="M9 8V6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/><path d="M4 13h16"/>',
     fitness: '<path d="M12 20c-4-2-6-6-6-9 2 1 4 3 6 7 2-4 4-6 6-7 0 3-2 7-6 9z"/><path d="M12 20c-3-3-4-7-4-11 2 2 3 5 4 9 1-4 2-7 4-9 0 4-1 8-4 11z"/><path d="M6 15c-2-1-4-3-4-5 2 0 4 1 6 3M18 15c2-1 4-3 4-5-2 0-4 1-6 3"/>',
-    reflections: '<circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5l-2.2 5-5 2.2 2.2-5 5-2.2z"/>'
+    reflections: '<circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5l-2.2 5-5 2.2 2.2-5 5-2.2z"/>',
+    gem: '<path d="M12 3.2l6.8 4.8-3 6.4-3.8 6.4-3.8-6.4-3-6.4z"/><path d="M5.2 8h13.6M9.4 8l2.6 12.8M14.6 8L12 20.8"/>'
   };
 
   function icon(name) {
@@ -693,6 +694,12 @@
     { id: "goals", icon: "list" }
   ];
 
+  var THEMES = [
+    { id: "greek-marble", label: "Greek Marble (light)", icon: "sunTheme", metaColor: "#F2E9D8" },
+    { id: "soft-black", label: "Soft Black (dark)", icon: "moon", metaColor: "#232323" },
+    { id: "midnight-luxury", label: "Midnight Luxury (dark)", icon: "gem", metaColor: "#0F0E13" }
+  ];
+
   function buildTabbar() {
     var bar = document.getElementById("tabbar");
     bar.innerHTML = "";
@@ -705,20 +712,29 @@
       btn.addEventListener("click", function () { go(defaultRouteFor(t.id)); });
       bar.appendChild(btn);
     });
-    var moonBtn = document.createElement("button");
-    moonBtn.className = "tab-btn theme-btn";
-    moonBtn.dataset.theme = "soft-black";
-    moonBtn.title = "Soft Black (dark)";
-    moonBtn.innerHTML = icon("moon");
-    moonBtn.addEventListener("click", function () { setTheme("soft-black"); });
-    bar.appendChild(moonBtn);
-    var sunBtn = document.createElement("button");
-    sunBtn.className = "tab-btn theme-btn";
-    sunBtn.dataset.theme = "greek-marble";
-    sunBtn.title = "Greek Marble (light)";
-    sunBtn.innerHTML = icon("sunTheme");
-    sunBtn.addEventListener("click", function () { setTheme("greek-marble"); });
-    bar.appendChild(sunBtn);
+    THEMES.forEach(function (th) {
+      var btn = document.createElement("button");
+      btn.className = "tab-btn theme-btn";
+      btn.dataset.theme = th.id;
+      btn.title = th.label;
+      btn.innerHTML = icon(th.icon);
+      btn.addEventListener("click", function () { setTheme(th.id); });
+      bar.appendChild(btn);
+    });
+  }
+
+  function buildThemePicker() {
+    var wrap = document.getElementById("drawer-theme-picker");
+    if (!wrap) return;
+    wrap.innerHTML = "";
+    THEMES.forEach(function (th) {
+      var btn = document.createElement("button");
+      btn.className = "drawer-link";
+      btn.dataset.theme = th.id;
+      btn.innerHTML = '<span class="drawer-icon">' + icon(th.icon) + "</span><span>" + th.label + "</span>";
+      btn.addEventListener("click", function () { setTheme(th.id); });
+      wrap.appendChild(btn);
+    });
   }
 
   function buildDrawer() {
@@ -3187,7 +3203,7 @@
     if (m) {
       m.setAttribute("content",
         "Slow Ink is an interactive " + YEAR + " digital planner — yearly overview, monthly, weekly and daily pages, " +
-        "habit tracker, goals, reading log, finance ledger and notes, in two hand-mixed colour palettes. " +
+        "habit tracker, goals, reading log, finance ledger and notes, in three hand-mixed colour palettes. " +
         "Built with plain HTML5, CSS and JavaScript."
       );
     }
@@ -3197,14 +3213,10 @@
 
   function applyTheme() {
     document.documentElement.setAttribute("data-theme", state.theme);
-    var isLight = state.theme === "greek-marble";
+    var current = THEMES.find(function (th) { return th.id === state.theme; }) || THEMES[0];
     var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute("content", isLight ? "#F2E9D8" : "#232323");
-    var label = document.getElementById("drawer-theme-label");
-    if (label) label.textContent = isLight ? "Switch to Soft Black" : "Switch to Greek Marble";
-    var icoEl = document.getElementById("drawer-theme-icon");
-    if (icoEl) icoEl.innerHTML = icon(isLight ? "moon" : "sunTheme");
-    document.querySelectorAll(".tab-btn.theme-btn").forEach(function (el) {
+    if (meta) meta.setAttribute("content", current.metaColor);
+    document.querySelectorAll(".tab-btn.theme-btn, #drawer-theme-picker .drawer-link").forEach(function (el) {
       el.classList.toggle("active", el.dataset.theme === state.theme);
     });
   }
@@ -3214,10 +3226,6 @@
     saveState();
     applyTheme();
   }
-
-  document.getElementById("drawer-theme").addEventListener("click", function () {
-    setTheme(state.theme === "greek-marble" ? "soft-black" : "greek-marble");
-  });
 
   /* ------------------------------------------------------------- nav chrome */
 
@@ -3286,6 +3294,7 @@
 
   buildTabbar();
   buildDrawer();
+  buildThemePicker();
   applyTheme();
   updatePageMeta();
   if (!location.hash) location.hash = "#/cover";

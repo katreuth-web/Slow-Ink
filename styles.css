@@ -1,6 +1,6 @@
 /* ===================================================================
    Slow Ink — 2027 Digital Planner
-   Design tokens reproduced from the two hand-mixed Slow Ink palettes.
+   Design tokens reproduced from the three hand-mixed Slow Ink palettes.
    =================================================================== */
 
 :root {
@@ -97,6 +97,49 @@
   --swatch-2-wash: rgba(164, 160, 158, .22);
   --swatch-3: #CFBAA6;
   --swatch-3-wash: rgba(207, 186, 166, .22);
+  color-scheme: dark;
+}
+
+[data-theme="midnight-luxury"] {
+  --page-1: #0F0E13;
+  --page-2: #0A0910;
+  --ink: #F4F3F7;
+  --ink-soft: #E4E1EA;
+  --ink-mute: #A09AAB;
+  --ink-faint: #6E6879;
+  --accent: #7C5CBF;
+  --accent-deep: #5E4494;
+  --accent-text: #9D7BDE;
+  --accent-ink: #F4F3F7;
+  --accent-subtle: rgba(124, 92, 191, .26);
+  --data-fill: rgba(124, 92, 191, .5);
+  --data-fill-neg: rgba(110, 104, 121, .55);
+  --hair: rgba(244, 243, 247, .14);
+  --hair-soft: rgba(244, 243, 247, .08);
+  --rule: #6E6879;
+  --fill-1: rgba(244, 243, 247, .05);
+  --fill-2: rgba(244, 243, 247, .1);
+  --fill-3: rgba(110, 104, 121, .25);
+  --weekend: rgba(212, 175, 55, .16);
+  --card-1: #211E2C;
+  --card-2: #1C1926;
+  --rail: #0A0910;
+  --rail-ink: #F4F3F7;
+  --rail-active-bg: rgba(212, 175, 55, .18);
+  --rail-active-ink: #D4AF37;
+  --focus: #9D7BDE;
+  --shadow: 0 26px 60px -22px rgba(0, 0, 0, .72), 0 2px 10px rgba(0, 0, 0, .32);
+  --scrim: rgba(0, 0, 0, .6);
+  --positive: #D4AF37;
+  --positive-subtle: rgba(212, 175, 55, .16);
+  --negative: #A09AAB;
+  --negative-subtle: rgba(160, 154, 171, .16);
+  --swatch-1: #F4F3F7;
+  --swatch-1-wash: rgba(244, 243, 247, .12);
+  --swatch-2: #9D7BDE;
+  --swatch-2-wash: rgba(157, 123, 222, .22);
+  --swatch-3: #D4AF37;
+  --swatch-3-wash: rgba(212, 175, 55, .22);
   color-scheme: dark;
 }
 
@@ -451,7 +494,7 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 .cover-cta {
   border: 1px solid var(--accent);
   background: var(--accent);
-  color: var(--card-1);
+  color: var(--accent-ink);
   padding: 12px 28px;
   border-radius: 999px;
   font-size: 13px;
