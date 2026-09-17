@@ -694,7 +694,7 @@
   ];
 
   var THEMES = [
-    { id: "greek-marble", label: "Greek Marble (light)", icon: "sunTheme", metaColor: "#F2E9D8" },
+    { id: "greek-marble", label: "Editorial (light)", icon: "sunTheme", metaColor: "#F7F5EF" },
     { id: "soft-black", label: "Soft Black (dark)", icon: "moon", metaColor: "#232323" },
     { id: "midnight-luxury", label: "Midnight Luxury (dark)", icon: "gem", metaColor: "#0F0E13" }
   ];

@@ -4,9 +4,9 @@
    =================================================================== */
 
 :root {
-  --font-display: "Questrial", "Avenir Next", sans-serif;
+  --font-display: "Fraunces", "Iowan Old Style", serif;
   --font-body: "Questrial", "Avenir Next", sans-serif;
-  --font-wordmark: "Montserrat", "Avenir Next", sans-serif;
+  --font-wordmark: "Fraunces", "Iowan Old Style", serif;
   --dur: .22s;
   --ease: cubic-bezier(.22, .61, .36, 1);
   --r-card: 14px;
@@ -15,45 +15,45 @@
 }
 
 [data-theme="greek-marble"] {
-  --page-1: #F2E9D8;
-  --page-2: #EAE0CE;
-  --ink: #594842;
-  --ink-soft: #5F4F48;
-  --ink-mute: #6B5A53;
-  --ink-faint: #7B6C63;
-  --accent: #736968;
-  --accent-deep: #594842;
-  --accent-text: #594842;
-  --accent-ink: #F2E9D8;
-  --accent-subtle: rgba(115, 105, 104, .24);
-  --data-fill: rgba(115, 105, 104, .45);
-  --data-fill-neg: rgba(89, 72, 66, .55);
-  --hair: rgba(89, 72, 66, .18);
-  --hair-soft: rgba(89, 72, 66, .1);
-  --rule: #999FA2;
-  --fill-1: rgba(89, 72, 66, .04);
-  --fill-2: rgba(89, 72, 66, .08);
-  --fill-3: rgba(115, 105, 104, .28);
-  --weekend: rgba(180, 187, 191, .4);
-  --card-1: #F8F2E8;
-  --card-2: #D9C3B0;
-  --rail: #594842;
-  --rail-ink: #F2E9D8;
-  --rail-active-bg: rgba(115, 105, 104, .28);
-  --rail-active-ink: #D9C3B0;
-  --focus: #636769;
-  --shadow: 0 24px 54px -24px rgba(89, 72, 66, .34), 0 2px 8px rgba(89, 72, 66, .1);
-  --scrim: rgba(89, 72, 66, .38);
-  --positive: #636769;
-  --positive-subtle: rgba(99, 103, 105, .14);
-  --negative: #594842;
-  --negative-subtle: rgba(89, 72, 66, .12);
-  --swatch-1: #594842;
-  --swatch-1-wash: rgba(89, 72, 66, .16);
-  --swatch-2: #736968;
-  --swatch-2-wash: rgba(115, 105, 104, .26);
-  --swatch-3: #B4BBBF;
-  --swatch-3-wash: rgba(180, 187, 191, .30);
+  --page-1: #F7F5EF;
+  --page-2: #EFEBE2;
+  --ink: #141413;
+  --ink-soft: #141413;
+  --ink-mute: #55534E;
+  --ink-faint: #8B887F;
+  --accent: #141413;
+  --accent-deep: #000000;
+  --accent-text: #141413;
+  --accent-ink: #F7F5EF;
+  --accent-subtle: rgba(20, 20, 19, .08);
+  --data-fill: rgba(20, 20, 19, .38);
+  --data-fill-neg: rgba(20, 20, 19, .6);
+  --hair: rgba(20, 20, 19, .18);
+  --hair-soft: rgba(20, 20, 19, .09);
+  --rule: #C7C4BB;
+  --fill-1: rgba(20, 20, 19, .03);
+  --fill-2: rgba(20, 20, 19, .06);
+  --fill-3: rgba(20, 20, 19, .14);
+  --weekend: rgba(20, 20, 19, .07);
+  --card-1: #FFFFFF;
+  --card-2: #EFEBE2;
+  --rail: #141413;
+  --rail-ink: #F7F5EF;
+  --rail-active-bg: rgba(247, 245, 239, .14);
+  --rail-active-ink: #F7F5EF;
+  --focus: #141413;
+  --shadow: 0 24px 54px -24px rgba(20, 20, 19, .28), 0 2px 8px rgba(20, 20, 19, .08);
+  --scrim: rgba(20, 20, 19, .38);
+  --positive: #141413;
+  --positive-subtle: rgba(20, 20, 19, .08);
+  --negative: #55534E;
+  --negative-subtle: rgba(85, 83, 78, .12);
+  --swatch-1: #141413;
+  --swatch-1-wash: rgba(20, 20, 19, .14);
+  --swatch-2: #55534E;
+  --swatch-2-wash: rgba(85, 83, 78, .22);
+  --swatch-3: #C7C4BB;
+  --swatch-3-wash: rgba(199, 196, 187, .30);
   color-scheme: light;
 }
 
@@ -153,7 +153,7 @@ body {
   transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 
-h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 400; margin: 0; }
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 600; margin: 0; }
 p { margin: 0; }
 button, input, textarea, select { font-family: inherit; color: inherit; }
 a { color: inherit; }
@@ -363,7 +363,7 @@ a { color: inherit; }
   gap: 10px;
   margin-bottom: 20px;
 }
-.view-head h1 { font-size: 30px; }
+.view-head h1 { font-size: 30px; font-weight: 700; font-style: italic; }
 .view-head .sub { color: var(--ink-mute); font-size: 13px; }
 
 .nav-strip {
@@ -480,7 +480,7 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 }
 .cover-mark svg { width: 28px; height: 28px; }
 .cover-year { color: var(--accent-text); letter-spacing: .3em; font-size: 13px; margin-bottom: 10px; }
-.cover-title { font-family: var(--font-wordmark); font-weight: 700; font-size: 56px; margin-bottom: 10px; }
+.cover-title { font-family: var(--font-wordmark); font-weight: 700; font-style: italic; font-size: 56px; margin-bottom: 10px; }
 .cover-rule { width: 60px; height: 1px; background: var(--rule); margin: 26px auto; }
 .cover-tag {
   font-family: var(--font-display);
