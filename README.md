@@ -4,12 +4,16 @@ A calm, tactile yearly planner built with plain HTML5, CSS and JavaScript — no
 
 ## Sections
 
-Cover · Year Overview · Monthly · Weekly · Daily · Habit Tracker · Goals · Reading Log · Finance Ledger · Notes
+Cover · Year Overview · Monthly · Weekly · Daily · Habit Tracker · Goals · Reading Log · Finance Ledger · Notes · Meal Planner · Travel Planner · Fitness & Wellness · Reflections
 
 ## Features
 
-- Full 2027 calendar logic (year/month/week/day views, all linked together)
-- Two hand-mixed colour themes — **Ivory Lace** (light) and **Green Velvet** (dark) — toggle in the toolbar
+- Full 2027 calendar logic (year/month/week/day views, all linked together), with multi-year support underneath
+- Three hand-mixed colour themes — **Greek Marble** (light), **Soft Black** (dark) and **Midnight Luxury** (dark) — pick one from the menu
+- Budget tracking with a category breakdown chart, savings goals, bills and debts
+- Workout logging, body measurements and cycle tracking
+- A notebook with lined, grid and dot paper styles, plus ikigai, wheel of life, stoic journaling exercises and mind maps
+- The hamburger icon is the only way to open the main menu; the house icon at the bottom-left of the tab bar returns to the cover page
 - Everything is saved automatically to `localStorage` in your browser
 - Export/import your planner as a JSON file, or reset it entirely
 - Responsive layout for smaller screens
