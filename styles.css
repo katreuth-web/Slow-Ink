@@ -1,11 +1,12 @@
 /* ===================================================================
    Slow Ink — 2027 Digital Planner
-   Design tokens reproduced from the two hand-mixed Slow Ink palettes.
+   Design tokens reproduced from the three hand-mixed Slow Ink palettes.
    =================================================================== */
 
 :root {
-  --font-display: "Caladea", "Iowan Old Style", serif;
+  --font-display: "Questrial", "Avenir Next", sans-serif;
   --font-body: "Questrial", "Avenir Next", sans-serif;
+  --font-wordmark: "Montserrat", "Avenir Next", sans-serif;
   --dur: .22s;
   --ease: cubic-bezier(.22, .61, .36, 1);
   --r-card: 14px;
@@ -13,46 +14,46 @@
   --r-panel: 18px;
 }
 
-[data-theme="tuscan-rose"] {
-  --page-1: #FEFFF1;
-  --page-2: #FEFCED;
-  --ink: #74474A;
-  --ink-soft: #896363;
-  --ink-mute: #9D7E7C;
-  --ink-faint: #B29A95;
-  --accent: #D8AFAB;
-  --accent-deep: #74474A;
-  --accent-text: #684043;
-  --accent-ink: #FEFFF1;
-  --accent-subtle: rgba(216, 175, 171, .24);
-  --data-fill: rgba(216, 175, 171, .45);
-  --data-fill-neg: rgba(116, 71, 74, .55);
-  --hair: rgba(116, 71, 74, .18);
-  --hair-soft: rgba(116, 71, 74, .1);
-  --rule: #C0ACAE;
-  --fill-1: rgba(116, 71, 74, .04);
-  --fill-2: rgba(116, 71, 74, .08);
-  --fill-3: rgba(216, 175, 171, .28);
-  --weekend: rgba(216, 175, 171, .32);
-  --card-1: #FEFFF7;
-  --card-2: #FEF7E4;
-  --rail: #74474A;
-  --rail-ink: #FEFFF1;
-  --rail-active-bg: rgba(216, 175, 171, .28);
-  --rail-active-ink: #E0BFBC;
-  --focus: #74474A;
-  --shadow: 0 24px 54px -24px rgba(116, 71, 74, .34), 0 2px 8px rgba(116, 71, 74, .1);
-  --scrim: rgba(116, 71, 74, .38);
-  --positive: #7F7263;
-  --positive-subtle: rgba(127, 114, 99, .14);
-  --negative: #74474A;
-  --negative-subtle: rgba(116, 71, 74, .12);
-  --swatch-1: #74474A;
-  --swatch-1-wash: rgba(116, 71, 74, .16);
-  --swatch-2: #D8AFAB;
-  --swatch-2-wash: rgba(216, 175, 171, .26);
-  --swatch-3: #FEE3C6;
-  --swatch-3-wash: rgba(254, 227, 198, .34);
+[data-theme="greek-marble"] {
+  --page-1: #F2E9D8;
+  --page-2: #EAE0CE;
+  --ink: #594842;
+  --ink-soft: #5F4F48;
+  --ink-mute: #6B5A53;
+  --ink-faint: #7B6C63;
+  --accent: #736968;
+  --accent-deep: #594842;
+  --accent-text: #594842;
+  --accent-ink: #F2E9D8;
+  --accent-subtle: rgba(115, 105, 104, .24);
+  --data-fill: rgba(115, 105, 104, .45);
+  --data-fill-neg: rgba(89, 72, 66, .55);
+  --hair: rgba(89, 72, 66, .18);
+  --hair-soft: rgba(89, 72, 66, .1);
+  --rule: #999FA2;
+  --fill-1: rgba(89, 72, 66, .04);
+  --fill-2: rgba(89, 72, 66, .08);
+  --fill-3: rgba(115, 105, 104, .28);
+  --weekend: rgba(180, 187, 191, .4);
+  --card-1: #F8F2E8;
+  --card-2: #D9C3B0;
+  --rail: #594842;
+  --rail-ink: #F2E9D8;
+  --rail-active-bg: rgba(115, 105, 104, .28);
+  --rail-active-ink: #D9C3B0;
+  --focus: #636769;
+  --shadow: 0 24px 54px -24px rgba(89, 72, 66, .34), 0 2px 8px rgba(89, 72, 66, .1);
+  --scrim: rgba(89, 72, 66, .38);
+  --positive: #636769;
+  --positive-subtle: rgba(99, 103, 105, .14);
+  --negative: #594842;
+  --negative-subtle: rgba(89, 72, 66, .12);
+  --swatch-1: #594842;
+  --swatch-1-wash: rgba(89, 72, 66, .16);
+  --swatch-2: #736968;
+  --swatch-2-wash: rgba(115, 105, 104, .26);
+  --swatch-3: #B4BBBF;
+  --swatch-3-wash: rgba(180, 187, 191, .30);
   color-scheme: light;
 }
 
@@ -96,6 +97,49 @@
   --swatch-2-wash: rgba(164, 160, 158, .22);
   --swatch-3: #CFBAA6;
   --swatch-3-wash: rgba(207, 186, 166, .22);
+  color-scheme: dark;
+}
+
+[data-theme="midnight-luxury"] {
+  --page-1: #0F0E13;
+  --page-2: #0A0910;
+  --ink: #F4F3F7;
+  --ink-soft: #E4E1EA;
+  --ink-mute: #A09AAB;
+  --ink-faint: #6E6879;
+  --accent: #7C5CBF;
+  --accent-deep: #5E4494;
+  --accent-text: #9D7BDE;
+  --accent-ink: #F4F3F7;
+  --accent-subtle: rgba(124, 92, 191, .26);
+  --data-fill: rgba(124, 92, 191, .5);
+  --data-fill-neg: rgba(110, 104, 121, .55);
+  --hair: rgba(244, 243, 247, .14);
+  --hair-soft: rgba(244, 243, 247, .08);
+  --rule: #6E6879;
+  --fill-1: rgba(244, 243, 247, .05);
+  --fill-2: rgba(244, 243, 247, .1);
+  --fill-3: rgba(110, 104, 121, .25);
+  --weekend: rgba(212, 175, 55, .16);
+  --card-1: #211E2C;
+  --card-2: #1C1926;
+  --rail: #0A0910;
+  --rail-ink: #F4F3F7;
+  --rail-active-bg: rgba(212, 175, 55, .18);
+  --rail-active-ink: #D4AF37;
+  --focus: #9D7BDE;
+  --shadow: 0 26px 60px -22px rgba(0, 0, 0, .72), 0 2px 10px rgba(0, 0, 0, .32);
+  --scrim: rgba(0, 0, 0, .6);
+  --positive: #D4AF37;
+  --positive-subtle: rgba(212, 175, 55, .16);
+  --negative: #A09AAB;
+  --negative-subtle: rgba(160, 154, 171, .16);
+  --swatch-1: #F4F3F7;
+  --swatch-1-wash: rgba(244, 243, 247, .12);
+  --swatch-2: #9D7BDE;
+  --swatch-2-wash: rgba(157, 123, 222, .22);
+  --swatch-3: #D4AF37;
+  --swatch-3-wash: rgba(212, 175, 55, .22);
   color-scheme: dark;
 }
 
@@ -377,6 +421,45 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
   padding: 6px 2px;
 }
 
+/* ---------------------------------------------------------------- shared: field grids, expandable cards, list editor, stars */
+
+.field-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 500px) { .field-grid-2 { grid-template-columns: 1fr; } }
+.field-grid-2 input { height: 40px; }
+
+.card-expand-toggle {
+  display: flex; align-items: center; gap: 6px;
+  border: none;
+  background: transparent;
+  color: var(--ink-mute);
+  font-size: 12px;
+  cursor: pointer;
+  padding: 4px 0;
+  margin-top: 4px;
+}
+.card-expand-toggle svg { width: 14px; height: 14px; transition: transform var(--dur) var(--ease); }
+.card-expand-toggle.open svg { transform: rotate(180deg); }
+.card-expand-toggle:hover { color: var(--accent-text); }
+.card-expand-body { display: none; flex-direction: column; gap: 4px; margin-top: 6px; }
+.card-expand-body.open { display: flex; }
+
+.list-editor { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.list-editor-row {
+  display: flex; flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px dotted var(--hair);
+}
+.list-editor-row input, .list-editor-row textarea { flex: 1; min-width: 90px; }
+.check-field { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-mute); flex: 0 0 auto; }
+.check-field input { width: auto; accent-color: var(--accent); }
+
+.star-row { display: flex; gap: 4px; margin-top: 6px; }
+.star-btn { border: none; background: transparent; color: var(--ink-faint); cursor: pointer; padding: 0; }
+.star-btn svg { width: 20px; height: 20px; }
+.star-btn:hover { color: var(--accent); }
+
 /* ---------------------------------------------------------------- cover */
 
 .cover {
@@ -397,7 +480,7 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 }
 .cover-mark svg { width: 28px; height: 28px; }
 .cover-year { color: var(--accent-text); letter-spacing: .3em; font-size: 13px; margin-bottom: 10px; }
-.cover-title { font-size: 56px; margin-bottom: 10px; }
+.cover-title { font-family: var(--font-wordmark); font-weight: 700; font-size: 56px; margin-bottom: 10px; }
 .cover-rule { width: 60px; height: 1px; background: var(--rule); margin: 26px auto; }
 .cover-tag {
   font-family: var(--font-display);
@@ -410,7 +493,7 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 .cover-cta {
   border: 1px solid var(--accent);
   background: var(--accent);
-  color: var(--card-1);
+  color: var(--accent-ink);
   padding: 12px 28px;
   border-radius: 999px;
   font-size: 13px;
@@ -456,6 +539,22 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 .mini-day.weekend { background: var(--weekend); }
 .mini-day.today { background: var(--accent); color: var(--card-1); font-weight: 600; }
 .mini-day.empty { visibility: hidden; }
+
+.mini-key-dates { margin-top: 8px; }
+.mini-key-dates-label {
+  display: block;
+  font-size: 8.5px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ink-faint);
+  margin-bottom: 3px;
+}
+.mini-key-dates textarea {
+  background: var(--card-1);
+  font-size: 10.5px;
+  padding: 5px 6px;
+  resize: none;
+}
 
 .year-summary { margin-top: 26px; }
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
@@ -556,6 +655,16 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 .meal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 4px; }
 @media (max-width: 500px) { .meal-grid { grid-template-columns: 1fr; } }
 
+.schedule-grid { display: flex; flex-direction: column; gap: 2px; }
+.schedule-row { display: flex; align-items: center; gap: 14px; }
+.schedule-row .line-input { flex: 1; }
+.schedule-hour {
+  flex: 0 0 auto;
+  width: 78px;
+  font-size: 11.5px;
+  color: var(--ink-faint);
+}
+
 /* ---------------------------------------------------------------- habits */
 
 .habit-toolbar { display: flex; gap: 10px; margin-bottom: 18px; }
@@ -592,21 +701,33 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
   padding: 0;
 }
 .habit-mark.on { background: var(--accent); border-color: var(--accent-deep); }
-.habit-mark.weekend-col { background-color: var(--weekend); }
+.habit-mark.partial { background: var(--accent-subtle); border-color: var(--accent); }
+.habit-table td.weekend-col, .habit-table th.weekend-col { background-color: var(--weekend); }
 .habit-del { border: none; background: transparent; color: var(--ink-faint); cursor: pointer; font-size: 15px; }
 .habit-del:hover { color: var(--accent-text); }
 .habit-row-empty { color: var(--ink-faint); font-size: 13px; padding: 20px 0; text-align: center; }
+.habit-mode-toggle {
+  border: 1px solid var(--hair);
+  background: var(--page-2);
+  color: var(--ink-mute);
+  border-radius: 999px;
+  font-size: 9.5px;
+  padding: 1px 7px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.habit-mode-toggle:hover { border-color: var(--accent); color: var(--accent-text); }
 
 /* ---------------------------------------------------------------- goals */
 
+.goal-card { display: flex; flex-direction: column; }
 .goal-item {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px 4px;
-  border-bottom: 1px solid var(--hair-soft);
+  padding: 0 0 10px;
 }
-.goal-item:last-child { border-bottom: none; }
 .goal-check {
   width: 20px; height: 20px;
   border-radius: 5px;
@@ -730,6 +851,85 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 .sticky .note-del { position: absolute; top: 10px; right: 10px; border: none; background: transparent; color: var(--ink-faint); cursor: pointer; }
 .empty-state { color: var(--ink-faint); font-size: 13.5px; padding: 30px 0; text-align: center; }
 
+/* ---------------------------------------------------------------- shared: sub-nav */
+
+.subtabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 16px 0 4px; }
+.subtab-pill {
+  border: 1px solid var(--hair);
+  background: var(--card-2);
+  color: var(--ink-mute);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.subtab-pill.active { border-color: var(--accent); background: var(--accent-subtle); color: var(--accent-text); }
+
+/* ---------------------------------------------------------------- meal planner */
+
+.meal-week-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+@media (max-width: 900px) { .meal-week-grid { grid-template-columns: repeat(2, 1fr); } }
+.meal-day-card { display: flex; flex-direction: column; gap: 8px; }
+.meal-day-head { font-family: var(--font-display); font-size: 14px; margin-bottom: 2px; }
+
+/* ---------------------------------------------------------------- finance: budget / donut */
+
+.budget-diff { font-size: 12.5px; font-weight: 600; flex: 0 0 auto; min-width: 70px; text-align: right; }
+.budget-diff.positive { color: var(--positive); }
+.budget-diff.negative { color: var(--negative); }
+
+.donut-wrap { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; margin-top: 10px; }
+.donut-svg { width: 130px; height: 130px; flex: 0 0 auto; }
+.donut-legend { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; color: var(--ink-mute); }
+.donut-legend-row { display: flex; align-items: center; gap: 8px; }
+.donut-dot { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+.donut-amt { color: var(--ink-faint); }
+
+/* ---------------------------------------------------------------- notebook pages: paper styles */
+
+[data-page-card] .title-input,
+[data-page-card] .field-grid-2 input {
+  background: var(--card-1);
+}
+.notebook-paper { background-color: var(--card-1); }
+.notebook-paper.paper-lined {
+  background-image: repeating-linear-gradient(to bottom, transparent, transparent 23px, var(--hair) 24px);
+  background-attachment: local;
+}
+.notebook-paper.paper-grid {
+  background-image:
+    repeating-linear-gradient(to bottom, transparent, transparent 23px, var(--hair) 24px),
+    repeating-linear-gradient(to right, transparent, transparent 23px, var(--hair) 24px);
+  background-attachment: local;
+}
+.notebook-paper.paper-dot {
+  background-image: radial-gradient(var(--hair) 1px, transparent 1px);
+  background-size: 16px 16px;
+  background-attachment: local;
+}
+
+/* ---------------------------------------------------------------- reflections */
+
+.ikigai-svg { width: 100%; max-width: 340px; height: auto; display: block; margin: 0 auto; }
+
+.wheel-wrap { display: flex; justify-content: center; }
+.wheel-svg { width: 100%; max-width: 320px; height: auto; }
+
+.mindmap-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 10px;
+  aspect-ratio: 1.3 / 1;
+  max-width: 560px;
+  margin: 0 auto;
+}
+.mindmap-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.mindmap-cell { position: relative; z-index: 1; }
+.mindmap-cell textarea { height: 100%; font-size: 12px; background: var(--card-1); }
+.mindmap-center textarea { background: var(--accent-subtle); border-color: var(--accent); font-family: var(--font-display); text-align: center; }
+
 /* ---------------------------------------------------------------- toast */
 
 .toast {
@@ -760,3 +960,4 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 @media (max-width: 380px) {
   .section-name { display: none; }
 }
+
