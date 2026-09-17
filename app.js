@@ -14,7 +14,6 @@
   var MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
   var MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
   var DOW_ABBR = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
-  var DOW_MIN = ["M","T","W","T","F","S","S"];
   var MOODS = ["😊","😌","😐","😔","😤","😴"];
   var TINTS = ["card", "1", "2", "3"];
   var WEATHERS = [
@@ -858,22 +857,25 @@
   /* ---- year ---- */
 
   function renderYear() {
-    var cards = "";
+    var months = "";
     for (var m = 0; m < 12; m++) {
-      cards += miniMonth(m);
+      months += yearMonthBlock(m);
     }
     var totalGoals = state.goals.length;
     var doneGoals = state.goals.filter(function (g) { return g.done; }).length;
     return (
       '<div class="view-head">' +
-        '<div><h1>Year Overview</h1><div class="sub">' + YEAR + " at a glance</div></div>" +
+        '<div><h1>' + YEAR + ' Overview</h1><div class="sub">Twelve months at a glance — tap a month to open it, and note the dates that matter.</div></div>' +
         '<div class="nav-strip">' +
           '<button id="year-prev">‹</button>' +
           '<span class="label">' + YEAR + "</span>" +
           '<button id="year-next">›</button>' +
         "</div>" +
       "</div>" +
-      '<div class="year-grid">' + cards + "</div>" +
+      '<div class="year-panel panel">' +
+        '<div class="year-subhead">Mon – Sun</div>' +
+        months +
+      "</div>" +
       '<div class="year-summary panel">' +
         '<h3>' + YEAR + " in numbers</h3>" +
         '<div class="chip-row">' +
@@ -886,45 +888,40 @@
     );
   }
 
-  function miniMonth(m) {
+  function yearMonthBlock(m) {
     var dim = daysInMonth(YEAR, m);
     var startDow = firstWeekdayMon(YEAR, m);
-    var filled = 0, total = 0;
     var cells = "";
-    DOW_MIN.forEach(function (dl) { cells += '<div class="mini-dow">' + dl + "</div>"; });
-    for (var i = 0; i < startDow; i++) cells += '<div class="mini-day empty"></div>';
+    DOW_ABBR.forEach(function (dl) { cells += '<div class="month-dow">' + dl + "</div>"; });
+    for (var i = 0; i < startDow; i++) cells += '<div class="month-cell empty"></div>';
     for (var d = 1; d <= dim; d++) {
       var dow = (startDow + d - 1) % 7;
-      var key = dateKey(YEAR, m, d);
       var isW = dow >= 5;
       var isT = isToday(YEAR, m, d);
-      total++;
-      if (state.daily[key] && (state.daily[key].top3.some(function (t) { return t.trim(); }) || state.daily[key].notes.trim())) filled++;
-      cells += '<div class="mini-day' + (isW ? " weekend" : "") + (isT ? " today" : "") + '">' + d + "</div>";
+      cells += '<div class="month-cell' + (isW ? " weekend" : "") + (isT ? " today" : "") + '"><div class="num">' + d + "</div></div>";
     }
-    var pct = total ? Math.round((filled / total) * 100) : 0;
     return (
-      '<div class="mini-month" data-month="' + m + '">' +
-        '<div class="mini-title"><span>' + MONTH_ABBR[m] + "</span><span class=\"pct\">" + pct + "%</span></div>" +
-        '<div class="mini-grid">' + cells + "</div>" +
-        '<div class="mini-key-dates"><span class="mini-key-dates-label">Key Dates</span>' +
-          '<textarea rows="2" data-mini-key-dates="' + m + '" placeholder="…">' + escapeHtml(getKeyDatesMap()[m] || "") + "</textarea>" +
+      '<div class="year-month-block" data-month="' + m + '">' +
+        '<div class="year-month-header">' + MONTH_ABBR[m] + "</div>" +
+        '<div class="month-grid">' + cells + "</div>" +
+        '<div class="year-key-dates"><span class="year-key-dates-label">Key Dates</span>' +
+          '<textarea rows="2" data-key-dates="' + m + '" placeholder="…">' + escapeHtml(getKeyDatesMap()[m] || "") + "</textarea>" +
         "</div>" +
       "</div>"
     );
   }
 
   function bindYear() {
-    document.querySelectorAll(".mini-month").forEach(function (el) {
+    document.querySelectorAll(".year-month-block").forEach(function (el) {
       el.addEventListener("click", function (e) {
-        if (e.target.closest(".mini-key-dates")) return;
+        if (e.target.closest(".year-key-dates")) return;
         go("#/month/" + el.dataset.month);
       });
     });
-    document.querySelectorAll("[data-mini-key-dates]").forEach(function (el) {
+    document.querySelectorAll("[data-key-dates]").forEach(function (el) {
       el.addEventListener("click", function (e) { e.stopPropagation(); });
       el.addEventListener("input", function () {
-        getKeyDatesMap()[parseInt(el.dataset.miniKeyDates, 10)] = el.value;
+        getKeyDatesMap()[parseInt(el.dataset.keyDates, 10)] = el.value;
         saveState();
       });
     });

@@ -513,48 +513,46 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 
 /* ---------------------------------------------------------------- year */
 
-.year-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-@media (max-width: 1100px) { .year-grid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 760px) { .year-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 480px) { .year-grid { grid-template-columns: 1fr; } }
-
-.mini-month {
-  background: var(--card-2);
-  border: 1px solid var(--hair-soft);
-  border-radius: var(--r-card);
-  padding: 12px 14px 14px;
-  cursor: pointer;
-  transition: border-color var(--dur) var(--ease), transform var(--dur) var(--ease);
-}
-.mini-month:hover { border-color: var(--accent); transform: translateY(-2px); }
-.mini-title { font-family: var(--font-display); font-size: 17px; margin-bottom: 8px; display:flex; justify-content: space-between; align-items:baseline; }
-.mini-title .pct { font-size: 11px; color: var(--ink-faint); font-family: var(--font-body); }
-.mini-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
-.mini-dow { font-size: 8.5px; text-align: center; color: var(--ink-faint); padding-bottom: 3px; }
-.mini-day { font-size: 9.5px; text-align: center; padding: 2.5px 0; border-radius: 3px; color: var(--ink-mute); }
-.mini-day.weekend { background: var(--weekend); }
-.mini-day.today { background: var(--accent); color: var(--card-1); font-weight: 600; }
-.mini-day.empty { visibility: hidden; }
-
-.mini-key-dates { margin-top: 8px; }
-.mini-key-dates-label {
-  display: block;
-  font-size: 8.5px;
+.year-panel { display: flex; flex-direction: column; }
+.year-subhead {
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: .06em;
+  letter-spacing: .08em;
   color: var(--ink-faint);
-  margin-bottom: 3px;
+  text-align: center;
+  padding-bottom: 14px;
+  margin-bottom: 22px;
+  border-bottom: 1px solid var(--hair-soft);
 }
-.mini-key-dates textarea {
-  background: var(--card-1);
+
+.year-month-block { cursor: pointer; }
+.year-month-block + .year-month-block { margin-top: 30px; }
+.year-month-header {
+  background: var(--fill-2);
+  border-radius: var(--r-cell);
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-mute);
+  padding: 8px 0;
+  margin-bottom: 10px;
+  transition: color var(--dur) var(--ease);
+}
+.year-month-block:hover .year-month-header { color: var(--accent-text); }
+
+.year-key-dates { margin-top: 12px; }
+.year-key-dates-label {
+  display: block;
+  text-align: center;
   font-size: 10.5px;
-  padding: 5px 6px;
-  resize: none;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--ink-faint);
+  margin-bottom: 6px;
 }
+.year-key-dates textarea { resize: vertical; min-height: 46px; }
 
 .year-summary { margin-top: 26px; }
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
