@@ -686,6 +686,7 @@
 
   var TAB_ITEMS = [
     { id: "cover", icon: "home" },
+    { id: "year", icon: "year" },
     { id: "month", icon: "month" },
     { id: "week", icon: "week" },
     { id: "day", icon: "pencil" },
