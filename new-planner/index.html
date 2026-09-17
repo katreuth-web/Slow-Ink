@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <title>New Planner — Digital Life Planner</title>
+    <meta
+      name="description"
+      content="New Planner is a private, editorial-inspired digital life planner — year, month, week and day views, time-blocking, habits, finance and fitness tracking, and a notes workspace. Built with plain HTML5, CSS and JavaScript."
+    />
+    <meta name="theme-color" content="#FBF8F2" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%231A1208'/%3E%3Ctext x='20' y='27' font-family='Georgia,serif' font-size='20' fill='%23FBF8F2' text-anchor='middle'%3EN%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app" id="app">
+      <!-- Left navigation rail (desktop) / bottom bar (mobile) -->
+      <nav class="rail" id="rail" aria-label="Main navigation">
+        <div class="rail-brand">
+          <span class="rail-mark">N</span>
+          <span class="rail-name">New&nbsp;Planner</span>
+        </div>
+        <div class="rail-links" id="rail-links"></div>
+        <div class="rail-foot">
+          <button id="btn-theme" class="rail-icon-btn" title="Toggle light / dark">
+            <span id="theme-icon">☾</span>
+          </button>
+          <button id="btn-menu" class="rail-icon-btn rail-menu-btn" title="More">⋯</button>
+        </div>
+      </nav>
+
+      <!-- Primary content -->
+      <div class="shell">
+        <header class="topbar">
+          <div class="crumbs" id="crumbs"></div>
+          <div class="topbar-actions">
+            <button class="btn-ghost" id="btn-today">Today</button>
+            <button class="btn-primary" id="btn-quick-add">+ New</button>
+          </div>
+        </header>
+        <main class="view" id="view" tabindex="-1"></main>
+      </div>
+    </div>
+
+    <!-- Overflow sheet for mobile / secondary actions -->
+    <div class="sheet-scrim" id="sheet-scrim"></div>
+    <aside class="sheet" id="sheet" aria-label="More options">
+      <div class="sheet-head">
+        <span>More</span>
+        <button id="sheet-close" aria-label="Close">✕</button>
+      </div>
+      <button class="sheet-link" id="sheet-export">Export planner (JSON)</button>
+      <label class="sheet-link" id="sheet-import-label">
+        Import planner (JSON)
+        <input type="file" id="input-import" accept="application/json" hidden />
+      </label>
+      <button class="sheet-link" id="sheet-seed">Load sample data</button>
+      <button class="sheet-link sheet-danger" id="sheet-reset">Reset planner</button>
+      <div class="sheet-note">
+        New Planner keeps everything on this device only — nothing is uploaded or shared.
+        External calendar sync (Google / Apple / Outlook) is not yet connected in this build.
+      </div>
+    </aside>
+
+    <!-- Generic modal host -->
+    <div class="modal-scrim" id="modal-scrim"></div>
+    <div class="modal" id="modal" role="dialog" aria-modal="true"></div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
