@@ -566,6 +566,15 @@
   function isToday(y, m, d) { return now.getFullYear() === y && now.getMonth() === m && now.getDate() === d; }
   function clampMonth(m) { m = parseInt(m, 10); if (isNaN(m)) m = 0; return Math.min(11, Math.max(0, m)); }
 
+  // Same Monday-start week numbering as buildWeeks()/the Week page, so the
+  // numbers shown in the Year Overview line up with "Week N" elsewhere.
+  function weekIndexFor(y, m, d) {
+    var dow0 = (new Date(YEAR, 0, 1).getDay() + 6) % 7;
+    var weekStart0 = new Date(YEAR, 0, 1 - dow0);
+    var diffDays = Math.round((new Date(y, m, d) - weekStart0) / 86400000);
+    return Math.floor(diffDays / 7) + 1;
+  }
+
   var WEEKS = buildWeeks(YEAR);
 
   function buildWeeks(year) {
@@ -890,17 +899,27 @@
     var dim = daysInMonth(YEAR, m);
     var startDow = firstWeekdayMon(YEAR, m);
     var filled = 0, total = 0;
-    var cells = "";
+    var baseWeek = weekIndexFor(YEAR, m, 1);
+    var rows = Math.ceil((startDow + dim) / 7);
+    var cells = '<div class="mini-weeknum"></div>';
     DOW_MIN.forEach(function (dl) { cells += '<div class="mini-dow">' + dl + "</div>"; });
-    for (var i = 0; i < startDow; i++) cells += '<div class="mini-day empty"></div>';
-    for (var d = 1; d <= dim; d++) {
-      var dow = (startDow + d - 1) % 7;
-      var key = dateKey(YEAR, m, d);
-      var isW = dow >= 5;
-      var isT = isToday(YEAR, m, d);
-      total++;
-      if (state.daily[key] && (state.daily[key].top3.some(function (t) { return t.trim(); }) || state.daily[key].notes.trim())) filled++;
-      cells += '<div class="mini-day' + (isW ? " weekend" : "") + (isT ? " today" : "") + '">' + d + "</div>";
+    var d = 1;
+    for (var row = 0; row < rows; row++) {
+      cells += '<div class="mini-weeknum">' + (baseWeek + row) + "</div>";
+      for (var col = 0; col < 7; col++) {
+        var slot = row * 7 + col;
+        if (slot < startDow || d > dim) {
+          cells += '<div class="mini-day empty"></div>';
+          continue;
+        }
+        var key = dateKey(YEAR, m, d);
+        var isW = col >= 5;
+        var isT = isToday(YEAR, m, d);
+        total++;
+        if (state.daily[key] && (state.daily[key].top3.some(function (t) { return t.trim(); }) || state.daily[key].notes.trim())) filled++;
+        cells += '<div class="mini-day' + (isW ? " weekend" : "") + (isT ? " today" : "") + '">' + d + "</div>";
+        d++;
+      }
     }
     var pct = total ? Math.round((filled / total) * 100) : 0;
     return (

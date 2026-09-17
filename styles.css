@@ -533,7 +533,8 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 .mini-month:hover { border-color: var(--accent); transform: translateY(-2px); }
 .mini-title { font-family: var(--font-display); font-size: 17px; margin-bottom: 8px; display:flex; justify-content: space-between; align-items:baseline; }
 .mini-title .pct { font-size: 11px; color: var(--ink-faint); font-family: var(--font-body); }
-.mini-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.mini-grid { display: grid; grid-template-columns: 14px repeat(7, 1fr); gap: 2px; }
+.mini-weeknum { font-size: 7.5px; text-align: center; color: var(--ink-faint); align-self: center; font-variant-numeric: tabular-nums; }
 .mini-dow { font-size: 8.5px; text-align: center; color: var(--ink-faint); padding-bottom: 3px; }
 .mini-day { font-size: 9.5px; text-align: center; padding: 2.5px 0; border-radius: 3px; color: var(--ink-mute); }
 .mini-day.weekend { background: var(--weekend); }
