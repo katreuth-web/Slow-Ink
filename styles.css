@@ -526,33 +526,42 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 }
 
 .year-month-block { cursor: pointer; }
-.year-month-block + .year-month-block { margin-top: 30px; }
+.year-month-block + .year-month-block { margin-top: 18px; }
 .year-month-header {
   background: var(--fill-2);
   border-radius: var(--r-cell);
   text-align: center;
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 12px;
   letter-spacing: .08em;
   text-transform: uppercase;
   color: var(--ink-mute);
-  padding: 8px 0;
-  margin-bottom: 10px;
+  padding: 5px 0;
+  margin-bottom: 6px;
   transition: color var(--dur) var(--ease);
 }
 .year-month-block:hover .year-month-header { color: var(--accent-text); }
 
-.year-key-dates { margin-top: 12px; }
+/* Compact the shared month-grid/month-cell components (also used by the
+   full Month page) just within the Year Overview's stacked months. */
+.year-month-block .month-grid { gap: 3px; margin-top: 0; }
+.year-month-block .month-dow { font-size: 9px; padding-bottom: 3px; }
+.year-month-block .month-cell { min-height: 32px; padding: 3px 4px; border-radius: 5px; }
+.year-month-block .month-cell .num { font-size: 10.5px; }
+.year-month-block .month-cell .dot-row { margin-top: 2px; gap: 2px; }
+.year-month-block .month-cell .dot { width: 4px; height: 4px; }
+
+.year-key-dates { margin-top: 8px; }
 .year-key-dates-label {
   display: block;
   text-align: center;
-  font-size: 10.5px;
+  font-size: 9.5px;
   text-transform: uppercase;
   letter-spacing: .07em;
   color: var(--ink-faint);
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
-.year-key-dates textarea { resize: vertical; min-height: 46px; }
+.year-key-dates textarea { resize: vertical; min-height: 36px; font-size: 12.5px; padding: 6px 8px; }
 
 .year-summary { margin-top: 26px; }
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
