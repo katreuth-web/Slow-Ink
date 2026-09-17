@@ -546,7 +546,7 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
    full Month page) just within the Year Overview's stacked months. */
 .year-month-block .month-grid { gap: 3px; margin-top: 0; }
 .year-month-block .month-dow { font-size: 9px; padding-bottom: 3px; }
-.year-month-block .month-cell { min-height: 32px; padding: 3px 4px; border-radius: 5px; }
+.year-month-block .month-cell { aspect-ratio: 1.3 / 1; min-height: 0; padding: 3px 4px; border-radius: 5px; }
 .year-month-block .month-cell .num { font-size: 10.5px; }
 .year-month-block .month-cell .dot-row { margin-top: 2px; gap: 2px; }
 .year-month-block .month-cell .dot { width: 4px; height: 4px; }
@@ -966,5 +966,12 @@ textarea:focus, input:focus, select:focus { border-color: var(--accent); }
 
 @media (max-width: 380px) {
   .section-name { display: none; }
+}
+
+/* Phone in landscape (wide but short) — cap the Year Overview's width so
+   its compact month cells (sized by aspect-ratio) don't balloon to match
+   the full viewport width; everything else on the page is unaffected. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .year-panel { max-width: 560px; margin: 0 auto; }
 }
 
