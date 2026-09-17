@@ -9,7 +9,7 @@ Cover · Year Overview · Monthly · Weekly · Daily · Habit Tracker · Goals �
 ## Features
 
 - Full 2027 calendar logic (year/month/week/day views, all linked together), with multi-year support underneath
-- Three hand-mixed colour themes — **Greek Marble** (light), **Soft Black** (dark) and **Midnight Luxury** (dark) — pick one from the menu
+- Three colour themes — **Editorial** (light, monochrome ink-on-cream with a bold italic serif), **Soft Black** (dark) and **Midnight Luxury** (dark) — pick one from the menu
 - Budget tracking with a category breakdown chart, savings goals, bills and debts
 - Workout logging, body measurements and cycle tracking
 - A notebook with lined, grid and dot paper styles, plus ikigai, wheel of life, stoic journaling exercises and mind maps
