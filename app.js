@@ -189,7 +189,6 @@
   /* ------------------------------------------------------------- rail / routing */
 
   var SECTIONS = [
-    { id: "cover", label: "Cover" },
     { id: "year", label: "Year" },
     { id: "month", label: "Month" },
     { id: "week", label: "Week" },
@@ -1074,7 +1073,6 @@
   document.getElementById("btn-menu").innerHTML = icon("menu");
   document.getElementById("drawer-close").innerHTML = icon("close");
   document.getElementById("btn-menu").addEventListener("click", openDrawer);
-  document.getElementById("btn-topbar-left").addEventListener("click", openDrawer);
   document.getElementById("drawer-close").addEventListener("click", closeDrawer);
   document.getElementById("drawer-scrim").addEventListener("click", closeDrawer);
 
