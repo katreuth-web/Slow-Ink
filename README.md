@@ -18,6 +18,10 @@ Cover · Year Overview · Monthly · Weekly · Daily · Habit Tracker · Goals �
 - Export/import your planner as a JSON file, or reset it entirely
 - Responsive layout for smaller screens
 
+## Also in this repo
+
+- **[Slow Ink Life](life-planner/)** — a soft neumorphic, all-in-one life planner with linked yearly/monthly/weekly/daily spreads, period reviews, life hubs (habits & fitness, meals, finance, mind, travel, home care), a multi-paper notebook and monday.com board sync. See [`life-planner/README.md`](life-planner/README.md).
+
 ## Running locally
 
 This is a static site — no build step required. Serve the folder with any static file server, e.g.:
