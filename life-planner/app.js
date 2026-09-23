@@ -524,6 +524,7 @@
         return '<a class="nav-link ' + (r.name === it[0] ? "active" : "") + '" href="' + navHref(it[0]) + '"' + (r.name === it[0] ? ' aria-current="page"' : "") + ">" + ic(it[2]) + "<span>" + esc(it[1]) + "</span></a>";
       }).join("") + "</div>";
     });
+    sb += '<div class="nav-group"><a class="nav-link" href="../">' + ic("arrow") + "<span>Back to Slow Ink</span></a></div>";
     sb += '<div class="sidebar-foot"><button class="icon-btn" data-act="theme" aria-label="Toggle dark mode" title="Toggle light / dark">' + ic(state.theme === "dark" ? "sun" : "moon") + '</button><a class="icon-btn" href="#/settings" aria-label="Settings" title="Settings">' + ic("sliders") + "</a></div>";
     $("#sidebar").innerHTML = sb;
 
@@ -1565,7 +1566,7 @@
     NAV.forEach(function (g) {
       html += '<div class="nav-label">' + g.group + '</div><div class="tile-links" style="margin-bottom:10px">' + g.items.map(function (it) { return '<a class="tile-link" href="' + navHref(it[0]) + '">' + ic(it[2]) + "<span>" + esc(it[1]) + "</span></a>"; }).join("") + "</div>";
     });
-    html += '<div class="row" style="margin-top:6px"><button class="btn" data-act="theme">' + ic(state.theme === "dark" ? "sun" : "moon") + (state.theme === "dark" ? " Light mode" : " Dark mode") + "</button></div>";
+    html += '<div class="row" style="margin-top:6px"><a class="btn" href="../">' + ic("arrow") + ' Slow Ink</a><button class="btn" data-act="theme">' + ic(state.theme === "dark" ? "sun" : "moon") + (state.theme === "dark" ? " Light mode" : " Dark mode") + "</button></div>";
     $("#sheet").innerHTML = html;
     $("#sheet").hidden = false;
     $("#sheet-scrim").hidden = false;

@@ -336,6 +336,7 @@ a { color: inherit; }
 .drawer-icon svg { width: 17px; height: 17px; }
 .drawer-link.active .drawer-icon { color: var(--accent-text); }
 .drawer-actions .drawer-link { color: var(--ink-mute); font-size: 13px; }
+a.drawer-link { text-decoration: none; }
 .drawer-actions .drawer-danger { color: #a5555a; }
 
 /* ---------------------------------------------------------------- cards & shared bits */
