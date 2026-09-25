@@ -1,8 +1,7 @@
 /* ===================================================================
    Slow Ink Life — all-in-one digital planner
    Vanilla JS single-page app. No build step, no dependencies.
-   Everything is stored in localStorage on this device; the optional
-   monday.com board sync talks to api.monday.com with your own token.
+   Everything is stored in localStorage on this device.
    =================================================================== */
 
 (function () {
@@ -73,7 +72,6 @@
     plane: '<path d="M21.5 2.5L10.5 13.5"/><path d="M21.5 2.5l-7 19-4-8-8-4z"/>',
     house: '<path d="M4 11l8-6.5 8 6.5v9H4z"/><path d="M12 11.5l.9 1.9 1.9.9-1.9.9-.9 1.9-.9-1.9-1.9-.9 1.9-.9z"/>',
     book: '<rect x="5" y="3" width="15" height="18" rx="2.5"/><path d="M9 3v18M3 7.5h4M3 12h4M3 16.5h4"/>',
-    sync: '<path d="M20 11a8 8 0 0 0-14.3-4.9L4 8"/><path d="M4 3v5h5"/><path d="M4 13a8 8 0 0 0 14.3 4.9L20 16"/><path d="M20 21v-5h-5"/>',
     sliders: '<path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     x: '<path d="M6 6l12 12M18 6L6 18"/>',
@@ -202,7 +200,6 @@
       chores: seedChores(),
       choreDone: {},
       notebook: {},
-      sync: { token: "", boardId: "", scope: "week", map: {}, log: [], pulled: [], boardName: "" },
       ui: { tabs: {} }
     };
   }
@@ -219,7 +216,11 @@
   function load() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return merge(defaults(), JSON.parse(raw));
+      if (raw) {
+        var saved = JSON.parse(raw);
+        if (saved) delete saved.sync; /* drop settings left over from the removed board sync */
+        return merge(defaults(), saved);
+      }
     } catch (e) { /* fall through to defaults */ }
     return defaults();
   }
@@ -507,7 +508,7 @@
     { group: "Plan", items: [["home", "Today", "home"], ["year", "Year", "year"], ["month", "Month", "month"], ["week", "Week", "week"], ["day", "Day", "sun"]] },
     { group: "Life", items: [["habits", "Habits & Fitness", "dumbbell"], ["meals", "Meals & Recipes", "bowl"], ["finance", "Finance", "wallet"], ["mind", "Mind & Ikigai", "lotus"], ["travel", "Travel", "plane"], ["home-care", "Home & Chores", "house"]] },
     { group: "Journal", items: [["notebook", "Notebook", "book"]] },
-    { group: "System", items: [["sync", "Board Sync", "sync"], ["settings", "Settings", "sliders"]] }
+    { group: "System", items: [["settings", "Settings", "sliders"]] }
   ];
   function navHref(id) {
     if (id === "year") return hrefYear(focusDate);
@@ -1338,125 +1339,6 @@
     reader.readAsDataURL(file);
   }
 
-  /* ------------------------------------------------------------ views: sync (monday.com) */
-
-  var syncBusy = false;
-  function syncLog(msg) {
-    state.sync.log.unshift(new Date().toLocaleTimeString() + "  " + msg);
-    state.sync.log = state.sync.log.slice(0, 60);
-    save();
-  }
-  function mondayQ(query, variables) {
-    if (!state.sync.token) return Promise.reject(new Error("Add your monday.com API token first."));
-    return fetch("https://api.monday.com/v2", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: state.sync.token, "API-Version": "2024-10" },
-      body: JSON.stringify({ query: query, variables: variables || {} })
-    }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); }).then(function (res) {
-      var j = res.j;
-      if (j.errors && j.errors.length) throw new Error(j.errors.map(function (e) { return e.message; }).join("; "));
-      if (j.error_message) throw new Error(j.error_message);
-      if (!res.ok) throw new Error("HTTP error from monday.com");
-      return j.data;
-    });
-  }
-  function syncRange() {
-    var t = today(), sc = state.sync.scope;
-    if (sc === "today") return [t, t];
-    if (sc === "month") return [new Date(t.getFullYear(), t.getMonth(), 1), new Date(t.getFullYear(), t.getMonth() + 1, 0)];
-    var m = mondayOf(t); return [m, addDays(m, 6)];
-  }
-  function boardColumns() {
-    return mondayQ("query($b:[ID!]){ boards(ids:$b){ name columns{ id title type } } }", { b: [String(state.sync.boardId)] }).then(function (d) {
-      var b = d.boards && d.boards[0];
-      if (!b) throw new Error("Board " + state.sync.boardId + " not found — check the board ID and token permissions.");
-      state.sync.boardName = b.name;
-      var status = b.columns.filter(function (c) { return c.type === "status"; })[0];
-      var date = b.columns.filter(function (c) { return c.type === "date"; })[0];
-      return { name: b.name, status: status && status.id, date: date && date.id };
-    });
-  }
-  function runSync(kind) {
-    if (syncBusy) return;
-    if (!state.sync.boardId) { toast("Add the board ID first."); return; }
-    syncBusy = true;
-    render();
-    var p;
-    if (kind === "test") {
-      p = boardColumns().then(function (c) { syncLog("Connected to board “" + c.name + "” · status column: " + (c.status || "none") + " · date column: " + (c.date || "none")); });
-    } else if (kind === "push") {
-      p = boardColumns().then(function (cols) {
-        var r = syncRange(), jobs = [];
-        for (var d = r[0]; d <= r[1]; d = addDays(d, 1)) {
-          var k = ymd(d), day = peekDay(k);
-          if (!day) continue;
-          (day.tasks || []).forEach(function (t) { if (t.text) jobs.push({ t: t, k: k }); });
-        }
-        var created = 0, updated = 0;
-        return jobs.reduce(function (chain, job) {
-          return chain.then(function () {
-            var v = {};
-            if (cols.status) v[cols.status] = { label: job.t.done ? "Done" : "Working on it" };
-            if (cols.date) v[cols.date] = { date: job.k };
-            var itemId = state.sync.map[job.t.id];
-            if (itemId) {
-              return mondayQ("mutation($b:ID!,$i:ID!,$v:JSON!){ change_multiple_column_values(board_id:$b, item_id:$i, column_values:$v, create_labels_if_missing:true){ id } }", { b: String(state.sync.boardId), i: String(itemId), v: JSON.stringify(v) })
-                .then(function () { updated++; });
-            }
-            return mondayQ("mutation($b:ID!,$n:String!,$v:JSON){ create_item(board_id:$b, item_name:$n, column_values:$v, create_labels_if_missing:true){ id } }", { b: String(state.sync.boardId), n: job.t.text, v: JSON.stringify(v) })
-              .then(function (dd) { state.sync.map[job.t.id] = dd.create_item.id; created++; });
-          });
-        }, Promise.resolve()).then(function () { syncLog("Pushed " + jobs.length + " task(s): " + created + " created, " + updated + " updated on “" + cols.name + "”."); });
-      });
-    } else {
-      p = mondayQ("query($b:[ID!]){ boards(ids:$b){ name items_page(limit:100){ items{ id name column_values{ id type text } } } } }", { b: [String(state.sync.boardId)] }).then(function (d) {
-        var b = d.boards && d.boards[0];
-        if (!b) throw new Error("Board not found.");
-        var items = b.items_page.items.map(function (it) {
-          var st = it.column_values.filter(function (c) { return c.type === "status"; })[0];
-          var dt = it.column_values.filter(function (c) { return c.type === "date"; })[0];
-          return { id: it.id, name: it.name, status: st ? st.text || "" : "", date: dt && dt.text ? dt.text.slice(0, 10) : "" };
-        });
-        state.sync.pulled = items;
-        var inverse = {};
-        Object.keys(state.sync.map).forEach(function (tid) { inverse[state.sync.map[tid]] = tid; });
-        var changed = 0;
-        items.forEach(function (it) {
-          var tid = inverse[it.id];
-          if (!tid) return;
-          Object.keys(state.days).forEach(function (k) {
-            (state.days[k].tasks || []).forEach(function (t) {
-              if (t.id === tid) {
-                var done = /done|complete/i.test(it.status);
-                if (!!t.done !== done) { t.done = done; changed++; }
-                if (t.text !== it.name) { t.text = it.name; changed++; }
-              }
-            });
-          });
-        });
-        syncLog("Pulled " + items.length + " item(s) from “" + b.name + "” · " + changed + " local change(s) applied.");
-      });
-    }
-    p.catch(function (e) { syncLog("⚠ " + e.message); toast(e.message); }).then(function () { syncBusy = false; save(); render(); });
-  }
-
-  function viewSync() {
-    var s = state.sync, inverse = {};
-    Object.keys(s.map).forEach(function (tid) { inverse[s.map[tid]] = tid; });
-    var pulled = s.pulled.length ? '<div class="scroll-x"><table class="table"><tr><th>Item</th><th>Status</th><th>Date</th><th></th></tr>' + s.pulled.map(function (it) {
-      return "<tr><td>" + esc(it.name) + '</td><td><span class="status-pill">' + esc(it.status || "—") + "</span></td><td>" + esc(it.date || "—") + "</td><td>" + (inverse[it.id] ? '<span class="badge sage">linked</span>' : '<button class="btn sm" data-act="sync-import" data-id="' + esc(it.id) + '">' + ic("download") + " Import</button>") + "</td></tr>";
-    }).join("") + "</table></div>" : '<div class="empty">Pull from your board to see its items here.</div>';
-    var busy = syncBusy ? " disabled" : "";
-    return head("System · Integrations", 'Live board <span class="em">sync</span>', s.boardName ? '<span class="badge sage">Connected · ' + esc(s.boardName) + "</span>" : "") +
-      '<div class="grid"><div class="c5 stack">' + card("Connect your monday board", '<p class="small muted" style="margin-top:0">Sync planner tasks, deadlines and statuses with your <b>PDF Digital Planner</b> monday.com board. Create a personal API token in monday.com under <i>Avatar → Developers → My access tokens</i>. The token stays in this browser only and is sent directly to api.monday.com.</p>' +
-        '<label class="lbl">API token</label><input type="password" data-bind="sync.token" value="' + esc(s.token) + '" placeholder="eyJhbGciOi…" autocomplete="off"><div class="spacer"></div>' +
-        '<label class="lbl">Board ID</label>' + bindInput("sync.boardId", 'placeholder="e.g. 1234567890" inputmode="numeric"') + '<p class="small muted">The number in your board URL: monday.com/boards/<b>1234567890</b></p>' +
-        '<button class="btn" data-act="sync-run" data-val="test"' + busy + ">" + ic("check") + " Test connection</button>", { cls: "tint-pink", dot: "p" }) +
-        card("Push planner → board", '<label class="lbl">Which tasks</label>' + bindSelect("sync.scope", [["today", "Today"], ["week", "This week"], ["month", "This month"]]) + '<p class="small muted">Each task becomes an item; its day fills the first date column and done/open sets the first status column (“Done” / “Working on it”). Re-pushing updates the linked item instead of duplicating it.</p><button class="btn pink" data-act="sync-run" data-val="push"' + busy + ">" + ic("upload") + " Push tasks</button>", { dot: "b" }) + "</div>" +
-        '<div class="c7 stack">' + card("Board items", '<div class="row" style="margin-bottom:12px"><button class="btn butter" data-act="sync-run" data-val="pull"' + busy + ">" + ic("sync") + (syncBusy ? " Syncing…" : " Pull & sync statuses") + '</button><span class="small muted">Linked tasks pick up status and name changes made on the board.</span></div>' + pulled, { dot: "k" }) +
-        card("Activity", s.log.length ? '<div class="sync-log inset">' + esc(s.log.join("\n")) + "</div>" : '<div class="empty">No sync activity yet.</div>', { dot: "l" }) + "</div></div>";
-  }
-
   /* ------------------------------------------------------------ views: settings */
 
   function viewSettings() {
@@ -1533,7 +1415,6 @@
             if (routeChanged) undoStack = [];
           } else html = viewNotebookIndex();
           break;
-        case "sync": html = viewSync(); break;
         case "settings": html = viewSettings(); break;
         default: r.name = "home"; focusDate = today(); html = viewHome();
       }
@@ -1880,15 +1761,6 @@
         nxt.priorities = (nxt.priorities || []).concat(pr.map(function (x) { return { id: uid(), text: x.text, done: false }; }));
         save(); toast(pr.length + " priorit" + (pr.length === 1 ? "y" : "ies") + " copied to next week"); return;
       }
-      case "sync-run": runSync(d.val); return;
-      case "sync-import": {
-        var it2 = state.sync.pulled.filter(function (x) { return x.id === d.id; })[0];
-        if (!it2) return;
-        var dk = it2.date || todayKey(), day = ensureDay(dk), tid = uid();
-        day.tasks.push({ id: tid, text: it2.name, done: /done|complete/i.test(it2.status), prio: 0 });
-        state.sync.map[tid] = it2.id;
-        save(); render(); toast("Imported to " + shortDay(parseD(dk))); return;
-      }
       case "export": exportData(); return;
       case "reset":
         if (!confirm("Reset the whole planner? Export a backup first — this erases everything on this device.")) return;
@@ -1934,6 +1806,7 @@
       try {
         var data = JSON.parse(rd.result);
         if (!data || typeof data !== "object" || !data.days) throw new Error("bad");
+        delete data.sync;
         state = merge(defaults(), data);
         saveNow(); render(); toast("Planner imported ✨");
       } catch (e) { toast("That file doesn't look like a Slow Ink Life backup."); }

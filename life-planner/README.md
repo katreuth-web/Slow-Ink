@@ -23,16 +23,8 @@ Navigation is a floating glass sidebar on desktop and an iOS-style neumorphic do
 | Travel | Trips with itinerary, packing list (with an essentials preset), daily outfits and a budget; plus a bucket list |
 | Home & Chores | Daily / weekly / monthly / seasonal chore charts by room, with an assignee field; check-offs reset automatically each period |
 | Notebook | Blank, lined, square grid, dot grid, Cornell notes, two-column, three-column, mind map (drag bubbles, add branches) and vision board (image tiles) — lined/grid/dot/Cornell/column pages also take pen, highlighter and eraser ink with undo |
-| Board Sync | Push tasks (today / this week / this month) to a monday.com board and pull statuses back — see below |
 
 Soft light and soft dark themes; everything is saved to `localStorage`, with JSON export/import and reset under **Settings**.
-
-## monday.com board sync
-
-The **Board Sync** page connects to your *PDF Digital Planner* monday board with a personal API token (monday.com → avatar → Developers → My access tokens) and the board ID from its URL. The token is stored only in this browser and sent straight to `api.monday.com`.
-
-- **Push** creates an item per task, fills the board's first date column with the task's day and its first status column with "Done" / "Working on it". Re-pushing updates the linked item instead of duplicating it.
-- **Pull** lists the board's items, applies status and name changes back to linked tasks, and lets you import unlinked items as tasks on their date.
 
 ## Running locally
 
