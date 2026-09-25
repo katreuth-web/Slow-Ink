@@ -4,7 +4,7 @@ A glassmorphic, all-in-one digital life planner in crisp whites and pastel purpl
 
 ## App flow
 
-- **Quick-flip ribbon.** The top ribbon switches between Planner, Life Design, Wellness, Notebook, AI Coach and Board Sync. A sub-ribbon lists the pages in each section.
+- **Quick-flip ribbon.** The top ribbon switches between Planner, Life Design, Wellness, Notebook, and AI Coach. A sub-ribbon lists the pages in each section.
 - **Calendar horizons.** Year → Month → Week → Daily Focus. Month names, week numbers and dates link to their pages. A side index of month tabs sits on every calendar page and becomes a horizontal strip on phones.
 - **Cards everywhere.** Every item on every page is its own frosted-glass card.
 
@@ -20,7 +20,6 @@ A glassmorphic, all-in-one digital life planner in crisp whites and pastel purpl
 | Wellness | Habits (streaks, best streaks, monthly grid) · Finances (income, expenses, category budgets, spending donut, savings goals) · Meals (weekly planner, aisle-sorted grocery list, recipe cards) · Fitness (workout log, weekly minutes ring, weight trend chart) |
 | Notebook | Blank, lined, dot grid, squared, Cornell, 2-column and 3-column paper. An iOS-style **Type / Markup** segmented toggle switches between typing and drawing. Markup mode has a floating palette with pen, marker, pencil and eraser, seven inks, stroke width, undo/redo and clear. It supports Apple Pencil pressure and ignores your palm once a stylus is in use. |
 | AI Coach | **Habit & Journal Analyzer** finds patterns across mood, hydration, focus, habits, workouts and reflections on-device, with optional written coaching from Claude · **Priority Synthesizer** turns brain dumps or notebook pages into Eisenhower-sorted actions and SMART goal ideas |
-| Board Sync | Push tasks (today / week / month) to a monday.com board with status and date, pull changes back, import board items |
 
 ### Image uploads
 
@@ -29,10 +28,6 @@ Recipe cards and the vision board accept photos. You can pick a file or drag and
 ### AI coach and Claude
 
 Without an API key, the coach works entirely offline with on-device rules. You can add your own Claude API key under **AI Coach → Coach settings**. The browser then calls `api.anthropic.com` directly: Claude Opus 5 by default, or Claude Sonnet 5. The key is stored only in this browser. The synthesizer uses structured JSON output so its suggestions map straight onto the matrix and goals.
-
-### monday.com
-
-**Board Sync** takes a personal API token and a board ID. Push creates or updates one item per task and fills the board's first status and date columns. Pull applies status and name changes back to your tasks.
 
 ## Data
 

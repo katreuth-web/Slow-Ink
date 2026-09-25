@@ -14,7 +14,7 @@
       '<button class="btn" data-act="export">' + ic("download") + "Export backup (.json)</button>" +
       '<label class="btn ghost">' + ic("upload") + 'Import backup<input type="file" accept="application/json,.json" hidden id="import-file" /></label>' +
       '<button class="btn danger" data-act="reset">' + ic("trash") + "Reset planner</button></div>" +
-      '<label class="lbl">About</label><p class="small muted" style="margin:0">Aura is a static app — no account, no server. The AI coach and board sync only talk to Anthropic and monday.com when you add your own keys.</p>'
+      '<label class="lbl">About</label><p class="small muted" style="margin:0">Aura is a static app — no account, no server. The only outside connection is the optional AI coach, which talks to Anthropic when you add your own API key.</p>'
     );
   };
   A.acts["close-drawer"] = function () { A.closeDrawer(); A.render(); };

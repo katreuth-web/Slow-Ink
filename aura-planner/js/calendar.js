@@ -247,7 +247,6 @@
     var tasks = '<ul class="list">' + day.tasks.map(function (t, i) {
       var q = t.q || "";
       return '<li class="li' + (t.done ? " done" : "") + '">' + A.checkbox(base + ".tasks." + i + ".done") + A.input(base + ".tasks." + i + ".text", "", "bare") +
-        (A.state.sync.map[t.id] ? '<i class="sync-dot" title="Synced to your board"></i>' : "") +
         '<button class="q-tag q-' + (q || "none") + '" data-act="task-quad" data-k="' + k + '" data-i="' + i + '" title="Eisenhower quadrant — tap to change">' + (A.QUADS[q] || "Tag") + "</button>" +
         '<button class="x-btn" data-act="list-remove" data-list="' + base + '.tasks" data-idx="' + i + '" aria-label="Remove task">' + ic("x") + "</button></li>";
     }).join("") + "</ul>" +
@@ -307,7 +306,7 @@
       '<div class="grid">' +
       '<div class="c4 stack">' +
         A.card("Top 3 priorities", top3, { icon: "star", tone: "pink" }) +
-        A.card("Tasks", tasks, { icon: "list", sub: "Tag each task with an Eisenhower quadrant. Synced tasks show a green dot.", tools: '<a class="btn xs soft" href="#/sync">' + ic("sync") + "Board</a>" }) +
+        A.card("Tasks", tasks, { icon: "list", sub: "Tag each task with an Eisenhower quadrant.", tools: '<a class="btn xs soft" href="#/matrix">' + ic("grid") + "Matrix</a>" }) +
       "</div>" +
       '<div class="c4">' + A.card("Schedule", sched, { icon: "clock", tone: "sky", sub: "6 AM – 11 PM" }) + "</div>" +
       '<div class="c4 stack">' +

@@ -360,7 +360,6 @@ img { max-width: 100%; display: block; }
 .q-do { background: #ffe1ec; color: #d44a82; } .q-plan { background: var(--lav-soft); color: var(--lav-3); }
 .q-delegate { background: var(--sky-soft); color: #3a73c8; } .q-drop { background: #f0eef5; color: var(--muted); }
 .q-none { background: #f6f4fa; color: var(--faint); }
-.sync-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--mint); flex: 0 0 auto; }
 
 .pager { display: flex; align-items: center; gap: 6px; }
 .crumbs { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-bottom: 4px; }

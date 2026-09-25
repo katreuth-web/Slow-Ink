@@ -258,7 +258,7 @@
     }).join("") : "";
     var results = r ? '<div class="tip" style="margin-bottom:12px">' + esc(r.summary) + (r.source === "claude" ? ' <span class="badge">Claude</span>' : ' <span class="badge grey">on-device</span>') + "</div>" + (groups || '<div class="empty">No actions found.</div>') +
       (goals ? '<p class="lbl" style="margin-top:16px">SMART goal ideas</p>' + goals : "") +
-      '<div class="row wrap" style="margin-top:14px"><button class="btn sm" data-act="synth-all">' + ic("grid") + 'Send all to matrix</button><button class="btn sm ghost" data-act="synth-do-today">' + ic("bolt") + 'Do-first → today</button><a class="btn sm ghost" href="#/sync">' + ic("sync") + "Push to board</a></div>"
+      '<div class="row wrap" style="margin-top:14px"><button class="btn sm" data-act="synth-all">' + ic("grid") + 'Send all to matrix</button><button class="btn sm ghost" data-act="synth-do-today">' + ic("bolt") + 'Do-first → today</button></div>'
       : '<div class="empty">Paste a brain dump, meeting notes or a messy to-do list and hit Synthesize.</div>';
     return A.head("AI pattern hub", 'Priority <span class="soft">synthesizer</span>', "Turn freeform thoughts into prioritised actions mapped to your Eisenhower matrix and SMART goals.") +
       '<div class="grid">' +

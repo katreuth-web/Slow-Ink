@@ -80,7 +80,6 @@
       fitness: { workouts: [], weights: [], unit: "lb", goalWeight: "", weeklyTarget: 150 },
       notebook: { pages: [], current: "" },
       coach: { key: "", model: "claude-opus-5", analysis: "", analysisAt: "", synthInput: "", synth: null, synthAt: "" },
-      sync: { token: "", boardId: "", boardName: "", map: {}, scope: "week", log: [], pulled: [] },
       ui: { mealWeek: "", finMonth: "", mmSel: "root" }
     };
   };
@@ -97,6 +96,7 @@
     var saved = null;
     try { saved = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { saved = null; }
     A.state = merge(A.defaults(), saved || {});
+    delete A.state.sync; /* drop settings left over from the removed board sync */
   };
   var quotaWarned = false;
   A.saveNow = function () {
@@ -248,7 +248,6 @@
     leaf: '<path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14"/><path d="M5 19 13 11"/>',
     notebook: '<rect x="5" y="3.5" width="14" height="17" rx="3"/><path d="M9 3.5v17M12 8h4M12 11.5h4"/>',
     sparkle: '<path d="M12 3.5 13.8 9 19.5 10.8 13.8 12.6 12 18.5 10.2 12.6 4.5 10.8 10.2 9z"/><path d="M18.5 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/>',
-    sync: '<path d="M19.5 12a7.5 7.5 0 0 1-13 5.1M4.5 12a7.5 7.5 0 0 1 13-5.1"/><path d="M17.5 3.5v3.4h-3.4M6.5 20.5v-3.4h3.4"/>',
     gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M4.5 7.2l2.1 1.2M17.4 15.6l2.1 1.2M4.5 16.8l2.1-1.2M17.4 8.4l2.1-1.2"/><circle cx="12" cy="12" r="6.6"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
     x: '<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
@@ -357,8 +356,7 @@
     { id: "life", label: "Life Design", icon: "compass", items: [["wheel", "Level 10 Life"], ["ikigai", "Ikigai"], ["matrix", "Eisenhower Matrix"], ["goals", "SMART Goals"], ["mindmap", "Mind Map"], ["vision", "Vision Board"]] },
     { id: "well", label: "Wellness", icon: "leaf", items: [["habits", "Habits"], ["finance", "Finances"], ["meals", "Meals & Recipes"], ["fitness", "Fitness"]] },
     { id: "notes", label: "Notebook", icon: "notebook", items: [["notebook", "Notebook"]] },
-    { id: "ai", label: "AI Coach", icon: "sparkle", items: [["coach", "Habit & Journal Analyzer"], ["synth", "Priority Synthesizer"]] },
-    { id: "board", label: "Board Sync", icon: "sync", items: [["sync", "monday board"]] }
+    { id: "ai", label: "AI Coach", icon: "sparkle", items: [["coach", "Habit & Journal Analyzer"], ["synth", "Priority Synthesizer"]] }
   ];
   A.views = {};
   A.acts = {};
