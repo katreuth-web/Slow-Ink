@@ -486,7 +486,7 @@ body.markup-on .foot { padding-bottom: 110px; }
 /* the floating Markup toolbar */
 .markup-bar {
   position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 60; display: flex; align-items: center; gap: 8px;
-  max-width: 96vw; overflow-x: auto; padding: 8px 14px 0; height: 64px; border-radius: 22px; background: var(--paper);
+  width: max-content; max-width: 96vw; overflow-x: auto; padding: 8px 14px 0; height: 64px; border-radius: 22px; background: var(--paper);
   border: 1px solid var(--rule-2); box-shadow: 0 18px 40px -12px rgba(20, 30, 20, 0.6); scrollbar-width: none;
 }
 .markup-bar::-webkit-scrollbar { display: none; }

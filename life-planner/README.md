@@ -7,7 +7,7 @@ A soft, neumorphic + glassmorphic life planner built with plain HTML5, CSS and J
 - **Calendar spreads** — Yearly → Monthly → Weekly → Daily, linked by drill-downs, breadcrumbs and prev/next arrows.
 - **Period reviews** — every spread has a matching reflection page (`…/review`) with a progress audit (tasks, habit consistency, mood, workouts, water, spending, journal pages), wins, challenges, lessons, gratitude, a 1–10 rating and next steps. The daily review can move unfinished tasks to tomorrow; the weekly review copies open priorities to next week.
 - **Life hubs** — Habits & Fitness, Meals & Recipes, Finance, Mind & Ikigai, Travel, Home & Chores.
-- **Notebook** — pick a paper and write, draw or arrange on an interactive canvas.
+- **Notebook** — opens as a bound book on its own desk: coloured section tabs (Journal, Notes, Ideas, plus your own), a contents page, and nine papers to write, draw or arrange on.
 
 Navigation is a floating glass sidebar on desktop and an iOS-style neumorphic dock (plus an "All sections" sheet) on mobile.
 
@@ -22,7 +22,7 @@ Navigation is a floating glass sidebar on desktop and an iOS-style neumorphic do
 | Mind | Interactive Ikigai four-circle tool, Level 10 Life wheel (radar chart), SMART goals, Eisenhower matrix, mood calendar |
 | Travel | Trips with itinerary, packing list (with an essentials preset), daily outfits and a budget; plus a bucket list |
 | Home & Chores | Daily / weekly / monthly / seasonal chore charts by room, with an assignee field; check-offs reset automatically each period |
-| Notebook | Blank, lined, square grid, dot grid, Cornell notes, two-column, three-column, mind map (drag bubbles, add branches) and vision board (image tiles) — lined/grid/dot/Cornell/column pages also take pen, highlighter and eraser ink with undo |
+| Notebook | A bound book with section tabs and a contents page. Blank, lined, square grid, dot grid, Cornell notes, two-column, three-column, mind map (drag bubbles, add branches) and vision board (image tiles). A **Type / Markup** toggle switches lined/grid/dot/Cornell/column pages between typing and drawing with a floating palette: pen, marker, pencil, eraser, seven inks, stroke width, undo/redo. Drawings are saved as strokes, and older drawings still show underneath. Journal pages linked from a day live in the Journal section. Print any page. |
 
 Soft light and soft dark themes; everything is saved to `localStorage`, with JSON export/import and reset under **Settings**.
 

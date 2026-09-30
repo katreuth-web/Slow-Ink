@@ -17,21 +17,63 @@
   };
   var ink = { tool: "pen", color: INKS[0], size: 1, redo: [] };
 
-  function newPage(paper) {
+  var TONES = ["lav", "pink", "mint", "sky", "butter"];
+
+  function newPage(paper, sectionId) {
+    var n = Date.now();
     return {
-      id: A.uid(), title: "Untitled page", paper: paper || "lined", text: "",
+      id: A.uid(), section: sectionId || A.state.notebook.section, title: "Untitled page", paper: paper || "lined", text: "",
       cornell: { topic: "", cue: "", notes: "", summary: "" },
       cols: [{ h: "", t: "" }, { h: "", t: "" }, { h: "", t: "" }],
-      strokes: [], updated: Date.now()
+      strokes: [], created: n, updated: n
     };
   }
-  function curPage(id) {
+  function secById(id) { return A.state.notebook.sections.filter(function (x) { return x.id === id; })[0]; }
+  function pagesIn(sectionId) {
+    return A.state.notebook.pages.filter(function (p) { return p.section === sectionId; }).sort(function (a, b) { return (b.created || 0) - (a.created || 0); });
+  }
+  /* Older planners have no sections: tuck their pages into Notes so nothing goes missing. */
+  function ensureNotebook() {
     var nb = A.state.notebook;
-    if (!nb.pages.length) { var p = newPage("lined"); p.title = "My first page"; nb.pages.push(p); A.save(); }
-    var page = nb.pages.find(function (x) { return x.id === (id || nb.current); }) || nb.pages[0];
-    nb.current = page.id;
+    if (!Array.isArray(nb.sections) || !nb.sections.length) nb.sections = [{ id: "s-journal", name: "Journal", tone: "lav" }, { id: "s-notes", name: "Notes", tone: "pink" }, { id: "s-ideas", name: "Ideas", tone: "mint" }];
+    var home = secById("s-notes") || nb.sections[0];
+    nb.pages.forEach(function (p) {
+      if (!p.section || !secById(p.section)) p.section = home.id;
+      if (!p.created) p.created = p.updated || Date.now();
+    });
+    if (!secById(nb.section)) nb.section = nb.pages.length && nb.current ? home.id : nb.sections[0].id;
+  }
+  /* Which page (if any) is on show. Keeps the section tab and the page in step. */
+  function curPage(id) {
+    ensureNotebook();
+    var nb = A.state.notebook, page = id && nb.pages.filter(function (x) { return x.id === id; })[0];
+    if (!page && nb.current) page = nb.pages.filter(function (x) { return x.id === nb.current; })[0];
+    if (page) nb.section = page.section;
+    else page = pagesIn(nb.section)[0] || null;
+    nb.current = page ? page.id : "";
     return page;
   }
+
+  /* A small "type a name" box for section names. */
+  A.ask = function (label, value, okText) {
+    return new Promise(function (resolve) {
+      var dlg = document.getElementById("ask"), input = document.getElementById("ask-input");
+      if (!dlg || typeof dlg.showModal !== "function") {
+        var v = window.prompt(label, value || "");
+        resolve(v && v.trim() ? v.trim() : null);
+        return;
+      }
+      document.getElementById("ask-label").textContent = label;
+      document.getElementById("ask-ok").textContent = okText || "Save";
+      input.value = value || "";
+      dlg.onclose = function () {
+        dlg.onclose = null;
+        resolve(dlg.returnValue === "ok" && input.value.trim() ? input.value.trim() : null);
+      };
+      dlg.showModal(); input.focus(); input.select();
+    });
+  };
+  function go(hash) { if (location.hash === hash) A.render(); else location.hash = hash; }
 
   function sheetBody(page, pi) {
     var p = "notebook.pages." + pi;
@@ -73,32 +115,48 @@
   }
 
   A.views.notebook = function (id) {
-    var nb = A.state.notebook, page = curPage(id), pi = nb.pages.indexOf(page);
-    var mode = A.state.ui.nbMode || "type";
-    if (ink.page !== page.id) { ink.page = page.id; ink.redo = []; }
-    var list = nb.pages.slice().sort(function (a, b) { return b.updated - a.updated; }).map(function (p) {
-      return '<a class="nb-page-link' + (p.id === page.id ? " on" : "") + '" href="#/notebook/' + p.id + '"><i class="thumb pv paper-' + p.paper + '"></i><span>' + esc(p.title || "Untitled") + "</span></a>";
+    var nb = A.state.notebook, page = curPage(id), sec = secById(nb.section);
+    var pi = page ? nb.pages.indexOf(page) : -1;
+    var mode = page && A.state.ui.nbMode === "markup" ? "markup" : "type";
+    if (page && ink.page !== page.id) { ink.page = page.id; ink.redo = []; }
+
+    var tabs = nb.sections.map(function (s) {
+      return '<button class="btab tone-' + esc(s.tone || "lav") + (s.id === nb.section ? " on" : "") + '" data-act="nb-section" data-id="' + s.id + '" role="tab" aria-selected="' + (s.id === nb.section) + '"><span>' + esc(s.name) + "</span></button>";
+    }).join("") + '<button class="btab add" data-act="nb-add-section" aria-label="Add a section" title="Add a section"><span>+</span></button>';
+
+    var list = pagesIn(nb.section).map(function (p) {
+      var d = new Date(p.created || p.updated);
+      return '<a class="nb-page-link' + (page && p.id === page.id ? " on" : "") + '" href="#/notebook/' + p.id + '" data-id="' + p.id + '"><i class="thumb pv paper-' + p.paper + '"></i><span class="pg-text"><span class="pg-title">' + esc(p.title || "Untitled") + '</span><span class="pg-date">' + d.getDate() + " " + A.MONTHS[d.getMonth()].slice(0, 3) + " " + d.getFullYear() + "</span></span></a>";
     }).join("");
-    var papers = '<div class="paper-picker">' + PAPERS.map(function (x) {
+    var papers = page ? '<div class="paper-picker">' + PAPERS.map(function (x) {
       return '<button class="paper-opt' + (page.paper === x[0] ? " on" : "") + '" data-act="nb-paper" data-v="' + x[0] + '"><div class="pv paper-' + x[0] + '"></div>' + x[1] + "</button>";
-    }).join("") + "</div>";
+    }).join("") + "</div>" : "";
 
-    var seg = '<div class="seg" role="tablist" aria-label="Notebook mode">' +
-      '<button role="tab" aria-selected="' + (mode === "type") + '" class="' + (mode === "type" ? "on" : "") + '" data-act="nb-mode" data-v="type">' + ic("type") + "Type</button>" +
-      '<button role="tab" aria-selected="' + (mode === "markup") + '" class="' + (mode === "markup" ? "on" : "") + '" data-act="nb-mode" data-v="markup">' + ic("pen") + "Markup</button></div>";
+    var left = '<aside class="book-index"><p class="eyebrow">' + esc(sec.name) + '</p><h2 class="index-title">Contents</h2>' +
+      '<div class="nb-pages">' + (list || '<p class="small muted">No pages yet.</p>') + "</div>" +
+      '<button class="btn sm block" data-act="nb-new">' + ic("plus") + "New page</button>" +
+      (page ? '<div class="index-block"><p class="eyebrow">Paper</p>' + papers + "</div>" : "") +
+      (page ? '<div class="index-block"><button class="btn sm ghost block" data-act="nb-synth">' + ic("sparkle") + "Synthesize into actions</button></div>" : "") +
+      '<div class="index-block tools"><button class="linklike" data-act="nb-rename-section">Rename section</button>' +
+      (nb.sections.length > 1 ? '<button class="linklike danger" data-act="nb-del-section">Delete section</button>' : "") +
+      (page ? '<button class="linklike danger" data-act="nb-del">Delete this page</button>' : "") + "</div></aside>";
 
-    A.afterRender = function () { setupSheet(page, mode); };
+    var sheetCol;
+    if (page) {
+      var seg = '<div class="seg" role="tablist" aria-label="Notebook mode">' +
+        '<button role="tab" aria-selected="' + (mode === "type") + '" class="' + (mode === "type" ? "on" : "") + '" data-act="nb-mode" data-v="type">' + ic("type") + "Type</button>" +
+        '<button role="tab" aria-selected="' + (mode === "markup") + '" class="' + (mode === "markup" ? "on" : "") + '" data-act="nb-mode" data-v="markup">' + ic("pen") + "Markup</button></div>";
+      A.afterRender = function () { setupSheet(page, mode); };
+      sheetCol = '<div class="book-sheet-col"><div class="nb-toolbar">' + A.input("notebook.pages." + pi + ".title", 'placeholder="Page title" maxlength="80"', "bare nb-title") + seg +
+        '<button class="icon-btn sm" data-act="nb-print" aria-label="Print this page" title="Print this page">' + ic("print") + "</button></div>" +
+        '<div class="sheet-wrap"><div class="sheet paper-' + page.paper + (mode === "markup" ? " annotating" + (ink.tool === "eraser" ? " eraser" : "") : "") + '" id="sheet">' + sheetBody(page, pi) + '<canvas class="ink-layer" id="ink"></canvas></div></div>' +
+        '<p class="small muted sheet-foot">Last edited ' + esc(new Date(page.updated).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })) + "</p></div>";
+    } else {
+      sheetCol = '<div class="book-sheet-col empty-sheet"><div class="sheet paper-lined static"><div class="empty-inner"><h2>A fresh section</h2><p>There are no pages in <b>' + esc(sec.name) + '</b> yet.</p><button class="btn" data-act="nb-new">' + ic("plus") + "Start a page</button></div></div></div>";
+    }
 
-    return A.head("Digital notebook", 'Notebook <span class="soft">studio</span>', "Type your notes, then switch to Markup to handwrite, highlight and sketch right on the page.") +
-      '<div class="nb-layout"><div class="stack">' +
-        A.card("Pages", '<div class="nb-pages">' + list + '</div><button class="btn sm soft" style="margin-top:10px;width:100%" data-act="nb-new">' + ic("plus") + "New page</button>", { icon: "book" }) +
-        A.card("Paper", papers, { icon: "grid", tone: "pink" }) +
-        A.card("", '<button class="btn sm ghost" style="width:100%" data-act="nb-synth">' + ic("sparkle") + 'Synthesize into actions</button><button class="btn sm danger" style="width:100%;margin-top:8px" data-act="nb-del">' + ic("trash") + "Delete page</button>") +
-      "</div>" +
-      '<div><div class="nb-toolbar">' + A.input("notebook.pages." + pi + ".title", 'placeholder="Page title"', "bare nb-title") + seg + "</div>" +
-      '<div class="sheet-wrap"><div class="sheet paper-' + page.paper + (mode === "markup" ? " annotating" + (ink.tool === "eraser" ? " eraser" : "") : "") + '" id="sheet">' + sheetBody(page, pi) + '<canvas class="ink-layer" id="ink"></canvas></div></div>' +
-      '<p class="small muted" style="text-align:center;margin-top:10px">Last edited ' + new Date(page.updated).toLocaleString() + "</p></div></div>" +
-      (mode === "markup" ? markupBar(page) : "");
+    return '<div class="nb-desk"><div class="book">' + left + '<div class="book-spine" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>' + sheetCol +
+      '<nav class="book-tabs" role="tablist" aria-label="Notebook sections">' + tabs + "</nav></div></div>" + (mode === "markup" ? markupBar(page) : "");
   };
 
   /* ------------------------------------------------------------ ink engine */
@@ -226,23 +284,50 @@
     if (A.state.ui.nbMode === "markup") A.toast("Markup on — draw anywhere on the page");
   };
   A.acts["nb-paper"] = function (el) {
-    var page = curPage(); page.paper = el.getAttribute("data-v"); page.updated = Date.now(); A.save(); A.render();
+    var page = curPage(); if (!page) return; page.paper = el.getAttribute("data-v"); page.updated = Date.now(); A.save(); A.render();
   };
   A.acts["nb-new"] = function () {
-    var page = newPage(curPage().paper);
+    var cur = curPage(), page = newPage(cur ? cur.paper : "lined", A.state.notebook.section);
     A.state.notebook.pages.push(page); A.state.notebook.current = page.id; A.state.ui.nbMode = "type"; A.save();
-    location.hash = "#/notebook/" + page.id;
+    go("#/notebook/" + page.id);
+    setTimeout(function () { var t = document.querySelector(".nb-title"); if (t) { t.focus(); t.select(); } }, 30);
   };
   A.acts["nb-del"] = function () {
     var nb = A.state.notebook, page = curPage();
-    if (!confirm("Delete “" + (page.title || "this page") + "”?")) return;
+    if (!page || !confirm("Delete “" + (page.title || "this page") + "”? This can’t be undone.")) return;
     nb.pages = nb.pages.filter(function (p) { return p.id !== page.id; });
-    nb.current = nb.pages[0] ? nb.pages[0].id : ""; A.save();
-    location.hash = "#/notebook";
-    A.render();
+    nb.current = ""; A.save();
+    var next = pagesIn(nb.section)[0];
+    go(next ? "#/notebook/" + next.id : "#/notebook");
   };
+  A.acts["nb-section"] = function (el) {
+    var nb = A.state.notebook; nb.section = el.getAttribute("data-id"); nb.current = "";
+    var first = pagesIn(nb.section)[0]; A.save();
+    go(first ? "#/notebook/" + first.id : "#/notebook");
+  };
+  A.acts["nb-add-section"] = function () {
+    A.ask("Name your new section", "", "Add section").then(function (name) {
+      if (!name) return;
+      var nb = A.state.notebook, s = { id: A.uid(), name: name, tone: TONES[nb.sections.length % TONES.length] };
+      nb.sections.push(s); nb.section = s.id; nb.current = ""; A.save(); go("#/notebook"); A.render();
+    });
+  };
+  A.acts["nb-rename-section"] = function () {
+    var s = secById(A.state.notebook.section);
+    A.ask("Rename this section", s.name, "Rename").then(function (name) { if (name) { s.name = name; A.save(); A.render(); } });
+  };
+  A.acts["nb-del-section"] = function () {
+    var nb = A.state.notebook, s = secById(nb.section), n = pagesIn(s.id).length;
+    if (nb.sections.length < 2) return;
+    if (!confirm("Delete the section “" + s.name + "”" + (n ? " and its " + n + (n === 1 ? " page" : " pages") : "") + "? This can’t be undone.")) return;
+    nb.pages = nb.pages.filter(function (p) { return p.section !== s.id; });
+    nb.sections = nb.sections.filter(function (x) { return x.id !== s.id; });
+    nb.section = nb.sections[0].id; nb.current = ""; A.save(); go("#/notebook"); A.render();
+  };
+  A.acts["nb-print"] = function () { window.print(); };
   A.acts["nb-synth"] = function () {
-    var p = curPage(), txt = [p.title, p.text, p.cornell.topic, p.cornell.cue, p.cornell.notes, p.cornell.summary]
+    var p = curPage(); if (!p) return;
+    var txt = [p.title, p.text, p.cornell.topic, p.cornell.cue, p.cornell.notes, p.cornell.summary]
       .concat(p.cols.map(function (c) { return (c.h ? c.h + ":\n" : "") + c.t; })).filter(function (s) { return s && s.trim(); }).join("\n");
     if (txt.trim().length < 5) { A.toast("Type some notes on this page first."); return; }
     A.state.coach.synthInput = txt; A.save(); location.hash = "#/synth";
