@@ -519,7 +519,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
   display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 26px;
   background: rgba(255, 255, 255, 0.72); -webkit-backdrop-filter: blur(24px) saturate(180%); backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: 0 18px 50px rgba(60, 30, 120, 0.2), 0 2px 6px rgba(60, 30, 120, 0.08);
-  max-width: calc(100vw - 24px); overflow-x: auto; scrollbar-width: none;
+  width: max-content; max-width: calc(100vw - 24px); overflow-x: auto; scrollbar-width: none;
   animation: rise 0.25s ease;
 }
 .markup-bar::-webkit-scrollbar { display: none; }

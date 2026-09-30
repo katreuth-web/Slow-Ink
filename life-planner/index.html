@@ -22,6 +22,12 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
+    <header class="nb-topbar" id="nb-topbar" hidden>
+      <a class="nb-back" href="#/home">&larr; Back to planner</a>
+      <span class="nb-topbar-title">My Notebook</span>
+      <span class="nb-topbar-spacer"></span>
+    </header>
+
     <div class="app">
       <aside class="sidebar glass" id="sidebar" aria-label="Main navigation"></aside>
 
@@ -35,6 +41,17 @@
 
     <div class="sheet-scrim" id="sheet-scrim" hidden></div>
     <section class="sheet glass" id="sheet" aria-label="All sections" hidden></section>
+
+    <dialog id="ask" class="ask">
+      <form method="dialog">
+        <label id="ask-label" for="ask-input">Name</label>
+        <input id="ask-input" type="text" maxlength="60" autocomplete="off">
+        <div class="ask-actions">
+          <button value="cancel" class="btn" formnovalidate>Cancel</button>
+          <button value="ok" class="btn pink" id="ask-ok">Save</button>
+        </div>
+      </form>
+    </dialog>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

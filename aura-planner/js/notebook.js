@@ -148,7 +148,7 @@
         '<button role="tab" aria-selected="' + (mode === "markup") + '" class="' + (mode === "markup" ? "on" : "") + '" data-act="nb-mode" data-v="markup">' + ic("pen") + "Markup</button></div>";
       A.afterRender = function () { setupSheet(page, mode); };
       sheetCol = '<div class="book-sheet-col"><div class="nb-toolbar">' + A.input("notebook.pages." + pi + ".title", 'placeholder="Page title" maxlength="80"', "bare nb-title") + seg +
-        '<button class="icon-btn sm" data-act="nb-print" aria-label="Print this page" title="Print this page">' + ic("download") + "</button></div>" +
+        '<button class="icon-btn sm" data-act="nb-print" aria-label="Print this page" title="Print this page">' + ic("print") + "</button></div>" +
         '<div class="sheet-wrap"><div class="sheet paper-' + page.paper + (mode === "markup" ? " annotating" + (ink.tool === "eraser" ? " eraser" : "") : "") + '" id="sheet">' + sheetBody(page, pi) + '<canvas class="ink-layer" id="ink"></canvas></div></div>' +
         '<p class="small muted sheet-foot">Last edited ' + esc(new Date(page.updated).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })) + "</p></div>";
     } else {
