@@ -1,0 +1,48 @@
+SLOW INK SAGE - START HERE
+===========================
+A warm, paper-and-sage yearly planner with a notebook of its own.
+Thank you for your purchase!
+
+HOW TO OPEN IT
+1. Unzip (extract) the folder first. Please don't open the planner from inside the zip file.
+2. Put the unzipped folder somewhere permanent, such as your Documents folder.
+3. Double-click the file named  index.html  - it opens in your web browser
+   (Chrome, Edge, Firefox or Safari all work).
+
+That's all. There is nothing to install, no account to make and no internet
+connection needed. Bookmark the page in your browser so it's easy to find.
+
+KEEP YOUR WORK SAFE  (please read - it's important)
+- Your planner saves automatically, inside your web browser on this device.
+  Nothing is sent anywhere and nobody else can see it.
+- Always open it in the SAME browser, from the SAME folder. Don't move, rename
+  or re-download the folder once you've started, or the planner may open empty.
+- Clearing your browser's "site data" or "cookies and site data" can erase the
+  planner. Make a backup before you clean your browser.
+- BACK UP REGULARLY:  scroll to the very bottom of any page and click "Back up planner".
+  It downloads one small file. Keep it somewhere safe (cloud drive, email to
+  yourself). To restore: click "Restore backup" at the bottom and choose your file.
+- Moving to a new computer or browser? Make a backup, open the planner there,
+  and restore the backup.
+- Best on a laptop or desktop. Opening local files on phones and tablets varies
+  by device and browser - if you'd like to use it on a tablet, get in touch.
+
+WHAT'S INSIDE
+- Today, Year, Month, Week and Day pages. Use the arrows to move to any year.
+- Star a task to make it a KEY DATE: it is highlighted in the Year and Month pages.
+- Habits, Goals and Reflect (monthly and yearly prompts).
+- NOTEBOOK (dark green button, top right): a separate bound book with coloured
+  section tabs (Journal, Notes, Ideas - add your own with the + tab), lined,
+  blank, dot grid and squared paper, and a Type / Markup switch. In Markup you
+  can handwrite and sketch with a pen, marker or pencil using a mouse, finger
+  or stylus.
+
+TERMS OF USE
+Personal use only. Please don't share, resell, redistribute or upload these
+files. The fonts included are free under the SIL Open Font License (the license
+files are in the "fonts" folder).
+
+QUESTIONS OR PROBLEMS?
+{{CONTACT}}
+
+Thank you so much for your support - happy planning!
