@@ -21,6 +21,7 @@ Cover · Year Overview · Monthly · Weekly · Daily · Habit Tracker · Goals �
 ## Also in this repo
 
 - **[Slow Ink Life](life-planner/)** — a soft neumorphic, all-in-one life planner with linked yearly/monthly/weekly/daily spreads, period reviews, life hubs (habits & fitness, meals, finance, mind, travel, home care) and a multi-paper notebook. See [`life-planner/README.md`](life-planner/README.md).
+- **[Slow Ink Sage](slow-ink-sage/)** — a warm cream-and-sage remake of the original Slow Ink: a lighter set of pages (Today, Year, Month, Week, Day, Habits, Goals, Reflect) plus a notebook that opens as its own bound book, with section tabs, four paper styles and a Type/Markup toggle. Works offline from a double-clicked `index.html`, with bundled fonts. See [`slow-ink-sage/README.md`](slow-ink-sage/README.md).
 - **[Aura](aura-planner/)** — a separate glassmorphic life planner in whites and pastel purples & pinks, with linked year/month/week/daily focus pages, life-design frameworks, wellness trackers, a notebook with an iOS-style Type/Markup toggle, image uploads for recipes and vision boards and an AI coach. See [`aura-planner/README.md`](aura-planner/README.md).
 
 ## Running locally
