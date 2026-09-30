@@ -78,7 +78,10 @@
       },
       meals: { weeks: {}, grocery: [], recipes: [] },
       fitness: { workouts: [], weights: [], unit: "lb", goalWeight: "", weeklyTarget: 150 },
-      notebook: { pages: [], current: "" },
+      notebook: {
+        pages: [], current: "", section: "s-journal",
+        sections: [{ id: "s-journal", name: "Journal", tone: "lav" }, { id: "s-notes", name: "Notes", tone: "pink" }, { id: "s-ideas", name: "Ideas", tone: "mint" }]
+      },
       coach: { key: "", model: "claude-opus-5", analysis: "", analysisAt: "", synthInput: "", synth: null, synthAt: "" },
       ui: { mealWeek: "", finMonth: "", mmSel: "root" }
     };
@@ -432,6 +435,9 @@
     var view = document.getElementById("view");
     view.innerHTML = html;
     renderNav();
+    var inBook = A.route.name === "notebook";
+    document.body.classList.toggle("nb-mode", inBook);
+    document.getElementById("nb-topbar").hidden = !inBook;
     document.title = (document.querySelector(".page-title") ? document.querySelector(".page-title").textContent + " · " : "") + "Aura";
     if (sameRoute) window.scrollTo(0, y);
     else window.scrollTo(0, 0);

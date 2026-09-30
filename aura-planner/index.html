@@ -37,6 +37,12 @@
     </header>
     <nav class="subribbon" id="subnav" aria-label="Pages in this section"></nav>
 
+    <header class="nb-topbar" id="nb-topbar" hidden>
+      <a class="nb-back" href="#/day/today">&larr; Back to planner</a>
+      <span class="nb-topbar-title">My Notebook</span>
+      <span class="nb-topbar-spacer"></span>
+    </header>
+
     <div class="layout" id="layout">
       <main class="view" id="view" tabindex="-1"></main>
       <aside class="month-rail glass" id="rail" aria-label="Month index"></aside>
@@ -44,6 +50,16 @@
 
     <div class="scrim" id="scrim" hidden></div>
     <section class="drawer glass" id="drawer" aria-label="Panel" hidden></section>
+    <dialog id="ask" class="ask glass">
+      <form method="dialog">
+        <label id="ask-label" for="ask-input">Name</label>
+        <input id="ask-input" class="field" type="text" maxlength="60" autocomplete="off" />
+        <div class="ask-actions">
+          <button value="cancel" class="btn ghost sm" formnovalidate>Cancel</button>
+          <button value="ok" class="btn sm" id="ask-ok">Save</button>
+        </div>
+      </form>
+    </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="js/core.js"></script>
