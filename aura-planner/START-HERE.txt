@@ -1,6 +1,6 @@
 AURA - START HERE
 ==================
-A glassy pastel life planner with a notebook of its own.
+A glassy pastel manifestation planner with a notebook of its own.
 Thank you for your purchase!
 
 HOW TO OPEN IT
@@ -28,18 +28,25 @@ KEEP YOUR WORK SAFE  (please read - it's important)
   by device and browser - if you'd like to use it on a tablet, get in touch.
 
 WHAT'S INSIDE
-- Year, Month, Week and Daily Focus pages.
-- Life Design tools: Level 10 Life wheel, Ikigai, Eisenhower matrix, SMART goals,
-  mind map and vision board.
-- Wellness: Habits, Finances, Meals & Recipes (with photos) and Fitness.
-- NOTEBOOK (top bar): a separate bound book with pastel section tabs (Journal,
-  Notes, Ideas - add your own with the + tab), seven papers including Cornell and
-  columns, and a Type / Markup switch for handwriting and sketching.
-- AI COACH (optional): the habit and journal analyzer and priority synthesizer
-  work on your device with no setup. If you want written coaching from Claude,
-  you can add your OWN Anthropic API key under AI Coach > Coach settings. This
-  is the only feature that uses the internet, it is completely optional, and the
-  key is stored only in your browser.
+- PLANNER: Year, Month, Week and a Daily Practice page (intention, moon of the
+  day, affirmation of the day, practice checklist, gratitude, feelings, reflection).
+- MANIFEST: My Manifestations (a board with a progress check-in and a log of signs
+  and wins), Scripting, guided Visualize sessions, Affirmations, and Rituals &
+  Moon (369 method, 55 x 5, gratitude, signs, moon phases).
+- ALIGN: Level 10 Life wheel, Ikigai, Dream Map, Vision Board and Habits.
+- NOTEBOOK (top bar): a separate bound book with section tabs, seven papers,
+  headings, lists and links, photos, stickers, and a Type / Markup switch for
+  handwriting and sketching.
+- INSIGHTS: pattern insights and a thought sorter that work on your device with
+  no setup. If you want written reflections from Claude you can add your OWN
+  Anthropic API key under Insights > Pattern Insights. This is the only feature
+  that uses the internet, it is completely optional, and the key is stored only
+  in your browser.
+
+A NOTE ON MANIFESTING
+Aura is a tool for reflection, intention-setting and planning. It can't promise
+any outcome. Use it to get clear about what you want, notice how you feel, and
+take small steps.
 
 TERMS OF USE
 Personal use only. Please don't share, resell, redistribute or upload these

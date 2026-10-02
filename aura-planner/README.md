@@ -1,37 +1,34 @@
-# Aura — Glass Life Planner
+# Aura — Manifestation Planner
 
-A glassmorphic, all-in-one digital life planner in crisp whites and pastel purples & pinks. Plain HTML, CSS and JavaScript: no build step, no framework, no dependencies. It lives in this repo as a standalone app, separate from Slow Ink.
+A glassy, pastel-purple manifestation planner for intention-setting and reflection, with a notebook of its own. Plain HTML, CSS and JavaScript: no build step, no framework, no accounts, no internet needed.
 
-## App flow
+Aura is a reflection and intention-setting tool. Nothing in it promises a result, and the copy is written that way on purpose. Keep that wording in your listing.
 
-- **Quick-flip ribbon.** The top ribbon switches between Planner, Life Design, Wellness, Notebook, and AI Coach. A sub-ribbon lists the pages in each section.
-- **Calendar horizons.** Year → Month → Week → Daily Focus. Month names, week numbers and dates link to their pages. A side index of month tabs sits on every calendar page and becomes a horizontal strip on phones.
-- **Cards everywhere.** Every item on every page is its own frosted-glass card.
+## Pages
 
-## Features
-
-| Area | What's inside |
+| Section | What's inside |
 | --- | --- |
-| Year | Word of the year, big goals, year-to-date stats, 12 linked mini-calendars with week numbers |
-| Month | Calendar with week links, mood dots and task previews; monthly intention & goals; last-month reset recap (tasks, mood, habits, workouts, spending) with reflection prompts; focus areas from your life wheel; habit grid |
-| Week | Week focus, priorities, pulse stats, seven day cards with inline tasks, weekly habit grid |
-| Daily Focus | Intention, Top 3, tasks tagged with Eisenhower quadrants, 6 AM–11 PM schedule, 10-point mood, hydration drops, 10 focus sessions with a 25-minute timer, break check-offs, self-care, meals, brain dump, evening reflection |
-| Life Design | Level 10 Life wheel with live polar chart and "set goal" for low areas · Ikigai four-circle map with intersections · Eisenhower matrix that sends items to today · SMART goals with milestones and progress rings · draggable mind map · vision board |
-| Wellness | Habits (streaks, best streaks, monthly grid) · Finances (income, expenses, category budgets, spending donut, savings goals) · Meals (weekly planner, aisle-sorted grocery list, recipe cards) · Fitness (workout log, weekly minutes ring, weight trend chart) |
-| Notebook | Opens as a bound book on a violet desk, with pastel section tabs (Journal, Notes, Ideas, plus your own) and a contents page. Blank, lined, dot grid, squared, Cornell, 2-column and 3-column paper. An iOS-style **Type / Markup** segmented toggle switches between typing and drawing. Markup mode has a floating palette with pen, marker, pencil and eraser, seven inks, stroke width, undo/redo and clear. It supports Apple Pencil pressure and ignores your palm once a stylus is in use. |
-| AI Coach | **Habit & Journal Analyzer** finds patterns across mood, hydration, focus, habits, workouts and reflections on-device, with optional written coaching from Claude · **Priority Synthesizer** turns brain dumps or notebook pages into Eisenhower-sorted actions and SMART goal ideas |
+| Planner | **Year** (word of the year, dreams, 12 linked mini-calendars) · **Month** (calendar with new/full moon markers, monthly intention, reflect-on-last-month prompts, focus areas, rituals grid) · **Week** (focus, inspired actions, pulse, rituals grid) · **Daily Practice** (intention and "I am", moon of the day, affirmation of the day, practice checklist, inspired actions, mood, energy, emotions, gratitude, act-as-if, signs, evening reflection prompts, brain dump) |
+| Manifest | **My Manifestations** (a Planted → Growing → Manifested → Released board; each one has a why, how it will feel, an affirmation, a next step, an alignment check-in with a small chart, and a log of signs, wins and steps) · **Scripting** (five starting templates, writing tips, link a script to a manifestation) · **Visualize** (a guided 3, 5 or 10 minute session with a breathing orb, prompts, optional soft chime, session log and streak) · **Affirmations** (49 original affirmations in seven categories, favourites, your own, "I said it" counters) · **Rituals & Moon** (369 method with a 35-day heat map, 55 × 5, gratitude jar, signs & synchronicities, moon phase with new/full-moon dates and a journal page for each lunar cycle) |
+| Align | Level 10 Life wheel (a low area becomes a manifestation in one tap) · Ikigai · Dream Map (mind map) · Vision Board with photos · Habits as daily rituals |
+| Notebook | A bound book on a violet desk with section tabs and a contents page. Seven papers (lined, blank, dot grid, squared, Cornell, 2 and 3 columns). **Write** with Title / Heading / Subhead styles, bold, italic, underline, lists, divider lines and links. **Decorate** with photos and 81 stickers (a Manifest set with lotus, infinity, inner eye, wings, angel numbers and "I am" labels, plus nature, hearts, moon phases, cosy things and washi tape). **Draw** with the Type / Markup toggle (pen, marker, pencil, eraser, seven inks, undo/redo, Apple Pencil pressure and palm rejection). |
+| Insights | **Pattern Insights** works out patterns across mood, practices, rituals, emotions and reflections on the device, with optional written reflections from Claude · **Thought Sorter** turns a brain dump into small inspired actions and intention ideas |
 
-### Image uploads
+Moon phases are calculated from the average lunar cycle, so dates can be off by about a day. They are for rituals, not astronomy.
 
-Recipe cards and the vision board accept photos. You can pick a file or drag and drop it. Images are resized in the browser (max 1400px, JPEG) and stored in IndexedDB, so they don't use up the localStorage quota. Backups include them.
+### Optional Claude key
 
-### AI coach and Claude
+Without an API key everything works offline. If a buyer adds their own Claude API key under **Insights → Pattern Insights**, the browser calls `api.anthropic.com` directly. The key is stored only in that browser. The prompts tell Claude never to promise or predict outcomes.
 
-Without an API key, the coach works entirely offline with on-device rules. You can add your own Claude API key under **AI Coach → Coach settings**. The browser then calls `api.anthropic.com` directly: Claude Opus 5 by default, or Claude Sonnet 5. The key is stored only in this browser. The synthesizer uses structured JSON output so its suggestions map straight onto the matrix and goals.
+## For the seller
 
-## Data
-
-Planner data is saved automatically to `localStorage` and photos to IndexedDB. **Settings** (the gear icon) has JSON export/import and reset.
+- No server, database or login. Nothing to host or maintain.
+- Fonts (Poppins, Caveat; both SIL Open Font License) are bundled in `fonts/`. Keep the two `LICENSE-*.txt` files in the zip.
+- All planner data lives under one `localStorage` key, `aura-planner-v1`. Photos live in IndexedDB and are included in backups.
+- Scripts are classic `<script>` tags on purpose, so the app works when opened from a file. Files: `core.js` (state, safe-HTML filter, moon maths, router), `stickers.js`, `calendar.js` (planner pages), `practice.js` (affirmations, rituals, moon), `manifest.js` (tracker, scripting, visualize), `frameworks.js` (wheel, Ikigai, vision board, dream map), `wellness.js` (habits), `notebook.js`, `coach.js`, `main.js` (settings, backup and restore).
+- Restoring a backup rebuilds the state from known fields only (`A.cleanState` in `main.js`): ids and dates are checked, notebook text goes through the safe-HTML filter, stickers must exist, photo data must be a real image.
+- Older Aura saves still open. Days written with the first version keep their gratitude and reflections.
+- All 49 affirmations are original text written for this planner.
 
 ## Running locally
 
