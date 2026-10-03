@@ -766,3 +766,13 @@ body.markup-on .book { margin-bottom: 90px; }
 .tg-trips { grid-area: trips; } .tg-main { grid-area: main; min-width: 0; } .tg-bucket { grid-area: bucket; }
 .tg-trips > .card, .tg-bucket > .card { margin: 0; }
 @media (max-width: 900px) { .travel-grid { gap: 16px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "trips" "main" "bucket"; } }
+
+/* travel expenses: category, what, amount, delete. On phones the description gets its own line. */
+.exp-list { display: flex; flex-direction: column; }
+.exp-row { display: grid; grid-template-columns: minmax(120px, 150px) minmax(0, 1fr) 110px auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px dashed var(--line); }
+.exp-row:first-child { border-top: 0; }
+@media (max-width: 600px) { .exp-row { grid-template-columns: minmax(0, 1fr) 100px auto; grid-template-areas: "cat amt del" "txt txt txt"; } .exp-row > :nth-child(1) { grid-area: cat; } .exp-row > :nth-child(2) { grid-area: txt; } .exp-row > :nth-child(3) { grid-area: amt; } .exp-row > :nth-child(4) { grid-area: del; } }
+/* dropdowns inside any table never shrink below their longest word */
+.table td select { min-width: 8.5em; }
+.recipe .row select { flex: 0 0 auto; width: auto; min-width: 8.5em; }
+.recipe .row input { flex: 1 1 60px; }
