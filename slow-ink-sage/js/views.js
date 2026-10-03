@@ -96,19 +96,67 @@
     }).join("") + "</div>";
   }
 
-  /* ------------------------------------------------------------ TODAY */
+  /* ------------------------------------------------------------ HOME (the dashboard) */
+  /* Days in a row ending today (or yesterday, if today isn't ticked yet). */
+  function currentStreak(hid) {
+    var log = S().habitLog[hid] || {}, d = SI.today(), n = 0;
+    if (!log[SI.key(d)]) d = SI.addDays(d, -1);
+    while (log[SI.key(d)] && n < 4000) { n++; d = SI.addDays(d, -1); }
+    return n;
+  }
+  /* Starred tasks from today onward, soonest first. */
+  function upcomingKeys(limit) {
+    var from = SI.key(SI.today()), out = [];
+    Object.keys(S().days).sort().forEach(function (k) {
+      if (k < from) return;
+      (S().days[k].items || []).forEach(function (it) { if (it.key && it.t && !it.done) out.push({ k: k, t: it.t, done: false }); });
+    });
+    return out.slice(0, limit);
+  }
+  function ring(pct, label, sub) {
+    var r = 46, c = 2 * Math.PI * r, off = c * (1 - Math.max(0, Math.min(1, pct)));
+    return '<div class="yring" role="img" aria-label="' + esc(label + ", " + sub) + '"><svg viewBox="0 0 110 110" aria-hidden="true"><circle cx="55" cy="55" r="' + r + '" class="yr-bg"/>' +
+      '<circle cx="55" cy="55" r="' + r + '" class="yr-fg" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '" transform="rotate(-90 55 55)"/></svg>' +
+      '<span class="yr-num">' + esc(label) + '</span><span class="yr-sub">' + esc(sub) + "</span></div>";
+  }
+  function tile(num, label, href2, pct) {
+    return '<a class="kpi" href="' + href2 + '"><span class="kpi-num">' + num + '</span><span class="kpi-label">' + label + "</span>" +
+      (pct != null ? '<span class="bar" aria-hidden="true"><i style="width:' + Math.round(pct * 100) + '%"></i></span>' : "") + "</a>";
+  }
+  var START_STEPS = [
+    ["Set an intention for the day", "#/today", function (s) { return Object.keys(s.days).some(function (k) { return s.days[k].intention; }); }],
+    ["Add a task", "#/today", function (s) { return Object.keys(s.days).some(function (k) { return (s.days[k].items || []).length; }); }],
+    ["Check off a habit", "#/habits/" + SI.monthKey(SI.today().getFullYear(), SI.today().getMonth()), function (s) { return Object.keys(s.habitLog).some(function (h) { return Object.keys(s.habitLog[h]).length; }); }],
+    ["Add a goal for the year", "#/goals", function (s) { return s.goals.length > 0; }],
+    ["Star a key date", "#/today", function (s) { return Object.keys(s.days).some(function (k) { return (s.days[k].items || []).some(function (i) { return i.key; }); }); }],
+    ["Write a notebook page", "#/notebook", function (s) { return s.notebook.pages.length > 1 || s.notebook.pages.some(function (p) { return (p.objects || []).length || (p.strokes || []).length; }); }],
+    ["Back up your planner", null, function (s) { return !!s.ui.backedUp; }]
+  ];
+  function gettingStarted() {
+    var s = S();
+    if (s.sample || s.ui.onboardHidden) return "";
+    var done = START_STEPS.filter(function (x) { return x[2](s); }).length, all = done === START_STEPS.length;
+    var list = START_STEPS.map(function (x) {
+      var ok = x[2](s);
+      return '<li class="gs-step' + (ok ? " ok" : "") + '"><span class="gs-dot" aria-hidden="true">' + (ok ? ic("check") : "") + "</span>" +
+        (x[1] && !ok ? '<a href="' + x[1] + '">' + esc(x[0]) + "</a>" : x[1] === null && !ok ? '<button class="linklike" data-act="export">' + esc(x[0]) + "</button>" : "<span>" + esc(x[0]) + "</span>") + "</li>";
+    }).join("");
+    return '<section class="card gstart"><div class="gs-head"><h2 class="card-title">' + (all ? "You’re all set" : "Getting started") + '</h2><span class="gs-count">' + done + " of " + START_STEPS.length + '</span></div>' +
+      '<div class="bar" aria-hidden="true"><i style="width:' + Math.round(done / START_STEPS.length * 100) + '%"></i></div><ul class="gs-list">' + list + "</ul>" +
+      '<div class="row-actions"><button class="btn sm ghost" data-act="load-sample">Look around with sample data</button><button class="btn sm ghost" data-act="hide-start">' + (all ? "Done, hide this" : "Hide this") + "</button></div></section>";
+  }
+
   SI.views.today = function () {
-    var t = SI.today(), key = SI.key(t), h = new Date().getHours();
+    var t = SI.today(), key = SI.key(t), h = new Date().getHours(), s = S(), rec = SI.peekDay(key);
     var hello = h < 5 ? "Still up?" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
-    var mon = SI.mondayOf(t);
-    var week = "";
+    var mon = SI.mondayOf(t), week = "";
     for (var i = 0; i < 7; i++) {
       var d = SI.addDays(mon, i), k = SI.key(d), st = SI.dayStats(k);
       week += '<a class="wtile' + (k === key ? " today" : "") + '" href="' + href.day(d) + '">' +
         '<span class="w-dow">' + SI.DOW[i] + '</span><span class="w-num">' + d.getDate() + "</span>" +
         '<span class="w-info">' + (st.total ? st.done + "/" + st.total + " done" : "·") + "</span></a>";
     }
-    var pages = S().notebook.pages.slice().sort(function (a, b) { return b.updated - a.updated; });
+    var pages = s.notebook.pages.slice().sort(function (a, b) { return b.updated - a.updated; });
     var last = pages[0];
     var nbCard = card("Your notebook",
       (last
@@ -118,16 +166,45 @@
       '<div class="row-actions"><button class="btn sm" data-act="nb-new-journal" data-day="' + key + '">' + ic("plus") + "Today’s journal entry</button>" +
       '<a class="btn sm ghost" href="#/notebook">Open notebook</a></div>', "card-nb");
 
-    return head(hello, esc(SI.longDate(t)), '<span class="prompt">' + esc(PROMPTS[dayOfYear(t) % PROMPTS.length]) + "</span>") +
+    /* the numbers */
+    var ts = SI.dayStats(key), hs = s.habits, hdone = hs.filter(function (x) { return (s.habitLog[x.id] || {})[key]; }).length;
+    var best = 0;
+    hs.forEach(function (x) { best = Math.max(best, currentStreak(x.id)); });
+    var gp = s.goals.length ? Math.round(s.goals.reduce(function (a, g) { return a + goalPct(g); }, 0) / s.goals.length) : null;
+    var doy = dayOfYear(t), yearDays = SI.daysIn(t.getFullYear(), 1) === 29 ? 366 : 365;
+    var tiles = '<div class="kpis">' +
+      tile(ts.total ? ts.done + "<small>/" + ts.total + "</small>" : "0", "tasks done today", "#/day/" + key, ts.total ? ts.done / ts.total : 0) +
+      tile(hs.length ? hdone + "<small>/" + hs.length + "</small>" : "0", "habits today", "#/habits/" + SI.monthKey(t.getFullYear(), t.getMonth()), hs.length ? hdone / hs.length : 0) +
+      tile(best + "<small> day" + (best === 1 ? "" : "s") + "</small>", "best habit streak", "#/habits/" + SI.monthKey(t.getFullYear(), t.getMonth())) +
+      tile(gp == null ? "—" : gp + "<small>%</small>", gp == null ? "no goals yet" : "average goal progress", "#/goals", gp == null ? null : gp / 100) + "</div>";
+
+    var habitsCard = card("Habits today", habitChips(key) + (hs.length ? '<ul class="streaks">' + hs.map(function (x) {
+      var n = currentStreak(x.id);
+      return n > 1 ? '<li><span>' + esc(x.name || "Habit") + '</span><b>' + n + " days</b></li>" : "";
+    }).join("") + "</ul>" : ""));
+    var goalsCard = card("Goals", s.goals.length ? s.goals.slice(0, 3).map(function (g) {
+      var pct = goalPct(g);
+      return '<a class="goal-mini" href="#/goals"><span class="gm-top"><span class="gm-title">' + esc(g.title || "Goal") + '</span><span class="gm-pct">' + pct + '%</span></span><span class="bar" aria-hidden="true"><i style="width:' + pct + '%"></i></span></a>';
+    }).join("") + (s.goals.length > 3 ? '<p class="small"><a href="#/goals">See all ' + s.goals.length + " goals</a></p>" : "")
+      : '<p class="empty">One goal that feels light to carry is plenty. <a href="#/goals">Add one</a>.</p>');
+    var soon = upcomingKeys(5);
+    var soonCard = card("Coming up", keyDateList(soon, "Star a task on any day and it appears here."));
+
+    var banner = s.sample ? '<div class="sample-banner" role="status"><span>You’re looking at a <b>sample planner</b>. Everything here is made up.</span><button class="btn sm" data-act="start-fresh">Start fresh</button></div>' : "";
+
+    return banner + '<div class="hero"><div class="hero-text">' + head(hello, esc(SI.longDate(t)), '<span class="prompt">' + esc(PROMPTS[doy % PROMPTS.length]) + "</span>") +
       '<div class="intention"><label for="intent" class="eyebrow">Today’s intention</label>' +
-      bound("days." + key + ".intention", SI.peekDay(key).intention, 'id="intent" placeholder="One line for the day ahead…" maxlength="160"', "field intent-field") + "</div>" +
+      bound("days." + key + ".intention", rec.intention, 'id="intent" placeholder="One line for the day ahead…" maxlength="160"', "field intent-field") + "</div></div>" +
+      ring(doy / yearDays, Math.round(doy / yearDays * 100) + "%", "of " + t.getFullYear() + " done") + "</div>" +
+      '<p class="yline">' + Math.round(doy / yearDays * 100) + "% of " + t.getFullYear() + ' done<span class="bar" aria-hidden="true"><i style="width:' + Math.round(doy / yearDays * 100) + '%"></i></span></p>' +
+      tiles + gettingStarted() +
       '<div class="cols cols-2"><div class="stack">' +
       card("To do today", taskList(key, false, "A quiet page. Add one small thing that would make today feel good.") + addRow(key)) +
       card("This week", '<div class="wstrip">' + week + '</div><p class="small"><a href="' + href.week(t) + '">Open the week</a></p>') +
+      nbCard +
       '</div><div class="stack">' +
-      card("Habits today", habitChips(key)) +
-      card("How are you feeling?", moodPicker(key)) +
-      nbCard + "</div></div>";
+      habitsCard + goalsCard + soonCard +
+      card("How are you feeling?", moodPicker(key)) + "</div></div>";
   };
 
   /* ------------------------------------------------------------ YEAR */

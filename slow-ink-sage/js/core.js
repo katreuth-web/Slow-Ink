@@ -185,6 +185,8 @@
     return s;
   }
 
+  SI.defaultState = defaultState;
+  SI.fillGaps = fillGaps;
   SI.state = loadState();
 
   var saveTimer = null, warned = false;
@@ -301,6 +303,7 @@
     SI.state.notebook.pages.forEach(function (p) {
       (p.objects || []).forEach(function (o) { if (o.type === "img" && ids.indexOf(o.imgId) < 0) ids.push(o.imgId); });
     });
+    SI.state.ui.backedUp = true; SI.saveNow();
     SI.images.exportAll(ids).then(function (imgs) {
       var data = Object.assign({}, SI.state, { images: imgs });
       var blob = new Blob([JSON.stringify(data)], { type: "application/json" });

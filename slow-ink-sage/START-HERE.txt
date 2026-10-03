@@ -28,7 +28,8 @@ KEEP YOUR WORK SAFE  (please read - it's important)
   by device and browser - if you'd like to use it on a tablet, get in touch.
 
 WHAT'S INSIDE
-- Today, Year, Month, Week and Day pages. Use the arrows to move to any year.
+- TODAY: your home dashboard, with a greeting, your intention, a year-progress ring, today's numbers, habit streaks, goal progress and your next key dates. A short "Getting started" checklist ticks itself off as you go (you can hide it). Plus Year, Month, Week and Day pages. Use the arrows to move to any year.
+- Want to see how a lived-in planner looks? Press "Look around with sample data" on the Today page. A banner lets you clear it and start fresh.
 - Star a task to make it a KEY DATE: it is highlighted in the Year and Month pages.
 - Habits, Goals and Reflect (monthly and yearly prompts).
 - NOTEBOOK (dark green button, top right): a separate bound book with coloured

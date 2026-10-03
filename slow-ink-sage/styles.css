@@ -622,3 +622,57 @@ body.markup-on .foot { padding-bottom: 110px; }
 
 /* very small phones: let the page title shrink so the whole name stays visible */
 @media (max-width: 400px) { .sheet-title { font-size: 19px; } }
+
+/* ---------------------------------------------------------------- home dashboard */
+.hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 28px; align-items: center; }
+.hero-text { min-width: 0; }
+.hero .intent-field { max-width: 640px; }
+.yring { position: relative; width: 132px; height: 132px; flex: none; display: grid; place-items: center; align-content: center; text-align: center; }
+.yring svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.yr-bg { fill: none; stroke: var(--sage-soft); stroke-width: 9; }
+.yr-fg { fill: none; stroke: var(--forest); stroke-width: 9; stroke-linecap: round; transition: stroke-dashoffset 0.6s; }
+.yr-num { position: relative; font-family: var(--serif); font-style: italic; font-weight: 700; font-size: 28px; line-height: 1; color: var(--forest); }
+.yr-sub { position: relative; font-size: 11px; letter-spacing: 0.06em; color: var(--ink-mute); margin-top: 4px; }
+
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin: 6px 0 20px; }
+.kpi { display: flex; flex-direction: column; gap: 2px; padding: 16px 18px 14px; border-radius: var(--radius); background: var(--paper); border: 1px solid var(--rule); box-shadow: var(--shadow); text-decoration: none; color: var(--ink); min-width: 0; }
+.kpi:hover { background: #fff; }
+.kpi-num { font-family: var(--serif); font-style: italic; font-weight: 700; font-size: 30px; line-height: 1.1; color: var(--forest); }
+.kpi-num small { font-family: var(--sans); font-style: normal; font-weight: 400; font-size: 14px; color: var(--ink-mute); }
+.kpi-label { font-size: 12.5px; color: var(--ink-mute); }
+.kpi .bar { margin-top: 8px; }
+
+.yline { display: none; margin: 0 0 14px; font-size: 13px; color: var(--ink-mute); }
+.yline .bar { margin-top: 6px; }
+.sample-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 6px 0 4px; padding: 10px 14px; border-radius: 12px; background: var(--gold-soft); border: 1px solid var(--sand); font-size: 14px; }
+.gstart { margin-bottom: 20px; border-left: 6px solid var(--sage); }
+.gs-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.gs-head .card-title { margin: 0; }
+.gs-count { font-size: 13px; color: var(--ink-mute); }
+.gs-list { list-style: none; margin: 14px 0 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 22px; }
+.gs-step { display: flex; align-items: center; gap: 10px; font-size: 15px; min-width: 0; }
+.gs-step a, .gs-step .linklike { color: var(--forest); }
+.gs-step.ok span:not(.gs-dot) { color: var(--ink-mute); text-decoration: line-through; }
+.gs-dot { flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--rule-2); display: grid; place-items: center; background: var(--paper); }
+.gs-step.ok .gs-dot { background: var(--forest); border-color: var(--forest); color: var(--cream); }
+.gs-dot .ic { width: 13px; height: 13px; stroke-width: 2.6; }
+
+.streaks { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--ink-soft); }
+.streaks li { display: flex; gap: 6px; align-items: baseline; }
+.streaks b { font-weight: 400; color: var(--clay); }
+.goal-mini { display: block; padding: 8px 0; text-decoration: none; color: var(--ink); }
+.goal-mini + .goal-mini { border-top: 1px dashed var(--rule); }
+.gm-top { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.gm-title { font-family: var(--serif); font-style: italic; font-weight: 600; font-size: 17px; color: var(--forest); min-width: 0; overflow-wrap: anywhere; }
+.gm-pct { font-size: 13px; color: var(--ink-mute); flex: none; }
+
+@media (max-width: 860px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .gs-list { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .yring { display: none; }
+  .yline { display: block; }
+  .kpi { padding: 12px 14px 10px; } .kpi-num { font-size: 26px; }
+}
