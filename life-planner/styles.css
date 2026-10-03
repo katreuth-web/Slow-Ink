@@ -622,6 +622,7 @@ body.nb-mode .sidebar, body.nb-mode .dock, body.nb-mode .topbar { display: none;
 body.nb-mode .app { display: block; padding: 0 22px 30px; min-height: 0; max-width: 1440px; margin: 0 auto; }
 body.nb-mode .toast { background: var(--ink); color: var(--bg); }
 
+[hidden] { display: none !important; }
 .nb-topbar { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 1440px; margin: 0 auto; padding: 18px 26px 6px; color: #fff; }
 .nb-back { color: #fff; text-decoration: none; padding: 9px 18px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.5); font-size: 13px; font-weight: 500; background: rgba(255, 255, 255, 0.12); }
 .nb-back:hover { background: rgba(255, 255, 255, 0.24); }
