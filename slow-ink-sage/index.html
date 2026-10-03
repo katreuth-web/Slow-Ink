@@ -10,6 +10,21 @@
       rel="icon"
       href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='11' fill='%232F4A3A'/%3E%3Cpath d='M20 9c5 4.6 7.4 8.6 7.4 12.4A7.4 7.4 0 0 1 20 29a7.4 7.4 0 0 1-7.4-7.6C12.6 17.600 15 13.600 20 9z' fill='%23F4EEE0'/%3E%3Cpath d='M20 15v13' stroke='%232F4A3A' stroke-width='1.800' stroke-linecap='round'/%3E%3C/svg%3E"
     />
+    <script>
+      /* apply the saved look before the page paints, so there is no flash of the wrong colours */
+      (function () {
+        try {
+          var s = JSON.parse(localStorage.getItem("slow-ink-sage-v1") || "null"), l = (s && s.ui && s.ui.look) || {}, d = document.documentElement;
+          function pick(v, list, def) { return list.indexOf(v) < 0 ? def : v; }
+          var m = pick(l.mode, ["light", "auto", "dark"], "light");
+          if (m === "auto") m = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+          d.setAttribute("data-theme", pick(l.theme, ["sage", "clay", "dusk", "rose"], "sage"));
+          d.setAttribute("data-mode", m);
+          d.setAttribute("data-font", pick(l.font, ["classic", "cozy", "modern"], "classic"));
+          d.setAttribute("data-bg", pick(l.bg, ["paper", "plain", "dots"], "paper"));
+        } catch (e) { /* the defaults apply */ }
+      })();
+    </script>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -19,6 +34,7 @@
           <span class="brand-mark" aria-hidden="true"></span>
           <span class="brand-name">Slow Ink</span>
         </a>
+        <button class="look-btn" data-act="open-look" aria-label="Personalise: colour, dark mode and font" title="Personalise"></button>
         <a class="nb-quick" href="#/notebook">
           <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4.500h11a3 3 0 0 1 3 3V19.500H8a3 3 0 0 1-3-3z"/><path d="M5 16.500a3 3 0 0 1 3-3h11"/></svg>Notebook
         </a>
@@ -36,6 +52,7 @@
       <footer class="foot" id="foot">
         <span>Everything you write stays on this device.</span>
         <button class="linklike" data-act="export">Back up planner</button>
+        <button class="linklike" data-act="open-look">Personalise</button>
         <button class="linklike" data-act="load-sample">Try sample data</button>
         <label class="linklike">
           Restore backup
@@ -55,12 +72,15 @@
       </form>
     </dialog>
 
+    <dialog id="look" class="ask look" aria-label="Personalise"></dialog>
+
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="js/core.js"></script>
     <script src="js/images.js"></script>
     <script src="js/stickers.js"></script>
     <script src="js/sample.js"></script>
+    <script src="js/look.js"></script>
     <script src="js/views.js"></script>
     <script src="js/notebook.js"></script>
     <script src="js/main.js"></script>

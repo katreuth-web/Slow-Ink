@@ -52,6 +52,7 @@
     check: '<path d="M5 12.5l4.5 4.5L19 7.500"/>',
     trash: '<path d="M4 7h16M9 7V4.500h6V7M6.500 7l.8 12.500h9.400L17.500 7"/>',
     star: '<path d="M12 3.500l2.600 5.400 5.900.8-4.300 4.100 1 5.800L12 16.800 6.800 19.600l1-5.800L3.500 9.700l5.900-.8z"/>',
+    palette: '<path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.4 0 2-.9 2-1.8 0-.6-.3-1-.6-1.4-.4-.4-.6-.9-.6-1.400 0-1 .8-1.800 1.800-1.800H16.500a4 4 0 0 0 4-4C20.500 6.800 16.700 3.500 12 3.500z"/><circle cx="7.500" cy="11" r="1"/><circle cx="10" cy="7.500" r="1"/><circle cx="14.500" cy="7.500" r="1"/>',
     left: '<path d="M14.500 5.500L8 12l6.500 6.500"/>',
     right: '<path d="M9.500 5.500L16 12l-6.500 6.500"/>',
     book: '<path d="M5 4.500h11a3 3 0 0 1 3 3V19.500H8a3 3 0 0 1-3-3z"/><path d="M5 16.500a3 3 0 0 1 3-3h11"/>',
@@ -380,6 +381,7 @@
       SI.images.replaceAll(imgs && typeof imgs === "object" ? imgs : {}).then(function () {
         SI.state = fillGaps(s);
         SI.saveNow();
+        if (SI.applyLook) SI.applyLook();
         SI.toast("Backup restored.");
         SI.render();
       });

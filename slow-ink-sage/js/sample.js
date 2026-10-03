@@ -70,6 +70,7 @@
   }
   function replace(state, msg) {
     SI.images.replaceAll({}).then(function () {
+      if (SI.state.ui.look) state.ui.look = SI.state.ui.look;   /* keep the chosen colours and font */
       SI.state = state;
       SI.saveNow();
       SI.toast(msg);

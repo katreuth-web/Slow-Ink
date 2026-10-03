@@ -16,6 +16,15 @@ A warm, paper-and-sage yearly planner with a notebook of its own. Plain HTML, CS
 - **Habits** is a month grid with streaks. **Goals** breaks a goal into steps with a progress bar. **Reflect** has monthly and yearly prompts.
 - Works for any year. Use the arrows on the Year, Month and Week pages to move around.
 
+## Personalise
+
+The palette button in the top bar (or "Personalise" in the footer) opens a panel with four choices. They save with the planner, so they travel with a backup:
+
+- **Colour:** Sage, Clay, Dusk or Rose.
+- **Appearance:** Light, Dark, or Auto (follows the phone or computer). The notebook paper stays light in dark mode, so ink, photos and stickers look right.
+- **Font:** Classic (Fraunces and Questrial), Cozy (Lora and Nunito) or Modern (Inter).
+- **Background:** Paper (soft glow and grain), Plain or Dotted.
+
 ## The Notebook
 
 Opening it steps out of the planner into a bound notebook on its own green desk.
@@ -41,14 +50,14 @@ Use the same browser each time you open it (Chrome, Edge, Firefox and Safari all
 ## For the seller
 
 - No server, database or login. Nothing to host, nothing to maintain.
-- Fonts (Fraunces, Questrial — both SIL Open Font License) are bundled in `fonts/`, so it looks identical offline. Keep the two `LICENSE-*.txt` files in the zip.
+- Fonts (Fraunces, Questrial, Lora, Nunito, Inter; all SIL Open Font License) are bundled in `fonts/`, so it looks identical offline. Keep the `LICENSE-*.txt` files in the zip.
 - All planner data lives under one `localStorage` key, `slow-ink-sage-v1` (see `js/core.js`).
 - Scripts are classic `<script>` tags on purpose: ES modules are blocked by browsers when a page is opened from a file.
-- Files: `index.html`, `styles.css`, `js/core.js` (dates, saving, backup/restore, the safe-HTML filter), `js/images.js` (photo storage), `js/stickers.js` (the sticker library), `js/views.js` (planner pages), `js/notebook.js` (notebook, editor, photos/stickers and ink), `js/sample.js` (the sample planner and getting-started actions), `js/main.js` (routing and events).
+- Files: `index.html`, `styles.css`, `js/core.js` (dates, saving, backup/restore, the safe-HTML filter), `js/images.js` (photo storage), `js/stickers.js` (the sticker library), `js/views.js` (planner pages), `js/notebook.js` (notebook, editor, photos/stickers and ink), `js/sample.js` (the sample planner and getting-started actions), `js/look.js` (the Personalise panel), `js/main.js` (routing and events).
 - Notebook text is stored as a small, safe subset of HTML (`h1–h3`, `p`, `strong`, `em`, `u`, lists, `hr`, `a`). Everything typed, pasted or restored from a backup passes through `SI.sanitizeHtml`, and a restored backup is also checked for unexpected ids and dates before anything is replaced.
 - Photos live in IndexedDB (not localStorage) and are included in backups. If a browser blocks IndexedDB, photos fall back to localStorage.
 - Stickers are SVG strings in `js/stickers.js`; recolour the whole set by editing the palette `P` at the top of that file.
-- Colours are CSS variables at the top of `styles.css`; changing `--forest` and `--sage` re-tints the whole planner.
+- Colours are CSS variables. Each theme is a pair of blocks near the top of `styles.css` (light and dark); add a theme by copying one pair, then add its name to `THEMES` in `js/look.js` and to the small script in `index.html`'s `<head>` (which applies the saved look before the page paints).
 
 ## Running locally
 
