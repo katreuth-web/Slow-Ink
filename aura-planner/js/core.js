@@ -37,7 +37,7 @@
   A.daysIn = function (y, m) { return new Date(y, m + 1, 0).getDate(); };
   A.fmtDay = function (d, opts) { return d.toLocaleDateString(undefined, opts || { weekday: "long", month: "long", day: "numeric" }); };
   A.money = function (n) {
-    var cur = (A.state && A.state.finance.currency) || "$";
+    var cur = (A.state && A.state.finance && A.state.finance.currency) || "$";
     return (n < 0 ? "−" : "") + cur + Math.abs(n).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   };
   A.PALETTE = ["#B69CFF", "#FF9ED2", "#8FD9C0", "#9CC7FF", "#FFD88A", "#FF8A9E", "#D6A8FF", "#7FD1E6", "#F7B2E0", "#A8E6A1"];
@@ -50,14 +50,14 @@
   var KEY = "aura-planner-v1";
 
   A.defaults = function () {
-    var habits = ["Morning pages", "Move 30 min", "Read 20 min", "Meditate", "Screens off by 10pm"].map(function (n, i) {
+    var habits = ["Morning pages", "Meditate", "Move my body", "Time in nature", "Screens off by 10pm"].map(function (n, i) {
       return { id: A.uid() + i, name: n, color: A.PALETTE[i] };
     });
-    var areas = ["Career", "Finances", "Health", "Family", "Love", "Friends", "Growth", "Fun", "Environment", "Spirituality"].map(function (n, i) {
+    var areas = ["Career", "Abundance", "Health", "Family", "Love", "Friends", "Growth", "Joy", "Home", "Spirit"].map(function (n, i) {
       return { name: n, score: 5, color: A.PALETTE[i] };
     });
     return {
-      v: 1,
+      v: 2,
       days: {},
       weeks: {},
       months: {},
@@ -66,24 +66,19 @@
       habitLog: {},
       wheel: { areas: areas, notes: "" },
       ikigai: { love: [], good: [], paid: [], need: [], statement: "" },
-      matrix: { do: [], plan: [], delegate: [], drop: [] },
-      goals: [],
-      mindmap: { nodes: [{ id: "root", text: "My year", x: 50, y: 50, color: "#B69CFF", parent: null }] },
+      mindmap: { nodes: [{ id: "root", text: "My dream life", x: 50, y: 50, color: "#B69CFF", parent: null }] },
       vision: { title: "The life I'm creating", tiles: [] },
-      finance: {
-        currency: "$",
-        categories: ["Housing", "Groceries", "Dining out", "Transport", "Health", "Shopping", "Fun", "Subscriptions", "Savings", "Other"],
-        months: {},
-        savings: []
-      },
-      meals: { weeks: {}, grocery: [], recipes: [] },
-      fitness: { workouts: [], weights: [], unit: "lb", goalWeight: "", weeklyTarget: 150 },
+      manifest: { items: [], view: "board" },
+      scripts: [],
+      viz: { sessions: [], sound: true, minutes: 5 },
+      affirm: { favs: [], custom: [], counts: {}, cat: "all" },
+      rituals: { tab: "369", r369: { text: "" }, r555: { text: "", start: "", days: {} }, signs: [], moon: {} },
       notebook: {
         pages: [], current: "", section: "s-journal",
         sections: [{ id: "s-journal", name: "Journal", tone: "lav" }, { id: "s-notes", name: "Notes", tone: "pink" }, { id: "s-ideas", name: "Ideas", tone: "mint" }]
       },
       coach: { key: "", model: "claude-opus-5", analysis: "", analysisAt: "", synthInput: "", synth: null, synthAt: "" },
-      ui: { mealWeek: "", finMonth: "", mmSel: "root" }
+      ui: { mmSel: "root", nbMode: "type" }
     };
   };
 
@@ -126,20 +121,34 @@
   A.newDay = function () {
     return {
       top3: [{ t: "", done: false }, { t: "", done: false }, { t: "", done: false }],
-      tasks: [], schedule: {}, mood: 0, water: 0, focus: [], breaks: [], care: {},
-      meals: { b: "", l: "", d: "", s: "" }, brain: "", intention: "", energy: 0,
-      reflect: { wins: "", grateful: "", learned: "", tomorrow: "" }
+      tasks: [], mood: 0, energy: 0, water: 0, care: {}, brain: "", intention: "", feeling: "",
+      gratitude: ["", "", ""], emotions: [], actAsIf: "", sign: "", practice: {}, r369: { m: false, a: false, e: false }, affirmed: 0,
+      reflect: { wins: "", felt: "", shifted: "", release: "", tomorrow: "" }
     };
   };
-  A.peekDay = function (k) { return A.state.days[k] || null; };
+  /* Days saved by an earlier version miss the newer fields; fill them in when a day is read. */
+  function ensureDay(d) {
+    var n = A.newDay();
+    Object.keys(n).forEach(function (f) { if (d[f] == null) d[f] = n[f]; });
+    ["wins", "felt", "shifted", "release", "tomorrow"].forEach(function (f) { if (d.reflect[f] == null) d.reflect[f] = ""; });
+    if (!Array.isArray(d.gratitude)) d.gratitude = ["", "", ""];
+    if (!Array.isArray(d.emotions)) d.emotions = [];
+    /* the evening page of the first version used "grateful" and "learned" */
+    if (d.reflect.grateful && !d.gratitude.some(Boolean)) d.gratitude = String(d.reflect.grateful).split("\n").concat(["", "", ""]).slice(0, 3);
+    if (d.reflect.learned && !d.reflect.felt) d.reflect.felt = d.reflect.learned;
+    return d;
+  }
+  A.peekDay = function (k) { var d = A.state.days[k]; return d ? ensureDay(d) : null; };
   A.day = function (k) {
     if (!A.state.days[k]) A.state.days[k] = A.newDay();
-    return A.state.days[k];
+    return ensureDay(A.state.days[k]);
   };
   A.dayHasContent = function (k) {
-    var d = A.state.days[k];
+    var d = A.peekDay(k);
     if (!d) return false;
-    return !!(d.tasks.length || d.mood || d.water || d.brain || d.top3.some(function (t) { return t.t; }) || Object.keys(d.schedule).some(function (h) { return d.schedule[h]; }) || d.reflect.wins || d.reflect.grateful);
+    var r = d.reflect;
+    return !!(d.tasks.length || d.mood || d.brain || d.intention || d.feeling || d.emotions.length || d.actAsIf || d.sign || d.gratitude.some(Boolean) || d.top3.some(function (t) { return t.t; }) ||
+      Object.keys(d.practice).some(function (x) { return d.practice[x]; }) || d.r369.m || d.r369.a || d.r369.e || r.wins || r.felt || r.shifted || r.release || r.grateful);
   };
   A.allTasks = function () {
     var out = [];
@@ -162,6 +171,83 @@
     A.day(k).tasks.push(t);
     A.save();
     return t;
+  };
+
+  /* ------------------------------------------------------------ safe rich text */
+  /* Notebook text is stored as a tiny, safe subset of HTML. Anything typed, pasted or restored
+     from a backup passes through this filter, so a tampered backup can never run code. */
+  var KEEP = { P: 1, DIV: 1, BR: 1, H1: 1, H2: 1, H3: 1, STRONG: 1, B: 1, EM: 1, I: 1, U: 1, UL: 1, OL: 1, LI: 1, A: 1, HR: 1 };
+  var DROP = { SCRIPT: 1, STYLE: 1, IFRAME: 1, OBJECT: 1, EMBED: 1, TEMPLATE: 1, NOSCRIPT: 1, SVG: 1, MATH: 1, TEXTAREA: 1, SELECT: 1, INPUT: 1, BUTTON: 1, FORM: 1, LINK: 1, META: 1, TITLE: 1, HEAD: 1, IMG: 1, VIDEO: 1, AUDIO: 1, CANVAS: 1 };
+  A.safeUrl = function (u) {
+    u = String(u == null ? "" : u).trim();
+    if (!u) return "";
+    if (/^(https?:|mailto:)/i.test(u)) return u;
+    if (/^[a-z][a-z0-9+.\-]*:/i.test(u)) return "";
+    if (/^[^\s\/]+\.[^\s]{2,}/.test(u)) return "https://" + u;
+    return "";
+  };
+  function cleanInto(node, out) {
+    Array.prototype.forEach.call(node.childNodes, function (ch) {
+      if (ch.nodeType === 3) { out.appendChild(document.createTextNode(ch.nodeValue)); return; }
+      if (ch.nodeType !== 1 || DROP[ch.tagName]) return;
+      if (!KEEP[ch.tagName]) { cleanInto(ch, out); return; }
+      var el = document.createElement(ch.tagName.toLowerCase());
+      if (ch.tagName === "A") {
+        var href = A.safeUrl(ch.getAttribute("href"));
+        if (!href) { cleanInto(ch, out); return; }
+        el.setAttribute("href", href);
+        el.setAttribute("target", "_blank");
+        el.setAttribute("rel", "noopener noreferrer");
+      }
+      if (ch.tagName !== "BR" && ch.tagName !== "HR") cleanInto(ch, el);
+      out.appendChild(el);
+    });
+  }
+  A.sanitizeHtml = function (html) {
+    var doc = new DOMParser().parseFromString("<!doctype html><body>" + String(html == null ? "" : html).slice(0, 600000), "text/html");
+    var box = document.createElement("div");
+    cleanInto(doc.body, box);
+    return box.innerHTML;
+  };
+  A.textToHtml = function (text) {
+    return String(text || "").split("\n").map(function (line) { return line ? "<p>" + A.esc(line) + "</p>" : "<p><br></p>"; }).join("");
+  };
+  A.htmlToText = function (html) {
+    var doc = new DOMParser().parseFromString("<!doctype html><body>" + String(html || ""), "text/html");
+    Array.prototype.forEach.call(doc.body.querySelectorAll("br"), function (b) { b.replaceWith(doc.createTextNode("\n")); });
+    Array.prototype.forEach.call(doc.body.querySelectorAll("p,div,h1,h2,h3,li,hr"), function (b) { b.appendChild(doc.createTextNode("\n")); });
+    return doc.body.textContent.replace(/\n{3,}/g, "\n\n").trim();
+  };
+
+  /* ------------------------------------------------------------ moon phases */
+  /* An average-month calculation from a known new moon. It is accurate to within about a day,
+     which is plenty for planning rituals, but it is not an astronomical almanac. */
+  var SYNODIC = 29.530588853, NEW_MOON_EPOCH = Date.UTC(2000, 0, 6, 18, 14);
+  var PHASES = [
+    ["New moon", "moon-new", "Plant the seed: set an intention and write down what you’re calling in."],
+    ["Waxing crescent", "moon-wax-cres", "Take one small, inspired step toward what you planted."],
+    ["First quarter", "moon-first", "Push through doubts. What is one thing that needs a decision?"],
+    ["Waxing gibbous", "moon-wax-gib", "Refine and trust. Adjust your plan, keep the feeling."],
+    ["Full moon", "moon-full", "Celebrate what has grown, and release what is in the way."],
+    ["Waning gibbous", "moon-wan-gib", "Give thanks. Notice what has already shifted."],
+    ["Last quarter", "moon-last", "Let go of what no longer fits. Forgive, tidy, simplify."],
+    ["Waning crescent", "moon-wan-cres", "Rest and reset before the next new moon."]
+  ];
+  A.moonAge = function (d) {
+    var t = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12).getTime();
+    return (((t - NEW_MOON_EPOCH) / 864e5) % SYNODIC + SYNODIC) % SYNODIC;
+  };
+  A.moonPhase = function (d) {
+    var age = A.moonAge(d), idx = Math.floor(age / SYNODIC * 8 + 0.5) % 8;
+    return { age: age, idx: idx, name: PHASES[idx][0], key: PHASES[idx][1], prompt: PHASES[idx][2], lit: (1 - Math.cos(2 * Math.PI * age / SYNODIC)) / 2 };
+  };
+  /* The next new (0) or full (1) moon after `from`, to the nearest day. */
+  A.nextMoon = function (from, full) {
+    for (var i = 1; i <= 35; i++) {
+      var a0 = A.moonAge(A.addDays(from, i - 1)), a1 = A.moonAge(A.addDays(from, i)), half = SYNODIC / 2;
+      if (full ? (a0 < half && a1 >= half) : a1 < a0) return A.addDays(from, i);
+    }
+    return null;
   };
 
   /* ------------------------------------------------------------ image store (IndexedDB) */
@@ -295,7 +381,22 @@
     refresh: '<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5v3.5H16"/>',
     lasso: '<ellipse cx="12" cy="9" rx="8" ry="5"/><path d="M8 13.5c-1 2 0 4 2 4.5s1 3-1 3"/>',
     play: '<path d="M8 5.5v13l10-6.5z"/>',
-    pause: '<path d="M8.5 5.5v13M15.5 5.5v13"/>'
+    pause: '<path d="M8.5 5.5v13M15.5 5.5v13"/>',
+    sprout: '<path d="M12 21v-9"/><path d="M12 12c0-4 3-6.500 7-6.500 0 4-3 6.500-7 6.500z"/><path d="M12 14c0-3.500-2.500-5.500-6-5.500 0 3.500 2.500 5.500 6 5.500z"/>',
+    seed: '<path d="M12 4c4 3 6 6 6 9.500a6 6 0 0 1-12 0C6 10 8 7 12 4z"/><path d="M12 9v9"/>',
+    bloom: '<circle cx="12" cy="12" r="2.500"/><path d="M12 9.500c-2-3-1.500-6 0-6.500 1.500.5 2 3.500 0 6.500zM14.500 12c3-2 6-1.500 6.500 0-.5 1.500-3.500 2-6.500 0zM12 14.500c2 3 1.500 6 0 6.500-1.500-.5-2-3.500 0-6.500zM9.500 12c-3 2-6 1.500-6.500 0 .5-1.500 3.500-2 6.500 0z"/>',
+    feather: '<path d="M20 4c-8 0-13 5-14 13l-1 3 3-1c8-1 12-6 12-15z"/><path d="M6 18L15 9"/>',
+    lotus: '<path d="M12 5c2.500 2.500 3 5.500 0 9-3-3.500-2.500-6.500 0-9z"/><path d="M6.500 8.500c3 .500 5 2.500 5.500 5.500-3 0-5.500-2-5.500-5.500zM17.500 8.500c-3 .500-5 2.500-5.500 5.500 3 0 5.500-2 5.500-5.500z"/><path d="M4 15c3 3 13 3 16 0"/>',
+    infinity: '<path d="M12 12c-2-3-3.500-4-5.500-4a4 4 0 0 0 0 8c2 0 3.500-1 5.500-4zm0 0c2 3 3.500 4 5.500 4a4 4 0 0 0 0-8c-2 0-3.500 1-5.500 4z"/>',
+    front: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M4 16V6a2 2 0 0 1 2-2h10"/>',
+    back: '<rect x="4" y="4" width="12" height="12" rx="2"/><path d="M20 8v10a2 2 0 0 1-2 2H8"/>',
+    copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+    external: '<path d="M14 5h5v5M19 5l-8 8M18 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h4"/>',
+    rule: '<path d="M3 12h18"/><path d="M8 7h8M8 17h8" opacity=".45"/>',
+    ol: '<path d="M10 7h10M10 12h10M10 17h10M4 5.500l1.500-1v5M3.500 14.500c.5-1 2.500-1 2.500.5 0 1-2.500 2-2.500 3h3"/>',
+    sticker: '<path d="M5 4.500h14v9l-6 6H5z"/><path d="M13 19.500V15a1.500 1.500 0 0 1 1.500-1.500H19"/><circle cx="9" cy="10" r="1"/>',
+    rotate: '<path d="M20 11a8 8 0 1 0-2.300 5.700"/><path d="M20 4v7h-7"/>',
+    resize: '<path d="M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7"/>'
   };
   A.ic = function (name, cls) {
     return '<svg class="' + (cls || "") + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[name] || "") + "</svg>";
@@ -356,11 +457,11 @@
 
   /* ------------------------------------------------------------ router & navigation */
   A.GROUPS = [
-    { id: "plan", label: "Planner", icon: "calendar", items: [["year", "Year"], ["month", "Month"], ["week", "Week"], ["day", "Daily Focus"]] },
-    { id: "life", label: "Life Design", icon: "compass", items: [["wheel", "Level 10 Life"], ["ikigai", "Ikigai"], ["matrix", "Eisenhower Matrix"], ["goals", "SMART Goals"], ["mindmap", "Mind Map"], ["vision", "Vision Board"]] },
-    { id: "well", label: "Wellness", icon: "leaf", items: [["habits", "Habits"], ["finance", "Finances"], ["meals", "Meals & Recipes"], ["fitness", "Fitness"]] },
+    { id: "plan", label: "Planner", icon: "calendar", items: [["year", "Year"], ["month", "Month"], ["week", "Week"], ["day", "Daily Practice"]] },
+    { id: "manifest", label: "Manifest", icon: "sparkle", items: [["manifest", "My Manifestations"], ["script", "Scripting"], ["visualize", "Visualize"], ["affirm", "Affirmations"], ["rituals", "Rituals & Moon"]] },
+    { id: "align", label: "Align", icon: "compass", items: [["wheel", "Level 10 Life"], ["ikigai", "Ikigai"], ["vision", "Vision Board"], ["mindmap", "Dream Map"], ["habits", "Habits"]] },
     { id: "notes", label: "Notebook", icon: "notebook", items: [["notebook", "Notebook"]] },
-    { id: "ai", label: "AI Coach", icon: "sparkle", items: [["coach", "Habit & Journal Analyzer"], ["synth", "Priority Synthesizer"]] }
+    { id: "ai", label: "Insights", icon: "eye", items: [["coach", "Pattern Insights"], ["synth", "Thought Sorter"]] }
   ];
   A.views = {};
   A.acts = {};

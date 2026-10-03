@@ -21,7 +21,9 @@ Opening it steps out of the planner into a bound notebook on its own green desk.
 - Coloured **section tabs** down the edge (Journal, Notes, Ideas — add, rename or delete your own).
 - A **Contents** page listing every page in the section.
 - Four papers per page: lined, blank, dot grid, squared.
-- **Type / Markup** toggle: type on the page, or switch to Markup to handwrite, highlight and sketch with pen, marker, pencil and eraser, seven ink colours, adjustable width, undo/redo. Works with mouse, finger and stylus (palm rejection once a stylus is detected).
+- **Write:** a formatting bar for Title, Heading and Subhead styles, bold, italic, underline, bulleted and numbered lists, divider lines and links (select text, press the link button or Ctrl/Cmd+K). Headings are sized to the ruled lines so everything stays on the paper.
+- **Decorate:** add **photos** (JPEG/PNG, resized automatically; also paste or drop a picture onto the page) and **stickers** (64 hand-drawn SVG stickers: nature, hearts & stars, moon phases and sky, cosy things, washi tape, labels and doodles). Drag to move, use the corner handle to resize and the top handle to turn. Bring forward, send back, duplicate and delete from the bar; arrow keys nudge and Delete removes.
+- **Type / Markup** toggle: type on the page, or switch to Markup to handwrite, highlight and sketch with pen, marker, pencil and eraser, seven inks, adjustable width, undo/redo. Works with mouse, finger and stylus (palm rejection once a stylus is detected). Ink sits on top of photos and stickers.
 - "Today's journal entry" buttons on the Today and Day pages open (or create) a dated journal page.
 - Print any page from the printer button.
 
@@ -40,7 +42,10 @@ Use the same browser each time you open it (Chrome, Edge, Firefox and Safari all
 - Fonts (Fraunces, Questrial — both SIL Open Font License) are bundled in `fonts/`, so it looks identical offline. Keep the two `LICENSE-*.txt` files in the zip.
 - All planner data lives under one `localStorage` key, `slow-ink-sage-v1` (see `js/core.js`).
 - Scripts are classic `<script>` tags on purpose: ES modules are blocked by browsers when a page is opened from a file.
-- Files: `index.html`, `styles.css`, `js/core.js` (dates, saving, backup), `js/views.js` (planner pages), `js/notebook.js` (notebook and ink), `js/main.js` (routing and events).
+- Files: `index.html`, `styles.css`, `js/core.js` (dates, saving, backup/restore, the safe-HTML filter), `js/images.js` (photo storage), `js/stickers.js` (the sticker library), `js/views.js` (planner pages), `js/notebook.js` (notebook, editor, photos/stickers and ink), `js/main.js` (routing and events).
+- Notebook text is stored as a small, safe subset of HTML (`h1–h3`, `p`, `strong`, `em`, `u`, lists, `hr`, `a`). Everything typed, pasted or restored from a backup passes through `SI.sanitizeHtml`, and a restored backup is also checked for unexpected ids and dates before anything is replaced.
+- Photos live in IndexedDB (not localStorage) and are included in backups. If a browser blocks IndexedDB, photos fall back to localStorage.
+- Stickers are SVG strings in `js/stickers.js`; recolour the whole set by editing the palette `P` at the top of that file.
 - Colours are CSS variables at the top of `styles.css`; changing `--forest` and `--sage` re-tints the whole planner.
 
 ## Running locally

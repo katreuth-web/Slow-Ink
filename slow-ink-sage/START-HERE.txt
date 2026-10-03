@@ -32,10 +32,16 @@ WHAT'S INSIDE
 - Star a task to make it a KEY DATE: it is highlighted in the Year and Month pages.
 - Habits, Goals and Reflect (monthly and yearly prompts).
 - NOTEBOOK (dark green button, top right): a separate bound book with coloured
-  section tabs (Journal, Notes, Ideas - add your own with the + tab), lined,
-  blank, dot grid and squared paper, and a Type / Markup switch. In Markup you
-  can handwrite and sketch with a pen, marker or pencil using a mouse, finger
-  or stylus.
+  section tabs (Journal, Notes, Ideas - add your own with the + tab) and lined,
+  blank, dot grid and squared paper.
+    * Write: use the bar above the page for Title / Heading / Subhead, bold,
+      italic, underline, lists, divider lines and links.
+    * Decorate: add your own PHOTOS and choose from 64 STICKERS (nature, hearts,
+      moon phases, tape, labels and more). Drag to move, use the round handles to
+      resize and turn, and the bar to bring forward, send back, copy or delete.
+    * Draw: switch to MARKUP to handwrite, highlight and sketch with a pen,
+      marker or pencil using a mouse, finger or stylus.
+  Your photos are included when you back up the planner.
 
 TERMS OF USE
 Personal use only. Please don't share, resell, redistribute or upload these

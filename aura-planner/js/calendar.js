@@ -4,11 +4,10 @@
   var A = window.Aura, esc = A.esc, ic = A.ic;
 
   A.MOOD_COLORS = ["#FF8A9E", "#FF9DB0", "#FFA9C8", "#F7B2E0", "#E6B4F5", "#D6A8FF", "#C2AEFF", "#ABBEFF", "#9CD3EE", "#8FD9C0"];
-  A.QUADS = { do: "Do", plan: "Plan", delegate: "Delegate", drop: "Drop" };
 
   /* ------------------------------------------------------------ shared stats */
   A.periodStats = function (start, end) {
-    var s = { days: 0, tasks: 0, done: 0, moods: [], water: 0, waterDays: 0, focus: 0, habitHits: 0, habitSlots: 0, workouts: 0, workoutMins: 0, spent: 0, reflections: 0 };
+    var s = { days: 0, tasks: 0, done: 0, moods: [], habitHits: 0, habitSlots: 0, practices: 0, gratitude: 0, affirmed: 0, reflections: 0, manifested: 0 };
     var hs = A.state.habits;
     for (var d = new Date(start); d <= end; d = A.addDays(d, 1)) {
       var k = A.ymd(d), day = A.peekDay(k);
@@ -17,9 +16,11 @@
         s.tasks += day.tasks.length;
         s.done += day.tasks.filter(function (t) { return t.done; }).length;
         if (day.mood) s.moods.push(day.mood);
-        if (day.water) { s.water += day.water; s.waterDays++; }
-        s.focus += (day.focus || []).filter(Boolean).length;
-        if (day.reflect && (day.reflect.wins || day.reflect.grateful || day.reflect.learned)) s.reflections++;
+        s.practices += A.practiceCount(day);
+        s.gratitude += day.gratitude.filter(Boolean).length;
+        s.affirmed += day.affirmed || 0;
+        var r = day.reflect;
+        if (r.wins || r.felt || r.shifted || r.release) s.reflections++;
       }
       if (d <= A.today()) {
         var log = A.state.habitLog[k] || {};
@@ -27,10 +28,7 @@
       }
     }
     var sk = A.ymd(start), ek = A.ymd(end);
-    A.state.fitness.workouts.forEach(function (w) { if (w.date >= sk && w.date <= ek) { s.workouts++; s.workoutMins += A.num(w.mins); } });
-    Object.keys(A.state.finance.months).forEach(function (m) {
-      (A.state.finance.months[m].expenses || []).forEach(function (x) { if (x.date >= sk && x.date <= ek) s.spent += A.num(x.amt); });
-    });
+    A.state.manifest.items.forEach(function (m) { if (m.status === "manifested" && m.doneDate >= sk && m.doneDate <= ek) s.manifested++; });
     s.moodAvg = s.moods.length ? s.moods.reduce(function (a, b) { return a + b; }, 0) / s.moods.length : 0;
     s.habitPct = s.habitSlots ? s.habitHits / s.habitSlots : 0;
     return s;
@@ -40,7 +38,7 @@
   A.habitGrid = function (dates, opts) {
     opts = opts || {};
     var tk = A.todayKey(), hs = A.state.habits;
-    if (!hs.length) return '<div class="empty">No habits yet — add some on the <a href="#/habits">Habits</a> page.</div>';
+    if (!hs.length) return '<div class="empty">No rituals yet. Add some on the <a href="#/habits">Habits</a> page.</div>';
     var head = "<tr><th></th>" + dates.map(function (d) {
       var k = A.ymd(d);
       return '<th class="' + (k === tk ? "today" : "") + '" title="' + esc(A.fmtDay(d)) + '">' + (opts.dow ? A.DOW[A.dowIdx(d)].charAt(0) + "<br>" : "") + d.getDate() + "</th>";
@@ -100,19 +98,25 @@
     var months = A.MONTHS.map(function (name, m) {
       return '<section class="card mini-month"><h3><a href="' + A.hrefMonth(new Date(y, m, 1)) + '">' + name + '</a><span class="badge grey">' + A.pad(m + 1) + "</span></h3>" + miniMonth(y, m) + "</section>";
     }).join("");
-    return A.head("Year overview", '<span class="soft">' + y + "</span> at a glance", "Tap a month, a week number or any date to jump straight to that page.", pager(A.hrefYear(y - 1), A.hrefYear(y + 1))) +
+    return A.head("Year overview", '<span class="soft">' + y + "</span> at a glance", "Tap a month, a week number or any date to jump straight to that page. Dots mark the days you’ve written in.", pager(A.hrefYear(y - 1), A.hrefYear(y + 1))) +
       '<div class="grid" style="margin-bottom:16px">' +
-      '<div class="c4">' + A.card("Word of the year", A.input("years." + y + ".word", 'placeholder="e.g. Bloom"', "hand") + '<label class="lbl">Theme / intention</label>' + A.textarea("years." + y + ".theme", 'placeholder="This year I want to feel…" rows="3"'), { icon: "sparkle", tint: "grad" }) + "</div>" +
-      '<div class="c4">' + A.card("Big goals", A.checklist("years." + y + ".goals", "Add a yearly goal", "Three to five goals is plenty.") + '<p class="small muted" style="margin:10px 0 0">Break them down on the <a href="#/goals">SMART Goals</a> page.</p>', { icon: "flag", tone: "pink" }) + "</div>" +
+      '<div class="c4">' + A.card("Word of the year", A.input("years." + y + ".word", 'placeholder="e.g. Bloom"', "hand") + '<label class="lbl">My intention for the year</label>' + A.textarea("years." + y + ".theme", 'placeholder="This year I am choosing to feel…" rows="3"'), { icon: "sparkle", tint: "grad" }) + "</div>" +
+      '<div class="c4">' + A.card("Dreams for this year", A.checklist("years." + y + ".goals", "Add a dream or intention", "Three to five is plenty.") + '<p class="small muted" style="margin:10px 0 0">Plant them on <a href="#/manifest">My Manifestations</a> to follow their progress.</p>', { icon: "flag", tone: "pink" }) + "</div>" +
       '<div class="c4">' + A.card("Year so far", '<div class="stats">' +
-        '<div class="inner stat"><b>' + st.days + "</b><span>days planned</span></div>" +
-        '<div class="inner stat"><b>' + st.done + "/" + st.tasks + "</b><span>tasks done</span></div>" +
-        '<div class="inner stat"><b>' + (st.moodAvg ? st.moodAvg.toFixed(1) : "—") + "</b><span>avg mood</span></div>" +
-        '<div class="inner stat"><b>' + Math.round(st.habitPct * 100) + "%</b><span>habits kept</span></div></div>", { icon: "target", tone: "mint" }) + "</div>" +
+        '<div class="inner stat"><b>' + st.days + "</b><span>days with practice</span></div>" +
+        '<div class="inner stat"><b>' + st.manifested + "</b><span>manifested</span></div>" +
+        '<div class="inner stat"><b>' + st.gratitude + "</b><span>thank-yous</span></div>" +
+        '<div class="inner stat"><b>' + (st.moodAvg ? st.moodAvg.toFixed(1) : "—") + "</b><span>avg mood</span></div></div>", { icon: "target", tone: "mint" }) + "</div>" +
       "</div>" + '<div class="year-grid">' + months + "</div>";
   };
 
   /* ------------------------------------------------------------ month */
+  /* A small marker on new and full moon days. */
+  function moonDot(d) {
+    var ph = A.moonPhase(d);
+    return ph.idx === 0 ? '<i class="mn new" title="New moon"></i>' : ph.idx === 4 ? '<i class="mn full" title="Full moon"></i>' : "";
+  }
+
   A.views.month = function (ymArg) {
     var first = A.parseD(ymArg) || new Date(A.today().getFullYear(), A.today().getMonth(), 1);
     var y = first.getFullYear(), m = first.getMonth(), key = A.ym(first);
@@ -127,7 +131,7 @@
       for (var i = 0; i < 7; i++) {
         var d = A.addDays(ws, i), k = A.ymd(d), day = A.peekDay(k);
         var items = day ? day.top3.filter(function (t) { return t.t; }).map(function (t) { return { text: t.t, done: t.done }; }).concat(day.tasks) : [];
-        cal += '<a class="day-cell' + (d.getMonth() !== m ? " out" : "") + (k === tk ? " today" : "") + '" href="' + A.hrefDay(d) + '"><span class="dn"><span>' + d.getDate() + "</span>" + (day && day.mood ? '<i class="mood-dot" style="background:' + A.MOOD_COLORS[day.mood - 1] + '" title="Mood ' + day.mood + '/10"></i>' : "") + "</span>" +
+        cal += '<a class="day-cell' + (d.getMonth() !== m ? " out" : "") + (k === tk ? " today" : "") + '" href="' + A.hrefDay(d) + '"><span class="dn"><span>' + d.getDate() + "</span>" + moonDot(d) + (day && day.mood ? '<i class="mood-dot" style="background:' + A.MOOD_COLORS[day.mood - 1] + '" title="Mood ' + day.mood + '/10"></i>' : "") + "</span>" +
           items.slice(0, 3).map(function (t) { return '<span class="t' + (t.done ? " done" : "") + '">' + esc(t.text) + "</span>"; }).join("") + (items.length > 3 ? '<span class="small muted">+' + (items.length - 3) + "</span>" : "") + "</a>";
       }
     }
@@ -136,14 +140,13 @@
     var prevFirst = new Date(y, m - 1, 1), prevLast = new Date(y, m, 0);
     var ps = A.periodStats(prevFirst, prevLast);
     var recap = '<div class="stats" style="margin-bottom:12px">' +
-      '<div class="inner stat"><b>' + ps.done + "/" + ps.tasks + "</b><span>tasks</span></div>" +
+      '<div class="inner stat"><b>' + ps.days + "</b><span>days written</span></div>" +
       '<div class="inner stat"><b>' + (ps.moodAvg ? ps.moodAvg.toFixed(1) : "—") + "</b><span>avg mood</span></div>" +
-      '<div class="inner stat"><b>' + Math.round(ps.habitPct * 100) + "%</b><span>habits</span></div>" +
-      '<div class="inner stat"><b>' + ps.workouts + "</b><span>workouts</span></div>" +
-      '<div class="inner stat"><b>' + A.money(ps.spent) + "</b><span>spent</span></div></div>" +
-      '<label class="lbl">What went well</label>' + A.textarea("months." + key + ".recap.well", 'rows="2" placeholder="Wins, proud moments…"') +
-      '<label class="lbl">What I\'m leaving behind</label>' + A.textarea("months." + key + ".recap.leave", 'rows="2" placeholder="Habits, worries, commitments…"') +
-      '<label class="lbl">Carrying forward</label>' + A.textarea("months." + key + ".recap.carry", 'rows="2" placeholder="Unfinished things worth continuing"');
+      '<div class="inner stat"><b>' + ps.gratitude + "</b><span>thank-yous</span></div>" +
+      '<div class="inner stat"><b>' + ps.manifested + "</b><span>manifested</span></div></div>" +
+      '<label class="lbl">What felt good and what I celebrate</label>' + A.textarea("months." + key + ".recap.well", 'rows="2" placeholder="Wins, proud moments, things that went better than expected…"') +
+      '<label class="lbl">What I’m releasing</label>' + A.textarea("months." + key + ".recap.leave", 'rows="2" placeholder="Worries, old stories, habits that no longer fit…"') +
+      '<label class="lbl">What I’m carrying forward</label>' + A.textarea("months." + key + ".recap.carry", 'rows="2" placeholder="Intentions and lessons worth keeping"');
 
     var areas = A.state.wheel.areas;
     var focus = '<div class="chips">' + areas.map(function (a) {
@@ -157,15 +160,15 @@
     return crumbs([[y, A.hrefYear(y)], [A.MONTHS[m]]]) +
       A.head("Monthly calendar & reset", A.MONTHS[m] + ' <span class="soft">' + y + "</span>", "", pager(A.hrefMonth(new Date(y, m - 1, 1)), A.hrefMonth(new Date(y, m + 1, 1)))) +
       '<div class="grid">' +
-      '<div class="c8">' + A.card("Calendar", cal, { icon: "calendar", sub: "Week numbers open the weekly spread; dates open the daily focus page." }) + "</div>" +
+      '<div class="c8">' + A.card("Calendar", cal, { icon: "calendar", sub: "Week numbers open the weekly spread; dates open the daily practice page. A ring marks new moons and a filled dot marks full moons." }) + "</div>" +
       '<div class="c4 stack">' +
         A.card("Monthly intention", '<label class="lbl">Word for the month</label>' + A.input("months." + key + ".word", 'placeholder="e.g. Steady"', "hand") +
           '<label class="lbl">Intentions</label>' + [0, 1, 2].map(function (i) { return '<div class="row" style="margin-bottom:6px"><span class="badge pink">' + (i + 1) + "</span>" + A.input("months." + key + ".intentions." + i, 'placeholder="I will…"', "grow") + "</div>"; }).join(""), { icon: "heart", tone: "pink", tint: "pink" }) +
-        A.card("Monthly goals", A.checklist("months." + key + ".goals", "Add a goal for " + A.MONTHS[m]), { icon: "flag" }) +
+        A.card("Monthly intentions to act on", A.checklist("months." + key + ".goals", "Add something for " + A.MONTHS[m]), { icon: "flag" }) +
       "</div>" +
-      '<div class="c6">' + A.card("Reset · " + A.MONTHS[prevFirst.getMonth()] + " recap", recap, { icon: "refresh", tone: "sky" }) + "</div>" +
+      '<div class="c6">' + A.card("Reflect · " + A.MONTHS[prevFirst.getMonth()] + " recap", recap, { icon: "refresh", tone: "sky" }) + "</div>" +
       '<div class="c6">' + A.card("Focus areas", focus, { icon: "target", tone: "mint", sub: "Pick the life areas that get your energy this month." }) + "</div>" +
-      '<div class="c12">' + A.card("Habit tracker", A.habitGrid(dates, { streak: true }), { icon: "check", tone: "butter", tools: '<a class="btn sm ghost" href="#/habits">Edit habits</a>' }) + "</div>" +
+      '<div class="c12">' + A.card("Rituals tracker", A.habitGrid(dates, { streak: true }), { icon: "check", tone: "butter", tools: '<a class="btn sm ghost" href="#/habits">Edit rituals</a>' }) + "</div>" +
       "</div>";
   };
   A.acts["month-focus"] = function (el) {
@@ -192,25 +195,25 @@
         '<ul class="list">' + day.tasks.map(function (t, j) {
           return '<li class="li' + (t.done ? " done" : "") + '">' + A.checkbox("days." + k + ".tasks." + j + ".done") + A.input("days." + k + ".tasks." + j + ".text", "", "bare") + "</li>";
         }).join("") + "</ul>" +
-        '<input class="field" placeholder="+ task" data-enter="task-add" data-k="' + k + '" />' +
+        '<input class="field" placeholder="+ inspired action" data-enter="task-add" data-k="' + k + '" />' +
         "</section>";
     }).join("");
     var label = mon.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " – " + sun.toLocaleDateString(undefined, { month: "short", day: "numeric" });
     var st = A.periodStats(mon, sun);
     return crumbs([[mon.getFullYear(), A.hrefYear(mon.getFullYear())], [A.MONTHS[mon.getMonth()], A.hrefMonth(mon)], ["Week " + A.isoWeek(mon)]]) +
-      A.head("Weekly planning spread", "Week " + A.isoWeek(mon) + ' <span class="soft">' + label + "</span>", "", pager(A.hrefWeek(A.addDays(mon, -7)), A.hrefWeek(A.addDays(mon, 7)))) +
+      A.head("Weekly spread", "Week " + A.isoWeek(mon) + ' <span class="soft">' + label + "</span>", "", pager(A.hrefWeek(A.addDays(mon, -7)), A.hrefWeek(A.addDays(mon, 7)))) +
       '<div class="grid" style="margin-bottom:16px">' +
-      '<div class="c4">' + A.card("This week's focus", A.textarea("weeks." + wk + ".focus", 'rows="3" placeholder="If this week goes well, it’s because…"'), { icon: "target", tint: "grad" }) + "</div>" +
-      '<div class="c4">' + A.card("Priorities", A.checklist("weeks." + wk + ".priorities", "Add a weekly priority", "What must happen this week?"), { icon: "star", tone: "pink" }) + "</div>" +
+      '<div class="c4">' + A.card("This week's focus", A.textarea("weeks." + wk + ".focus", 'rows="3" placeholder="This week I’m focusing on… and I want to feel…"'), { icon: "target", tint: "grad" }) + "</div>" +
+      '<div class="c4">' + A.card("Inspired actions", A.checklist("weeks." + wk + ".priorities", "Add an action for this week", "What small steps will you take?"), { icon: "star", tone: "pink" }) + "</div>" +
       '<div class="c4">' + A.card("Week pulse", '<div class="stats">' +
-        '<div class="inner stat"><b>' + st.done + "/" + st.tasks + "</b><span>tasks</span></div>" +
+        '<div class="inner stat"><b>' + st.done + "/" + st.tasks + "</b><span>actions done</span></div>" +
         '<div class="inner stat"><b>' + (st.moodAvg ? st.moodAvg.toFixed(1) : "—") + "</b><span>mood</span></div>" +
-        '<div class="inner stat"><b>' + st.focus + "</b><span>focus sessions</span></div>" +
-        '<div class="inner stat"><b>' + st.workoutMins + "</b><span>active min</span></div></div>" +
-        '<label class="lbl">Notes</label>' + A.textarea("weeks." + wk + ".notes", 'rows="2" placeholder="Reminders, appointments…"'), { icon: "bolt", tone: "mint" }) + "</div>" +
+        '<div class="inner stat"><b>' + st.practices + "</b><span>practices</span></div>" +
+        '<div class="inner stat"><b>' + st.gratitude + "</b><span>thank-yous</span></div></div>" +
+        '<label class="lbl">Looking back: how did this week feel?</label>' + A.textarea("weeks." + wk + ".notes", 'rows="2" placeholder="What I noticed, what I’m proud of, what I’ll do differently…"'), { icon: "bolt", tone: "mint" }) + "</div>" +
       "</div>" +
       '<div class="week-days">' + cols + "</div>" +
-      '<div style="margin-top:16px">' + A.card("Habits this week", A.habitGrid(days, { dow: true, streak: true }), { icon: "check", tone: "butter" }) + "</div>";
+      '<div style="margin-top:16px">' + A.card("Rituals this week", A.habitGrid(days, { dow: true, streak: true }), { icon: "check", tone: "butter" }) + "</div>";
   };
   A.acts["task-add"] = function (el) {
     var text = el.value.trim();
@@ -221,13 +224,9 @@
     if (again) again.focus();
   };
 
-  /* ------------------------------------------------------------ day */
-  var CARE = [["skin", "Skincare"], ["stretch", "Stretch"], ["air", "Fresh air"], ["connect", "Call a friend"], ["read", "Read for fun"], ["early", "Early night"]];
-  var BREAKS = ["Mid-morning stretch", "Screen-free lunch", "Afternoon walk", "Evening wind-down"];
-  var timer = { running: false, end: 0, left: 25 * 60, k: "", iv: null };
-
-  function fmtTime(s) { return A.pad(Math.floor(s / 60)) + ":" + A.pad(Math.floor(s % 60)); }
-  function hourLabel(h) { var hh = h % 12 || 12; return hh + (h < 12 || h === 24 ? " AM" : " PM"); }
+  /* ------------------------------------------------------------ day: daily practice */
+  var EMOTIONS = ["Joyful", "Grateful", "Calm", "Hopeful", "Excited", "Confident", "Loved", "Peaceful", "Curious", "Tired", "Anxious", "Overwhelmed", "Sad", "Frustrated", "Doubtful"];
+  var ENERGY = ["Drained", "Low", "Steady", "Bright", "Buzzing"];
 
   A.views.day = function (kArg) {
     var d = kArg === "today" || !kArg ? A.today() : A.parseD(kArg) || A.today();
@@ -240,85 +239,76 @@
       return '<a class="' + (xk === k ? "on " : "") + (xk === tk ? "today" : "") + '" href="' + A.hrefDay(x) + '">' + A.DOW[i].slice(0, 3) + "<b>" + x.getDate() + "</b></a>";
     }).join("") + "</div>";
 
+    var ph = A.moonPhase(d), aff = A.affirmOfDay(d);
+    var moonChip = '<span class="moon-art sm">' + (A.stickerSvg ? A.stickerSvg(ph.key) : "") + '</span><div><b>' + esc(ph.name) + '</b><div class="small muted">' + esc(ph.prompt) + "</div></div>";
+
     var top3 = '<ul class="list top3">' + day.top3.map(function (t, i) {
-      return '<li class="li' + (t.done ? " done" : "") + '"><span class="n">' + (i + 1) + "</span>" + A.input(base + ".top3." + i + ".t", 'placeholder="Priority ' + (i + 1) + '"', "bare") + A.checkbox(base + ".top3." + i + ".done") + "</li>";
+      return '<li class="li' + (t.done ? " done" : "") + '"><span class="n">' + (i + 1) + "</span>" + A.input(base + ".top3." + i + ".t", 'placeholder="An inspired step ' + (i + 1) + '"', "bare") + A.checkbox(base + ".top3." + i + ".done") + "</li>";
     }).join("") + "</ul>";
 
     var tasks = '<ul class="list">' + day.tasks.map(function (t, i) {
-      var q = t.q || "";
       return '<li class="li' + (t.done ? " done" : "") + '">' + A.checkbox(base + ".tasks." + i + ".done") + A.input(base + ".tasks." + i + ".text", "", "bare") +
-        '<button class="q-tag q-' + (q || "none") + '" data-act="task-quad" data-k="' + k + '" data-i="' + i + '" title="Eisenhower quadrant — tap to change">' + (A.QUADS[q] || "Tag") + "</button>" +
         '<button class="x-btn" data-act="list-remove" data-list="' + base + '.tasks" data-idx="' + i + '" aria-label="Remove task">' + ic("x") + "</button></li>";
     }).join("") + "</ul>" +
-      '<div class="add-row"><input class="field" placeholder="Add a task" data-enter="task-add" data-k="' + k + '" /><button class="btn sm soft" data-act="task-add-btn" data-k="' + k + '">' + ic("plus") + "</button></div>";
-
-    var now = new Date(), nowH = k === tk ? now.getHours() : -1;
-    var sched = '<div class="schedule">';
-    for (var h = 6; h <= 23; h++) {
-      sched += '<div class="slot' + (h === nowH ? " now" : "") + '"><time>' + hourLabel(h) + "</time>" + A.input(base + ".schedule." + h, "", "") + "</div>";
-    }
-    sched += "</div>";
+      '<div class="add-row"><input class="field" placeholder="Add a to-do" data-enter="task-add" data-k="' + k + '" /><button class="btn sm soft" data-act="task-add-btn" data-k="' + k + '">' + ic("plus") + "</button></div>";
 
     var mood = '<div class="mood-scale">' + A.MOOD_COLORS.map(function (c, i) {
       var on = day.mood === i + 1;
       return '<button class="' + (on ? "on" : "") + '" style="' + (on ? "background:" + c : "border:2px solid " + c) + '" data-act="day-mood" data-k="' + k + '" data-v="' + (i + 1) + '" aria-label="Mood ' + (i + 1) + '">' + (i + 1) + "</button>";
-    }).join("") + '</div><div class="row small muted" style="justify-content:space-between;margin-top:6px"><span>heavy</span><span>radiant</span></div>';
+    }).join("") + '</div><div class="row small muted" style="justify-content:space-between;margin:6px 0 12px"><span>heavy</span><span>radiant</span></div>' +
+      '<label class="lbl">Energy</label><div class="seg energy">' + ENERGY.map(function (e, i) {
+        return '<button class="' + (day.energy === i + 1 ? "on" : "") + '" data-act="day-energy" data-k="' + k + '" data-v="' + (i + 1) + '" aria-pressed="' + (day.energy === i + 1) + '">' + e + "</button>";
+      }).join("") + "</div>";
 
-    var drops = '<div class="drops">' + [0, 1, 2, 3, 4, 5, 6, 7].map(function (i) {
-      return '<button class="drop' + (i < day.water ? " on" : "") + '" data-act="day-water" data-k="' + k + '" data-v="' + (i + 1) + '" aria-label="' + (i + 1) + ' glasses">' + '<svg viewBox="0 0 24 28"><path d="M12 2s8 8.6 8 14.2A8 8 0 0 1 4 16.2C4 10.6 12 2 12 2z" fill="currentColor"/></svg></button>';
-    }).join("") + '</div><p class="small muted" style="margin:6px 0 0">' + day.water + " of 8 glasses</p>";
-
-    if (timer.k !== k && !timer.running) { timer.k = k; }
-    var focus = '<div class="dots-10">' + [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (i) {
-      var on = !!day.focus[i];
-      return '<button class="dot-btn' + (on ? " on" : "") + '" data-act="day-focus" data-k="' + k + '" data-i="' + i + '" aria-pressed="' + on + '">' + (i + 1) + "</button>";
-    }).join("") + "</div>" +
-      '<div class="timer"><div><b id="focus-timer">' + fmtTime(timer.running ? Math.max(0, (timer.end - Date.now()) / 1000) : timer.left) + '</b><div class="small muted">25-minute focus session</div></div><div class="row">' +
-      '<button class="icon-btn" data-act="timer-toggle" data-k="' + k + '" aria-label="' + (timer.running ? "Pause" : "Start") + ' timer">' + ic(timer.running ? "pause" : "play") + "</button>" +
-      '<button class="icon-btn" data-act="timer-reset" aria-label="Reset timer">' + ic("refresh") + "</button></div></div>";
-
-    var breaks = '<div class="checks">' + BREAKS.map(function (b, i) {
-      return '<label class="check-pill">' + A.checkbox(base + ".breaks." + i) + esc(b) + "</label>";
-    }).join("") + "</div>";
-    var care = '<div class="checks">' + CARE.map(function (c) {
-      return '<label class="check-pill">' + A.checkbox(base + ".care." + c[0]) + c[1] + "</label>";
+    var emotions = '<div class="chips">' + EMOTIONS.map(function (e) {
+      var on = day.emotions.indexOf(e) >= 0;
+      return '<button class="chip emo' + (on ? " pink" : " grey") + '" style="border:0;cursor:pointer" data-act="day-emotion" data-k="' + k + '" data-v="' + e + '" aria-pressed="' + on + '">' + (on ? "✓ " : "") + e + "</button>";
     }).join("") + "</div>";
 
-    var meals = [["b", "Breakfast"], ["l", "Lunch"], ["d", "Dinner"], ["s", "Snacks"]].map(function (m) {
-      return '<div class="meal-row"><span>' + m[1] + "</span>" + A.input(base + ".meals." + m[0], 'placeholder="…"') + "</div>";
+    var grat = [0, 1, 2].map(function (i) {
+      return '<div class="row" style="margin-bottom:8px"><span class="badge pink">' + (i + 1) + "</span>" + A.input(base + ".gratitude." + i, 'placeholder="I’m grateful for…" data-live="gratitude-live"', "grow") + "</div>";
     }).join("");
-    var weekPlan = (A.state.meals.weeks[A.ymd(mon)] || {})[A.dowIdx(d)];
-    if (weekPlan && (weekPlan.b || weekPlan.l || weekPlan.d)) {
-      meals += '<p class="small muted" style="margin:6px 0 0">Planned: ' + esc([weekPlan.b, weekPlan.l, weekPlan.d].filter(Boolean).join(" · ")) + ' <a href="#" data-act="day-meals-from-plan" data-k="' + k + '">use plan</a></p>';
-    }
+
+    var growing = A.state.manifest.items.filter(function (m) { return m.status === "planted" || m.status === "growing"; }).slice(0, 4);
+    var grow = growing.length ? '<ul class="list">' + growing.map(function (m) {
+      return '<li class="li"><span class="badge ' + (m.status === "growing" ? "mint" : "pink") + '">' + (m.status === "growing" ? "Growing" : "Planted") + '</span><a class="li-text" href="#/manifest/' + m.id + '">' + esc(m.title || "Untitled") + "</a></li>";
+    }).join("") + '</ul><p class="small muted" style="margin:10px 0 0"><a href="#/manifest">See all manifestations</a></p>' :
+      '<div class="empty">Nothing planted yet. <a href="#/manifest">Plant your first intention</a>.</div>';
 
     var reflect = '<div class="grid">' +
-      '<div class="c3"><label class="lbl">Today\'s wins</label>' + A.textarea(base + ".reflect.wins", 'rows="4" placeholder="Big or tiny…"', "lined") + "</div>" +
-      '<div class="c3"><label class="lbl">Grateful for</label>' + A.textarea(base + ".reflect.grateful", 'rows="4" placeholder="Three good things"', "lined") + "</div>" +
-      '<div class="c3"><label class="lbl">What I learned / felt</label>' + A.textarea(base + ".reflect.learned", 'rows="4" placeholder="Notice patterns…"', "lined") + "</div>" +
-      '<div class="c3"><label class="lbl">Tomorrow I will</label>' + A.textarea(base + ".reflect.tomorrow", 'rows="4" placeholder="Set yourself up"', "lined") + "</div></div>";
+      '<div class="c4"><label class="lbl">What went well today?</label>' + A.textarea(base + ".reflect.wins", 'rows="4" placeholder="Big or tiny…"', "lined") + "</div>" +
+      '<div class="c4"><label class="lbl">What did I feel, and what were my emotions telling me?</label>' + A.textarea(base + ".reflect.felt", 'rows="4" placeholder="Name the feeling, then get curious about it…"', "lined") + "</div>" +
+      '<div class="c4"><label class="lbl">What shifted in my thinking?</label>' + A.textarea(base + ".reflect.shifted", 'rows="4" placeholder="A new thought, a changed mind, a small insight…"', "lined") + "</div>" +
+      '<div class="c6"><label class="lbl">What am I ready to release?</label>' + A.textarea(base + ".reflect.release", 'rows="3" placeholder="A worry, a story, a should…"', "lined") + "</div>" +
+      '<div class="c6"><label class="lbl">Tomorrow I will…</label>' + A.textarea(base + ".reflect.tomorrow", 'rows="3" placeholder="Set yourself up gently"', "lined") + "</div></div>";
 
     var dateTitle = d.toLocaleDateString(undefined, { weekday: "long" }) + ' <span class="soft">' + d.toLocaleDateString(undefined, { month: "long", day: "numeric" }) + "</span>";
     return crumbs([[d.getFullYear(), A.hrefYear(d.getFullYear())], [A.MONTHS[d.getMonth()], A.hrefMonth(d)], ["Week " + A.isoWeek(d), A.hrefWeek(d)], [String(d.getDate())]]) +
-      A.head(k === tk ? "Today · daily focus" : "Daily focus", dateTitle, "", pager(A.hrefDay(A.addDays(d, -1)), A.hrefDay(A.addDays(d, 1)))) +
+      A.head(k === tk ? "Today · daily practice" : "Daily practice", dateTitle, "", pager(A.hrefDay(A.addDays(d, -1)), A.hrefDay(A.addDays(d, 1)))) +
       strip +
-      '<div class="card tint-grad" style="margin-bottom:16px;padding:14px 18px"><div class="row wrap"><span class="eyebrow" style="margin:0">Intention</span>' + A.input(base + ".intention", 'placeholder="Today I choose to feel…"', "bare grow hand") + "</div></div>" +
+      '<div class="card tint-grad" style="margin-bottom:16px;padding:14px 18px"><div class="row wrap"><span class="eyebrow" style="margin:0">Today I choose to feel</span>' + A.input(base + ".intention", 'placeholder="calm, capable, open…"', "bare grow hand") + "</div>" +
+        '<div class="row wrap" style="margin-top:6px"><span class="eyebrow" style="margin:0">I am</span>' + A.input(base + ".feeling", 'placeholder="…"', "bare grow hand") + "</div></div>" +
       '<div class="grid">' +
+      '<div class="c6"><div class="card moon-chip">' + moonChip + '<a class="btn xs ghost" href="#/rituals/moon">Moon</a></div></div>' +
+      '<div class="c6"><div class="card aff-chip"><p class="aff-text" style="margin:0">“' + esc(aff.text) + '”</p><button class="btn xs soft" data-act="affirm-say" data-id="' + aff.id + '" data-stay="1">' + ic("check") + "I said it" + (day.affirmed ? " · " + day.affirmed : "") + "</button></div></div>" +
+      '<div class="c12">' + A.card("Today’s practice", '<span id="pr-count" class="badge" style="margin-bottom:8px;display:inline-block">' + A.practiceCount(day) + "/" + A.PRACTICES.length + "</span>" + A.practiceChips(k) +
+        '<p class="small muted" style="margin:10px 0 0">Tick what you’ve done. Do the practice itself on <a href="#/visualize">Visualize</a>, <a href="#/script">Scripting</a>, <a href="#/affirm">Affirmations</a> or <a href="#/rituals">Rituals</a> and it ticks for you.</p>', { icon: "sprout", tint: "lav" }) + "</div>" +
       '<div class="c4 stack">' +
-        A.card("Top 3 priorities", top3, { icon: "star", tone: "pink" }) +
-        A.card("Tasks", tasks, { icon: "list", sub: "Tag each task with an Eisenhower quadrant.", tools: '<a class="btn xs soft" href="#/matrix">' + ic("grid") + "Matrix</a>" }) +
+        A.card("Inspired actions", top3, { icon: "star", tone: "pink", sub: "Up to three small steps you feel pulled to take today." }) +
+        A.card("To-dos", tasks, { icon: "list" }) +
       "</div>" +
-      '<div class="c4">' + A.card("Schedule", sched, { icon: "clock", tone: "sky", sub: "6 AM – 11 PM" }) + "</div>" +
       '<div class="c4 stack">' +
-        A.card("Mood", mood, { icon: "smile", tone: "pink" }) +
-        A.card("Hydration", drops, { icon: "drop", tone: "sky" }) +
-        A.card("Focus sessions", focus, { icon: "bolt", tone: "butter" }) +
+        A.card("How I feel", mood, { icon: "smile", tone: "pink" }) +
+        A.card("Emotions", emotions, { icon: "heart", tone: "lav", sub: "Tap any that were present today." }) +
       "</div>" +
-      '<div class="c4">' + A.card("Breaks", breaks, { icon: "coffee", tone: "butter" }) + "</div>" +
-      '<div class="c4">' + A.card("Self-care", care, { icon: "heart", tone: "pink" }) + "</div>" +
-      '<div class="c4">' + A.card("Meals", meals, { icon: "chef", tone: "mint" }) + "</div>" +
-      '<div class="c12">' + A.card("Brain dump", A.textarea(base + ".brain", 'rows="4" placeholder="Empty your head — the AI synthesizer can turn this into actions."', "lined"), { icon: "brain", tools: '<button class="btn xs soft" data-act="brain-to-synth" data-k="' + k + '">' + ic("sparkle") + "Synthesize</button>" }) + "</div>" +
-      '<div class="c12">' + A.card("Evening reflection", reflect, { icon: "moon", tint: "lav", tools: '<button class="btn sm" data-act="day-to-coach">' + ic("send") + "Send log to AI coach</button>" }) + "</div>" +
+      '<div class="c4 stack">' +
+        A.card("Gratitude", grat, { icon: "heart", tone: "butter" }) +
+        A.card("What I’m growing", grow, { icon: "seed", tone: "mint" }) +
+      "</div>" +
+      '<div class="c6">' + A.card("Act as if", '<label class="lbl">If this were already true, today I would…</label>' + A.textarea(base + ".actAsIf", 'rows="3" placeholder="How would I think, move and speak?"', "lined"), { icon: "bolt", tone: "butter", tools: '<a class="btn xs soft" href="#/script">' + ic("pen") + "Script it</a>" }) + "</div>" +
+      '<div class="c6">' + A.card("Signs I noticed", '<label class="lbl">A number, a song, a coincidence, a kind word…</label>' + A.textarea(base + ".sign", 'rows="3" placeholder="Today I noticed…"', "lined"), { icon: "eye", tone: "sky", tools: '<a class="btn xs soft" href="#/rituals/signs">All signs</a>' }) + "</div>" +
+      '<div class="c12">' + A.card("Evening reflection", reflect, { icon: "moon", tint: "lav", tools: '<a class="btn sm" href="#/notebook">' + ic("book") + "Open notebook</a>" }) + "</div>" +
+      '<div class="c12">' + A.card("Brain dump", A.textarea(base + ".brain", 'rows="4" placeholder="Empty your head. The Thought Sorter can turn it into inspired actions."', "lined"), { icon: "brain", tools: '<button class="btn xs soft" data-act="brain-to-synth" data-k="' + k + '">' + ic("sparkle") + "Sort my thoughts</button>" }) + "</div>" +
       "</div>";
   };
 
@@ -326,28 +316,17 @@
     var inp = el.parentNode.querySelector("input");
     A.acts["task-add"](inp);
   };
-  A.acts["task-quad"] = function (el) {
-    var t = A.day(el.getAttribute("data-k")).tasks[+el.getAttribute("data-i")];
-    var order = ["", "do", "plan", "delegate", "drop"];
-    t.q = order[(order.indexOf(t.q || "") + 1) % order.length];
-    A.save(); A.render();
-  };
   A.acts["day-mood"] = function (el) {
     var day = A.day(el.getAttribute("data-k")), v = +el.getAttribute("data-v");
     day.mood = day.mood === v ? 0 : v; A.save(); A.render();
   };
-  A.acts["day-water"] = function (el) {
+  A.acts["day-energy"] = function (el) {
     var day = A.day(el.getAttribute("data-k")), v = +el.getAttribute("data-v");
-    day.water = day.water === v ? v - 1 : v; A.save(); A.render();
+    day.energy = day.energy === v ? 0 : v; A.save(); A.render();
   };
-  A.acts["day-focus"] = function (el) {
-    var day = A.day(el.getAttribute("data-k")), i = +el.getAttribute("data-i");
-    day.focus[i] = !day.focus[i]; A.save(); A.render();
-  };
-  A.acts["day-meals-from-plan"] = function (el) {
-    var k = el.getAttribute("data-k"), d = A.parseD(k), p = A.state.meals.weeks[A.ymd(A.mondayOf(d))][A.dowIdx(d)];
-    var day = A.day(k);
-    ["b", "l", "d", "s"].forEach(function (x) { if (p[x] && !day.meals[x]) day.meals[x] = p[x]; });
+  A.acts["day-emotion"] = function (el) {
+    var day = A.day(el.getAttribute("data-k")), v = el.getAttribute("data-v"), i = day.emotions.indexOf(v);
+    if (i >= 0) day.emotions.splice(i, 1); else day.emotions.push(v);
     A.save(); A.render();
   };
   A.acts["brain-to-synth"] = function (el) {
@@ -355,35 +334,5 @@
     if (!day.brain.trim()) { A.toast("Write something in the brain dump first."); return; }
     A.state.coach.synthInput = day.brain;
     A.save(); location.hash = "#/synth";
-  };
-  A.acts["day-to-coach"] = function () { location.hash = "#/coach"; A.toast("Your daily log is included in the analysis."); };
-
-  function tick() {
-    var el = document.getElementById("focus-timer");
-    var left = Math.max(0, (timer.end - Date.now()) / 1000);
-    if (el) el.textContent = fmtTime(left);
-    if (left <= 0) {
-      clearInterval(timer.iv); timer.running = false; timer.left = 25 * 60;
-      var day = A.day(timer.k), i = 0;
-      while (i < 10 && day.focus[i]) i++;
-      if (i < 10) day.focus[i] = true;
-      A.save();
-      A.toast("Focus session complete — take a short break ✨");
-      if (A.route.name === "day") A.render();
-    }
-  }
-  A.acts["timer-toggle"] = function (el) {
-    if (timer.running) {
-      timer.left = Math.max(0, (timer.end - Date.now()) / 1000);
-      timer.running = false; clearInterval(timer.iv);
-    } else {
-      timer.k = el.getAttribute("data-k");
-      timer.end = Date.now() + timer.left * 1000; timer.running = true;
-      clearInterval(timer.iv); timer.iv = setInterval(tick, 500);
-    }
-    A.render();
-  };
-  A.acts["timer-reset"] = function () {
-    clearInterval(timer.iv); timer.running = false; timer.left = 25 * 60; A.render();
   };
 })();

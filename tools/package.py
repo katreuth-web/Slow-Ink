@@ -14,7 +14,7 @@ import argparse, os, sys, zipfile
 PRODUCTS = {
     "slow-ink-sage": "Slow Ink Sage",
     "life-planner": "Slow Ink Life",
-    "aura-planner": "Aura",
+    "aura-planner": "Aura Manifestation Planner",
 }
 SKIP_FILES = {"README.md", ".DS_Store", "Thumbs.db"}
 
