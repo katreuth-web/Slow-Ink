@@ -17,7 +17,7 @@ Navigation is a floating glass sidebar on desktop and an iOS-style neumorphic do
 | --- | --- |
 | Daily spread | Top three, prioritised tasks & deadlines, 6am–10pm schedule, mood, hydration, habits, meals, movement, gratitude, notes, and quick links to the trackers and a journal page for the day |
 | Habits & Fitness | Monthly habit grid with colours and streaks, workout log, weekly minute target, milestones, weight curve, 14-day hydration chart |
-| Meals & Recipes | Weekly breakfast/lunch/dinner/snack planner, editable recipe cards, a grocery list that sorts items into aisles automatically, and "Build grocery list" from the week's planned recipes |
+| Meals & Recipes | Weekly breakfast/lunch/dinner/snack planner, recipe cards organised in photo sections (Breakfast, Lunch, Dinner, Snacks, Desserts, Drinks, plus any you add), each with its own cover photo and recipe photos, a grocery list that sorts items into aisles automatically, and "Build grocery list" from the week's planned recipes |
 | Finance | Monthly income & spending with a category donut, savings pots, debt paydown progress, subscriptions with renewal countdowns and "Paid" roll-forward |
 | Mind | Interactive Ikigai four-circle tool, Level 10 Life wheel (radar chart), SMART goals, Eisenhower matrix, mood calendar |
 | Travel | Trips with itinerary, packing list (with an essentials preset), daily outfits and a budget; plus a bucket list |
@@ -35,3 +35,7 @@ python3 -m http.server 8000
 ```
 
 Then open `http://localhost:8000/life-planner/` in your browser.
+
+## Photos on recipes
+
+Recipe photos and section covers are stored in the browser's image storage (IndexedDB), not in the main save, so many photos won't fill the planner's storage. They are included in backups. Vision board images still use the older storage and are a candidate to move across later.
