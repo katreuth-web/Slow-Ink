@@ -1050,8 +1050,8 @@
     var list = trips.map(function (t) {
       return '<button class="trip-pill ' + (cur && cur.id === t.id ? "on" : "") + '" data-act="trip-open" data-id="' + t.id + '"><b>' + esc(t.text || "Untitled trip") + '</b><span class="small muted">' + esc(t.dest || "Somewhere lovely") + (t.start ? " · " + shortDay(parseD(t.start)) : "") + "</span></button>";
     }).join("");
-    var side = card("Trips", '<div class="trip-list">' + list + '</div><div class="spacer"></div><button class="btn pink" data-act="trip-add">' + ic("plus") + " Plan a trip</button>", { dot: "p" }) +
-      card("Bucket list", listEd("travel.bucket", { placeholder: "Somewhere you dream of…", empty: "Northern lights? Kyoto in spring?" }), { cls: "tint-butter", dot: "b" });
+    var tripsCard = card("Trips", (trips.length > 1 ? '<p class="small muted" style="margin:0 0 10px">Tap a trip to open its plan.</p>' : "") + '<div class="trip-list">' + list + '</div><div class="spacer"></div><button class="btn pink" data-act="trip-add">' + ic("plus") + " Plan a trip</button>", { dot: "p" });
+    var bucketCard = card("Bucket list", listEd("travel.bucket", { placeholder: "Somewhere you dream of…", empty: "Northern lights? Kyoto in spring?" }), { cls: "tint-butter", dot: "b" });
     var main = "";
     if (!cur) {
       main = card("", '<div class="empty" style="padding:40px 10px;text-align:center">Plan your first getaway — itinerary, packing, outfits and budget all in one place.</div>');
@@ -1073,13 +1073,13 @@
           '<table class="table">' + ex.map(function (x) { return "<tr><td>" + itemSelect(p + ".expenses", x, "cat", ["Transport", "Stay", "Food", "Activities", "Shopping", "Other"]) + "</td><td>" + itemInput(p + ".expenses", x, "text") + '</td><td style="width:120px">' + itemInput(p + ".expenses", x, "amount", "data-rerender", "number") + '</td><td><button class="del" data-act="list-del" data-path="' + p + '.expenses" data-id="' + x.id + '" aria-label="Delete">' + ic("x") + "</button></td></tr>"; }).join("") + "</table>" +
           '<div class="spacer"></div><button class="btn sm" data-act="trip-expense" data-id="' + cur.id + '">' + ic("plus") + " Add expense</button>";
       }
-      main = card("", '<div class="row wrap" style="align-items:flex-end"><div class="grow" style="min-width:200px"><label class="lbl">Trip</label>' + bindInput(p + ".text", 'style="font-family:var(--serif);font-size:1.4rem;font-weight:600"') + '</div><div class="grow" style="min-width:160px"><label class="lbl">Destination</label>' + bindInput(p + ".dest", 'placeholder="City, country"') + "</div></div>" +
-        '<div class="row wrap" style="margin-top:12px"><div><label class="lbl">Depart</label><input type="date" data-bind="' + p + '.start" data-rerender value="' + esc(cur.start || "") + '"></div><div><label class="lbl">Return</label><input type="date" data-bind="' + p + '.end" data-rerender value="' + esc(cur.end || "") + '"></div><div style="max-width:140px"><label class="lbl">Budget</label>' + bindNum(p + ".budget", "data-rerender") + '</div><div class="grow"></div>' +
+      main = card("", '<div class="row wrap" style="align-items:flex-end"><div class="grow" style="min-width:200px"><label class="lbl">Trip</label>' + bindInput(p + ".text", 'style="height:46px;font-family:var(--serif);font-size:1.15rem;font-weight:600"') + '</div><div class="grow" style="min-width:160px"><label class="lbl">Destination</label>' + bindInput(p + ".dest", 'placeholder="City, country" style="height:46px;font-size:15px"') + "</div></div>" +
+        '<div class="row wrap" style="margin-top:12px"><div style="flex:1 1 150px"><label class="lbl">Depart</label><input type="date" data-bind="' + p + '.start" data-rerender value="' + esc(cur.start || "") + '"></div><div style="flex:1 1 150px"><label class="lbl">Return</label><input type="date" data-bind="' + p + '.end" data-rerender value="' + esc(cur.end || "") + '"></div><div style="max-width:140px"><label class="lbl">Budget</label>' + bindNum(p + ".budget", "data-rerender") + '</div><div class="grow"></div>' +
         (until != null && until >= 0 ? '<span class="badge pink">' + (until === 0 ? "Today!" : until + " days to go") + "</span>" : "") + (nights != null && nights > 0 ? '<span class="badge">' + nights + " nights</span>" : "") +
         '<button class="del" data-act="trip-del" data-id="' + cur.id + '" aria-label="Delete trip" title="Delete trip">' + ic("trash") + "</button></div>", { cls: "tint-pink" }) +
         '<div class="spacer"></div>' + tt.html + card("", inner);
     }
-    return head("Life · Adventure", 'Travel <span class="em">&amp; vacations</span>') + '<div class="grid"><div class="c4 stack">' + side + '</div><div class="c8">' + main + "</div></div>";
+    return head("Life · Adventure", 'Travel <span class="em">&amp; vacations</span>') + '<div class="travel-grid"><div class="tg-trips">' + tripsCard + '</div><div class="tg-main">' + main + '</div><div class="tg-bucket">' + bucketCard + "</div></div>";
   }
 
   /* ------------------------------------------------------------ views: home care */
@@ -1481,6 +1481,24 @@
     Array.prototype.forEach.call(root.querySelectorAll(".list li textarea.txt"), autosize);
   }
   window.addEventListener("resize", function () { Array.prototype.forEach.call(view.querySelectorAll(".list li textarea.txt"), autosize); });
+  /* Safari on iPhone draws an empty date box as blank space. Show the date (or "Select date") as text and lay the real
+     date input invisibly over it, so it always looks like a box and tapping it opens the date picker. */
+  function dateText(v) {
+    var d = v ? parseD(v) : null;
+    return d ? d.toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "Select date";
+  }
+  function wrapDates(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('input[type="date"]'), function (i) {
+      if (i.parentNode.classList.contains("datefield")) return;
+      var w = document.createElement("span");
+      w.className = "datefield" + (i.value ? "" : " unset");
+      var st = i.getAttribute("style");
+      if (st) { w.setAttribute("style", st); i.removeAttribute("style"); }
+      w.innerHTML = '<span class="df-text">' + esc(dateText(i.value)) + "</span>";
+      i.parentNode.replaceChild(w, i);
+      w.appendChild(i);
+    });
+  }
   function autosize(el) { el.style.height = "auto"; el.style.height = el.scrollHeight + "px"; }
   function addNode(p, parentId, x, y) {
     var parent = p.nodes.filter(function (n) { return n.id === parentId; })[0] || p.nodes[0];
@@ -1603,6 +1621,7 @@
     document.body.classList.toggle("markup-on", r.name === "notebook" && state.ui.nbMode === "markup" && !!state.nbCurrent && !!state.notebook[state.nbCurrent] && DRAWABLE.indexOf(state.notebook[state.nbCurrent].paper) >= 0);
     view.innerHTML = html;
     wrapTxt(view);
+    wrapDates(view);
     if (mount) mount();
     closeSheet();
 
@@ -1626,6 +1645,7 @@
     });
     html += '<div class="row" style="margin-top:6px"><button class="btn" data-act="theme">' + ic(state.theme === "dark" ? "sun" : "moon") + (state.theme === "dark" ? " Light mode" : " Dark mode") + "</button></div>";
     $("#sheet").innerHTML = html;
+    wrapDates($("#sheet"));
     $("#sheet").hidden = false;
     $("#sheet-scrim").hidden = false;
   }
@@ -1686,6 +1706,10 @@
         if (it) { it.img = url; save(); render(); }
       });
       return;
+    }
+    if (el.type === "date" && el.parentNode.classList.contains("datefield")) {
+      el.parentNode.classList.toggle("unset", !el.value);
+      el.parentNode.firstChild.textContent = dateText(el.value);
     }
     if (el.type === "checkbox" || el.tagName === "SELECT" || el.type === "range" || el.type === "date" || el.type === "number") applyInput(el);
     if (el.hasAttribute("data-rerender")) render();

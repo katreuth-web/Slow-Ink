@@ -753,3 +753,16 @@ body.markup-on .book { margin-bottom: 90px; }
 /* add-forms: the name box gets its own line on phones instead of shrinking to a sliver */
 .row.wrap > input.grow { min-width: 150px; }
 @media (max-width: 600px) { .row.wrap[data-form] > input.grow { flex: 1 1 100%; } }
+
+/* date boxes: always a visible box on iPhone (see wrapDates in app.js) */
+.datefield { position: relative; display: block; width: 100%; min-height: 38px; background: var(--surface); box-shadow: var(--press-sm); border-radius: 12px; padding: 9px 12px; font-size: 13px; line-height: 1.3; }
+.datefield .df-text { display: block; pointer-events: none; white-space: nowrap; }
+.datefield.unset .df-text { color: var(--muted); opacity: 0.8; }
+.datefield input[type="date"] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; font-size: 16px; box-shadow: none; background: transparent; -webkit-appearance: none; appearance: none; }
+.datefield:focus-within { box-shadow: var(--press-sm), 0 0 0 2px var(--pink); }
+
+/* travel: trips, then the open trip, then the bucket list (so the plan sits right under the trip list on phones) */
+.travel-grid { display: grid; gap: 22px; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-areas: "trips trips trips trips main main main main main main main main" "bucket bucket bucket bucket main main main main main main main main"; grid-template-rows: auto 1fr; align-items: start; }
+.tg-trips { grid-area: trips; } .tg-main { grid-area: main; min-width: 0; } .tg-bucket { grid-area: bucket; }
+.tg-trips > .card, .tg-bucket > .card { margin: 0; }
+@media (max-width: 900px) { .travel-grid { gap: 16px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "trips" "main" "bucket"; } }
