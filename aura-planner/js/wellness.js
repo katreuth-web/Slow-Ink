@@ -20,7 +20,7 @@
     var hs = A.state.habits;
     var list = '<ul class="list">' + hs.map(function (h, i) {
       var hits = dates.filter(function (x) { return x <= t && (A.state.habitLog[A.ymd(x)] || {})[h.id]; }).length;
-      return '<li class="li"><button class="swatch" style="background:' + h.color + '" data-act="habit-color" data-i="' + i + '" aria-label="Change colour"></button>' + A.input("habits." + i + ".name", "", "bare") +
+      return '<li class="li habit-li"><button class="swatch" style="background:' + h.color + '" data-act="habit-color" data-i="' + i + '" aria-label="Change colour"></button>' + A.input("habits." + i + ".name", "", "bare") +
         '<span class="badge" title="This month">' + Math.round(hits / t.getDate() * 100) + '%</span><span class="badge pink" title="Current streak">🔥 ' + A.streak(h.id) + '</span><span class="badge grey" title="Best streak">best ' + bestStreak(h.id) + "</span>" +
         '<button class="x-btn" data-act="habit-del" data-i="' + i + '" aria-label="Delete habit">' + ic("trash") + "</button></li>";
     }).join("") + "</ul>" +

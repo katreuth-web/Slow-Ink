@@ -142,7 +142,7 @@
     Object.keys(A.state.days).forEach(function (k) { if (r369Count(k) === 3) full++; });
     return '<div class="grid">' +
       '<div class="c7">' + A.card("Today’s 369", intro("How it works:", "write one affirmation 3 times in the morning, 6 in the afternoon and 9 in the evening. Tick each set when you’ve done it.") +
-        '<label class="lbl">My 369 affirmation</label>' + A.input("rituals.r369.text", 'maxlength="140" placeholder="e.g. I am calm, capable and open to good things."', "hand") + today +
+        '<label class="lbl">My 369 affirmation</label>' + A.input("rituals.r369.text", 'maxlength="140" placeholder="I am calm and capable."', "hand") + today +
         (r.text ? '<p class="aff-big" style="margin-top:14px;font-size:18px">“' + esc(r.text) + "”</p>" : ""), { icon: "infinity", tint: "grad" }) + "</div>" +
       '<div class="c5">' + A.card("Your rhythm", '<div class="stats" style="margin-bottom:12px"><div class="inner stat"><b>' + r369Streak() + "</b><span>day streak</span></div><div class=\"inner stat\"><b>" + full + "</b><span>complete days</span></div></div>" +
         '<div class="heat-grid" aria-label="Last 35 days">' + cells + '</div><p class="small muted" style="margin:8px 0 0">Darker means more sets done that day.</p>', { icon: "calendar", tone: "pink" }) + "</div></div>";
@@ -164,7 +164,7 @@
     }).join("") + "</div>" : '<div class="empty">Write your affirmation, then begin. Day 1 is today.</div>';
     return '<div class="grid">' +
       '<div class="c7">' + A.card("55 × 5", intro("How it works:", "write one affirmation 55 times a day for 5 days in a row, then notice how the words land. Tick each day when you’ve finished.") +
-        '<label class="lbl">My affirmation</label>' + A.input("rituals.r555.text", 'maxlength="140" placeholder="e.g. I am confident and at ease."', "hand") +
+        '<label class="lbl">My affirmation</label>' + A.input("rituals.r555.text", 'maxlength="140" placeholder="I am confident."', "hand") +
         '<div class="row wrap" style="margin:12px 0"><button class="btn" data-act="r555-start">' + ic("play") + (start ? "Start again today" : "Begin today") + "</button>" +
         (start ? '<span class="badge">' + done + " of 5 days</span>" : "") + "</div>" + chips +
         (done === 5 ? '<div class="tip" style="margin-top:12px">You completed all five days. Take a moment to notice what has shifted.</div>' : "") + A.bar(done / 5), { icon: "star", tint: "grad" }) + "</div>" +

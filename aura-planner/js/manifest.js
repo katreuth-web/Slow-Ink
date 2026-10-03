@@ -53,7 +53,7 @@
       return '<section class="mf-col"><h3><span class="ico ' + s[3] + '">' + ic(s[2]) + "</span>" + s[1] + '<span class="badge grey">' + list.length + "</span></h3>" +
         (list.length ? list.map(boardCard).join("") : '<p class="small muted mf-none">' + (s[0] === "planted" ? "New intentions start here." : s[0] === "growing" ? "Move one here when you start to see movement." : s[0] === "manifested" ? "Celebrate it here." : "Letting go is part of it too.") + "</p>") + "</section>";
     }).join("");
-    var add = '<div class="row wrap mf-add"><input class="field grow" id="mf-new-title" maxlength="120" placeholder="I am calling in… (e.g. a calm, creative morning routine)" data-enter="mf-add" />' +
+    var add = '<div class="row wrap mf-add"><input class="field grow" id="mf-new-title" maxlength="120" placeholder="What are you calling in?" data-enter="mf-add" />' +
       '<select class="field" id="mf-new-cat" aria-label="Category" style="max-width:190px">' + areaOptions("") + '</select><button class="btn" data-act="mf-add">' + ic("seed") + "Plant it</button></div>";
     return A.head("Manifest", 'My <span class="soft">Manifestations</span>', "Write down what you’re calling in, check in on how aligned it feels, and keep a record of the signs and wins along the way.") +
       A.card("Plant a new intention", add + '<p class="small muted" style="margin:10px 0 0">Tip: describe it in the present tense and keep it about how you want to live and feel.</p>', { icon: "seed", tint: "grad" }) +
