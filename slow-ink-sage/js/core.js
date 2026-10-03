@@ -52,6 +52,16 @@
     check: '<path d="M5 12.5l4.5 4.5L19 7.500"/>',
     trash: '<path d="M4 7h16M9 7V4.500h6V7M6.500 7l.8 12.500h9.400L17.500 7"/>',
     star: '<path d="M12 3.500l2.600 5.400 5.900.8-4.300 4.100 1 5.800L12 16.800 6.800 19.600l1-5.800L3.500 9.700l5.900-.8z"/>',
+    calendar: '<rect x="3.500" y="5" width="17" height="15.500" rx="3.500"/><path d="M3.500 10h17M8 3v4M16 3v4"/>',
+    grid: '<rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.500v2.500M12 19v2.500M2.500 12H5M19 12h2.500M5.200 5.200L7 7M17 17l1.800 1.800M5.200 18.800L7 17M17 7l1.800-1.800"/>',
+    columns: '<rect x="3.500" y="4.500" width="17" height="15" rx="3"/><path d="M9.200 4.500v15M14.800 4.500v15"/>',
+    clock: '<circle cx="12" cy="12" r="8.500"/><path d="M12 7.500V12l3 2"/>',
+    loop: '<path d="M19.500 12a7.500 7.500 0 1 1-2.200-5.300M19.500 4.500V8H16"/>',
+    target: '<circle cx="12" cy="12" r="8.500"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.500"/>',
+    moon: '<path d="M19.500 14.500A8 8 0 0 1 9.500 4.500a8 8 0 1 0 10 10z"/>',
+    download: '<path d="M12 4.500v11M7.500 11l4.500 4.500 4.500-4.500"/><path d="M4.500 15v2.500A2.500 2.500 0 0 0 7 20h10a2.500 2.500 0 0 0 2.500-2.500V15"/>',
+    palette: '<path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.4 0 2-.9 2-1.8 0-.6-.3-1-.6-1.4-.4-.4-.6-.9-.6-1.400 0-1 .8-1.800 1.800-1.800H16.500a4 4 0 0 0 4-4C20.500 6.800 16.700 3.500 12 3.500z"/><circle cx="7.500" cy="11" r="1"/><circle cx="10" cy="7.500" r="1"/><circle cx="14.500" cy="7.500" r="1"/>',
     left: '<path d="M14.500 5.500L8 12l6.500 6.500"/>',
     right: '<path d="M9.500 5.500L16 12l-6.500 6.500"/>',
     book: '<path d="M5 4.500h11a3 3 0 0 1 3 3V19.500H8a3 3 0 0 1-3-3z"/><path d="M5 16.500a3 3 0 0 1 3-3h11"/>',
@@ -185,6 +195,8 @@
     return s;
   }
 
+  SI.defaultState = defaultState;
+  SI.fillGaps = fillGaps;
   SI.state = loadState();
 
   var saveTimer = null, warned = false;
@@ -301,6 +313,7 @@
     SI.state.notebook.pages.forEach(function (p) {
       (p.objects || []).forEach(function (o) { if (o.type === "img" && ids.indexOf(o.imgId) < 0) ids.push(o.imgId); });
     });
+    SI.state.ui.backedUp = true; SI.saveNow();
     SI.images.exportAll(ids).then(function (imgs) {
       var data = Object.assign({}, SI.state, { images: imgs });
       var blob = new Blob([JSON.stringify(data)], { type: "application/json" });
@@ -377,6 +390,7 @@
       SI.images.replaceAll(imgs && typeof imgs === "object" ? imgs : {}).then(function () {
         SI.state = fillGaps(s);
         SI.saveNow();
+        if (SI.applyLook) SI.applyLook();
         SI.toast("Backup restored.");
         SI.render();
       });
