@@ -234,7 +234,25 @@
     return defaults();
   }
 
+  /* Recipe sections ("Breakfast", "Drinks", ...) are the covers on the Recipe cards page. Older planners only had a
+     category word on each recipe, so give every recipe a section. */
+  function normSec(n) { return String(n || "").trim().toLowerCase().replace(/s$/, ""); }
+  function ensureRecipes() {
+    if (!Array.isArray(state.recipes)) state.recipes = [];
+    if (!Array.isArray(state.recipeSections) || !state.recipeSections.length) {
+      state.recipeSections = [["Breakfast", "pink"], ["Lunch", "butter"], ["Dinner", "sage"], ["Snacks", "sky"], ["Desserts", "lilac"], ["Drinks", "pink"]].map(function (x) { return { id: uid(), name: x[0], color: x[1], imgId: "" }; });
+    }
+    state.recipes.forEach(function (r) {
+      if (state.recipeSections.some(function (x) { return x.id === r.sec; })) return;
+      var hit = state.recipeSections.filter(function (x) { return normSec(x.name) === normSec(r.cat); })[0];
+      if (!hit) { hit = { id: uid(), name: String(r.cat || "Other").slice(0, 40), color: COLORS[state.recipeSections.length % COLORS.length], imgId: "" }; state.recipeSections.push(hit); }
+      r.sec = hit.id;
+    });
+    if (!state.ui) state.ui = { tabs: {}, nbMode: "type" };
+    if (state.ui.recipeSec && !state.recipeSections.some(function (x) { return x.id === state.ui.recipeSec; })) state.ui.recipeSec = "";
+  }
   var state = load();
+  ensureRecipes();
   var saveTimer = null;
   function save() {
     clearTimeout(saveTimer);
@@ -876,6 +894,49 @@
     return "Other";
   }
 
+
+  /* ---- recipe cards: sections (like the vision board) holding recipes, both with photos ---- */
+  function safeColor(c) { return COLORS.indexOf(c) >= 0 ? c : "pink"; }
+  function photoLabel(path, item, text) {
+    return '<label class="icon-btn sm" title="' + text + '" aria-label="' + text + '">' + ic("image") + '<input type="file" accept="image/*" hidden data-photo="' + path + "|" + item.id + '"></label>';
+  }
+  function recipePhoto(r) {
+    var u = imgs.url(r.imgId);
+    return u
+      ? '<div class="r-photo"><img alt="" src="' + u + '"><div class="v-actions">' + photoLabel("recipes", r, "Change photo") + '<button class="icon-btn sm" data-act="photo-remove" data-path="recipes" data-id="' + r.id + '" aria-label="Remove photo">' + ic("x") + "</button></div></div>"
+      : '<label class="r-photo r-empty">' + ic("image") + "<span>Add a photo</span>" + '<input type="file" accept="image/*" hidden data-photo="recipes|' + r.id + '"></label>';
+  }
+  function recipeCard(r) {
+    return '<div class="recipe">' + recipePhoto(r) +
+      itemInput("recipes", r, "text", 'class="txt" style="font-family:var(--serif);font-size:1.3rem;font-weight:600;background:transparent;box-shadow:none;padding:2px 0" aria-label="Recipe name"') +
+      '<div class="r-meta">' + itemSelect("recipes", r, "sec", state.recipeSections.map(function (x) { return [x.id, x.name]; }), 'aria-label="Section"') + itemInput("recipes", r, "time", 'placeholder="Time" aria-label="Time"') + itemInput("recipes", r, "serves", 'placeholder="Serves" aria-label="Serves"') + "</div>" +
+      '<label class="lbl">Ingredients · one per line</label><textarea data-item="recipes|' + r.id + '|ingredients" style="min-height:110px;font-size:12.5px">' + esc(r.ingredients) + "</textarea>" +
+      '<label class="lbl">Method</label><textarea data-item="recipes|' + r.id + '|method" style="min-height:70px;font-size:12.5px">' + esc(r.method) + "</textarea>" +
+      '<div class="row" style="margin-top:4px"><button class="btn sm butter grow" data-act="recipe-grocery" data-id="' + r.id + '">' + ic("plus") + ' Add to groceries</button><button class="del" data-act="recipe-del" data-id="' + r.id + '" aria-label="Delete recipe">' + ic("trash") + "</button></div></div>";
+  }
+  function sectionTile(sec) {
+    var n = state.recipes.filter(function (r) { return r.sec === sec.id; }).length, u = imgs.url(sec.imgId);
+    return '<div class="v-tile rs-tile" style="background:var(--' + safeColor(sec.color) + ')">' + (u ? '<img alt="" src="' + u + '">' : "") +
+      '<button class="rs-open" data-act="rsec-open" data-id="' + sec.id + '" aria-label="Open ' + esc(sec.name) + '"></button>' +
+      '<div class="v-actions">' + photoLabel("recipeSections", sec, "Add a cover photo") +
+      (u ? '<button class="icon-btn sm" data-act="photo-remove" data-path="recipeSections" data-id="' + sec.id + '" aria-label="Remove cover photo">' + ic("upload") + "</button>" : "") +
+      '<button class="icon-btn sm" data-act="vb-color" data-path="recipeSections" data-id="' + sec.id + '" aria-label="Change colour">' + ic("spark") + '</button><button class="icon-btn sm" data-act="rsec-del" data-id="' + sec.id + '" aria-label="Delete section">' + ic("x") + "</button></div>" +
+      '<div class="rs-foot">' + itemInput("recipeSections", sec, "name", 'class="rs-name" maxlength="40" placeholder="Section name" aria-label="Section name"') + '<span class="rs-count">' + n + (n === 1 ? " recipe" : " recipes") + "</span></div></div>";
+  }
+  function viewRecipes() {
+    var open = state.recipeSections.filter(function (x) { return x.id === state.ui.recipeSec; })[0];
+    if (open) {
+      var mine = state.recipes.filter(function (r) { return r.sec === open.id; });
+      return '<div class="rs-head"><button class="btn sm ghost" data-act="rsec-back">' + ic("left") + ' All sections</button><h2 class="rs-title">' + esc(open.name || "Recipes") + '</h2><span class="small muted">' + mine.length + (mine.length === 1 ? " recipe" : " recipes") + "</span></div>" +
+        '<div class="recipes"><button class="recipe v-add" style="min-height:150px" data-act="recipe-add" data-sec="' + open.id + '">' + ic("plus") + "<span>New recipe card</span></button>" + mine.map(recipeCard).join("") + "</div>" +
+        (mine.length ? "" : '<p class="empty" style="margin-top:14px">Nothing in ' + esc(open.name || "this section") + " yet. Add your first recipe above.</p>");
+    }
+    var pick = state.ui.recipePick
+      ? '<div class="rs-pick card"><p class="small muted" style="margin:0 0 8px">Which section is it for?</p><div class="chips">' + state.recipeSections.map(function (x) { return '<button class="chip" data-act="recipe-add" data-sec="' + x.id + '">' + esc(x.name || "Untitled") + "</button>"; }).join("") + "</div></div>"
+      : "";
+    return '<div class="rs-adds"><button class="v-add" data-act="recipe-pick">' + ic("plus") + "<span>New recipe card</span></button><button class=\"v-add\" data-act=\"rsec-add\">" + ic("plus") + "<span>New section</span></button></div>" + pick + '<div class="rs-grid">' + state.recipeSections.map(sectionTile).join("") + "</div>";
+  }
+
   function viewMeals() {
     var tb = tabs("meals", [["plan", "Weekly plan"], ["recipes", "Recipe cards"], ["grocery", "Grocery list"]]);
     var body = "";
@@ -892,14 +953,7 @@
         dot: "p", right: '<div class="row"><button class="icon-btn sm" data-act="meal-week-step" data-val="-7" aria-label="Previous week">' + ic("left") + '</button><button class="icon-btn sm" data-act="meal-week-step" data-val="7" aria-label="Next week">' + ic("right") + '</button><button class="btn sm butter" data-act="meal-grocery">Build grocery list</button></div>'
       }) + '<div class="spacer"></div>' + card("Your recipes", '<p class="small muted" style="margin-top:0">Type a recipe name exactly into a meal slot and “Build grocery list” pulls its ingredients in. Tap to copy a name.</p><div class="chips">' + (names || '<span class="empty">No recipes yet.</span>') + "</div>", { dot: "b" });
     } else if (tb.cur === "recipes") {
-      var cards = state.recipes.map(function (r) {
-        return '<div class="recipe">' + itemInput("recipes", r, "text", 'class="txt" style="font-family:var(--serif);font-size:1.3rem;font-weight:600;background:transparent;box-shadow:none;padding:2px 0" aria-label="Recipe name"') +
-          '<div class="row">' + itemSelect("recipes", r, "cat", RECIPE_CATS, 'style="padding:5px 8px;font-size:12px"') + itemInput("recipes", r, "time", 'placeholder="Time" style="padding:5px 8px;font-size:12px"') + itemInput("recipes", r, "serves", 'placeholder="Serves" style="padding:5px 8px;font-size:12px;max-width:70px"') + "</div>" +
-          '<label class="lbl">Ingredients · one per line</label><textarea data-item="recipes|' + r.id + '|ingredients" style="min-height:110px;font-size:12.5px">' + esc(r.ingredients) + "</textarea>" +
-          '<label class="lbl">Method</label><textarea data-item="recipes|' + r.id + '|method" style="min-height:70px;font-size:12.5px">' + esc(r.method) + "</textarea>" +
-          '<div class="row" style="margin-top:4px"><button class="btn sm butter grow" data-act="recipe-grocery" data-id="' + r.id + '">' + ic("plus") + ' Add to groceries</button><button class="del" data-act="list-del" data-path="recipes" data-id="' + r.id + '" aria-label="Delete recipe">' + ic("trash") + "</button></div></div>";
-      }).join("");
-      body = '<div class="recipes">' + cards + '<button class="recipe v-add" style="min-height:260px" data-act="recipe-add">' + ic("plus") + "<span>New recipe card</span></button></div>";
+      body = viewRecipes();
     } else {
       var groups = {};
       state.grocery.forEach(function (g2) { (groups[g2.cat || "Other"] = groups[g2.cat || "Other"] || []).push(g2); });
@@ -1517,6 +1571,83 @@
     if (el) el.focus();
   }
 
+  /* Recipe photos and section covers live in IndexedDB (not in the main save), so lots of photos never fill the planner's storage.
+     The state only keeps an id; backups include the pictures. */
+  var imgs = (function () {
+    var db = null, urls = {};
+    function req(r) { return new Promise(function (res, rej) { r.onsuccess = function () { res(r.result); }; r.onerror = function () { rej(r.error); }; }); }
+    function store(mode) { return db.transaction("images", mode).objectStore("images"); }
+    function toData(blob) { return new Promise(function (res) { var fr = new FileReader(); fr.onload = function () { res(fr.result); }; fr.readAsDataURL(blob); }); }
+    return {
+      init: function () {
+        if (!window.indexedDB) return Promise.resolve();
+        return new Promise(function (res) {
+          var rq;
+          try { rq = indexedDB.open("slow-ink-life-images", 1); } catch (e) { res(); return; }
+          rq.onupgradeneeded = function () { rq.result.createObjectStore("images"); };
+          rq.onsuccess = function () {
+            db = rq.result;
+            Promise.all([req(store("readonly").getAllKeys()), req(store("readonly").getAll())]).then(function (r) {
+              r[0].forEach(function (k, i) { if (r[1][i] instanceof Blob) urls[k] = URL.createObjectURL(r[1][i]); });
+            }).catch(function () { /* start without photos */ }).then(res);
+          };
+          rq.onerror = function () { res(); };
+        });
+      },
+      url: function (id) { return (id && urls[id]) || ""; },
+      put: function (id, blob) {
+        urls[id] = URL.createObjectURL(blob);
+        if (!db) return Promise.resolve(id);
+        return req(store("readwrite").put(blob, id)).then(function () { return id; }, function () { return id; });
+      },
+      remove: function (id) {
+        if (!id) return;
+        if (urls[id]) URL.revokeObjectURL(urls[id]);
+        delete urls[id];
+        if (db) try { store("readwrite").delete(id); } catch (e) { /* ignore */ }
+      },
+      clear: function () {
+        Object.keys(urls).forEach(function (k) { URL.revokeObjectURL(urls[k]); });
+        urls = {};
+        if (db) try { store("readwrite").clear(); } catch (e) { /* ignore */ }
+      },
+      exportAll: function () {
+        var ids = Object.keys(urls), out = {};
+        return Promise.all(ids.map(function (id) { return fetch(urls[id]).then(function (r) { return r.blob(); }).then(toData).then(function (d) { out[id] = d; }); })).then(function () { return out; });
+      },
+      importAll: function (map) {
+        return Promise.all(Object.keys(map || {}).map(function (id) { return fetch(map[id]).then(function (r) { return r.blob(); }).then(function (b) { return imgs.put(id, b); }); }));
+      }
+    };
+  })();
+  function shrinkToBlob(file, max, cb) {
+    if (!/^image\//.test(file.type)) { toast("That file isn't a picture."); return; }
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function () {
+      var sc = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight)), c = document.createElement("canvas");
+      c.width = Math.round(img.naturalWidth * sc); c.height = Math.round(img.naturalHeight * sc);
+      var x = c.getContext("2d"); x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height); x.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(function (b) { cb(b || file); }, "image/jpeg", 0.82);
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); toast("That image couldn't be read."); };
+    img.src = url;
+  }
+  function photoUsed(id) {
+    return state.recipes.some(function (r) { return r.imgId === id; }) || state.recipeSections.some(function (x) { return x.imgId === id; });
+  }
+  function setPhoto(item, file) {
+    shrinkToBlob(file, 1000, function (blob) {
+      var old = item.imgId, id = "img_" + uid();
+      imgs.put(id, blob).then(function () {
+        item.imgId = id;
+        if (old && !photoUsed(old)) imgs.remove(old);
+        save(); render();
+      });
+    });
+  }
+  function dropPhoto(item) { var old = item.imgId; item.imgId = ""; if (old && !photoUsed(old)) imgs.remove(old); }
+
   function compressImage(file, cb) {
     var reader = new FileReader();
     reader.onload = function () {
@@ -1698,6 +1829,12 @@
   document.addEventListener("change", function (e) {
     var el = e.target;
     if (el.hasAttribute("data-import")) { importFile(el.files[0]); el.value = ""; return; }
+    if (el.dataset.photo) {
+      var pp = el.dataset.photo.split("|"), pit = listAt(pp[0]).filter(function (x) { return x.id === pp[1]; })[0];
+      if (pit && el.files && el.files[0]) setPhoto(pit, el.files[0]);
+      el.value = "";
+      return;
+    }
     if (el.dataset.upload) {
       var parts = el.dataset.upload.split("|"), f = el.files[0];
       if (!f) return;
@@ -1835,7 +1972,46 @@
         save(); toast(n2 ? n2 + " ingredient" + (n2 === 1 ? "" : "s") + " added" : "Already on your list");
         return;
       }
-      case "recipe-add": state.recipes.push({ id: uid(), text: "New recipe", cat: "Dinner", time: "", serves: "", ingredients: "", method: "" }); save(); render(); return;
+      case "recipe-pick": state.ui.recipePick = !state.ui.recipePick; render(); return;
+      case "recipe-add": {
+        var secId = d.sec || (state.recipeSections[0] && state.recipeSections[0].id);
+        if (!secId) return;
+        var secObj = state.recipeSections.filter(function (x) { return x.id === secId; })[0];
+        state.recipes.unshift({ id: uid(), text: "New recipe", cat: secObj ? secObj.name : "", sec: secId, imgId: "", time: "", serves: "", ingredients: "", method: "" });
+        state.ui.recipeSec = secId; state.ui.recipePick = false; save(); render();
+        setTimeout(function () { var t = document.querySelector(".recipes .recipe .txt"); if (t) { t.focus(); if (t.select) t.select(); } }, 60);
+        return;
+      }
+      case "recipe-del": {
+        var rd = state.recipes.filter(function (x) { return x.id === d.id; })[0];
+        if (!rd || !window.confirm("Delete “" + (rd.text || "this recipe") + "”?")) return;
+        state.recipes = state.recipes.filter(function (x) { return x.id !== rd.id; });
+        dropPhoto(rd); save(); render(); return;
+      }
+      case "rsec-open": state.ui.recipeSec = d.id; state.ui.recipePick = false; save(); render(); window.scrollTo(0, 0); return;
+      case "rsec-back": state.ui.recipeSec = ""; save(); render(); return;
+      case "rsec-add": {
+        var ns = { id: uid(), name: "New section", color: COLORS[state.recipeSections.length % COLORS.length], imgId: "" };
+        state.recipeSections.push(ns); state.ui.recipePick = false; save(); render();
+        setTimeout(function () { var t = document.querySelector('.rs-name[data-item$="|' + ns.id + '|name"]') || document.querySelector(".rs-grid .rs-tile:last-of-type .rs-name"); if (t) { t.focus(); if (t.select) t.select(); } }, 60);
+        return;
+      }
+      case "rsec-del": {
+        var sd = state.recipeSections.filter(function (x) { return x.id === d.id; })[0];
+        if (!sd) return;
+        if (state.recipeSections.length < 2) { toast("Keep at least one section."); return; }
+        var inside = state.recipes.filter(function (x) { return x.sec === sd.id; });
+        if (!window.confirm("Delete the section “" + (sd.name || "this section") + "”" + (inside.length ? " and its " + inside.length + (inside.length === 1 ? " recipe" : " recipes") : "") + "? This can’t be undone.")) return;
+        inside.forEach(dropPhoto);
+        state.recipes = state.recipes.filter(function (x) { return x.sec !== sd.id; });
+        state.recipeSections = state.recipeSections.filter(function (x) { return x.id !== sd.id; });
+        dropPhoto(sd); state.ui.recipeSec = ""; save(); render(); return;
+      }
+      case "photo-remove": {
+        var po = listAt(d.path).filter(function (x) { return x.id === d.id; })[0];
+        if (po) { dropPhoto(po); save(); render(); }
+        return;
+      }
       case "grocery-add": {
         var g = formVals(el);
         if (!g.text || !g.text.trim()) return;
@@ -1995,7 +2171,7 @@
       case "export": exportData(); return;
       case "reset":
         if (!confirm("Reset the whole planner? Export a backup first — this erases everything on this device.")) return;
-        state = defaults(); saveNow(); go("#/home"); toast("Planner reset"); return;
+        imgs.clear(); state = defaults(); ensureRecipes(); saveNow(); go("#/home"); toast("Planner reset"); return;
     }
   }
 
@@ -2022,13 +2198,38 @@
 
   function exportData() {
     saveNow();
-    var blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "slow-ink-life-" + todayKey() + ".json";
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    imgs.exportAll().then(function (pics) {
+      var blob = new Blob([JSON.stringify(Object.assign({}, state, { images: pics }), null, 2)], { type: "application/json" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "slow-ink-life-" + todayKey() + ".json";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    });
+  }
+  /* Recipe sections, recipes and photos from a backup file are checked before use: ids and colours end up in page markup. */
+  var SAFE_ID = /^[A-Za-z0-9_-]{1,60}$/;
+  function str(v, n) { return typeof v === "string" ? v.slice(0, n) : ""; }
+  function cleanBackup(data) {
+    var secs = Array.isArray(data.recipeSections) ? data.recipeSections : [];
+    data.recipeSections = secs.filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 60).map(function (x) {
+      return { id: String(x.id), name: str(x.name, 40), color: safeColor(x.color), imgId: SAFE_ID.test(String(x.imgId)) ? String(x.imgId) : "" };
+    });
+    data.recipes = (Array.isArray(data.recipes) ? data.recipes : []).filter(function (r) { return r && typeof r === "object" && SAFE_ID.test(String(r.id)); }).slice(0, 2000).map(function (r) {
+      return { id: String(r.id), text: str(r.text, 120), cat: str(r.cat, 40), sec: SAFE_ID.test(String(r.sec)) ? String(r.sec) : "", imgId: SAFE_ID.test(String(r.imgId)) ? String(r.imgId) : "", time: str(r.time, 40), serves: str(r.serves, 20), ingredients: str(r.ingredients, 8000), method: str(r.method, 8000) };
+    });
+    Object.keys(data.notebook && typeof data.notebook === "object" ? data.notebook : {}).forEach(function (k) {
+      var pg = data.notebook[k];
+      if (pg && Array.isArray(pg.tiles)) pg.tiles.forEach(function (t) { if (t && typeof t === "object") t.color = safeColor(t.color); });
+    });
+    var pics = {};
+    if (data.images && typeof data.images === "object") Object.keys(data.images).slice(0, 2000).forEach(function (id) {
+      var v = data.images[id];
+      if (SAFE_ID.test(id) && typeof v === "string" && /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+\/=]+$/.test(v)) pics[id] = v;
+    });
+    delete data.images;
+    return pics;
   }
   function importFile(f) {
     if (!f) return;
@@ -2038,8 +2239,13 @@
         var data = JSON.parse(rd.result);
         if (!data || typeof data !== "object" || !data.days) throw new Error("bad");
         delete data.sync;
-        state = merge(defaults(), data);
-        saveNow(); render(); toast("Planner imported ✨");
+        var pics = cleanBackup(data);
+        imgs.clear();
+        imgs.importAll(pics).then(function () {
+          state = merge(defaults(), data);
+          ensureRecipes();
+          saveNow(); render(); toast("Planner imported ✨");
+        });
       } catch (e) { toast("That file doesn't look like a Slow Ink Life backup."); }
     };
     rd.readAsText(f);
@@ -2048,5 +2254,5 @@
   /* ------------------------------------------------------------ boot */
 
   if (!location.hash) history.replaceState(null, "", "#/home");
-  render();
+  imgs.init().then(function () { render(); });
 })();
