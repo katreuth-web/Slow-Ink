@@ -276,6 +276,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border-radius
 }
 .list li:last-child { border-bottom: 0; }
 .list li .txt { flex: 1; min-width: 0; border: 0; background: transparent; box-shadow: none; padding: 2px 4px; border-radius: 8px; }
+.list li textarea.txt { resize: none; min-height: 0; overflow: hidden; line-height: 1.35; display: block; padding: 4px 6px; }
 .list li .txt:focus { box-shadow: var(--press-sm); }
 .list li.done .txt { text-decoration: line-through; color: var(--muted); }
 .list li .del { opacity: 0; transition: opacity 0.15s; }
@@ -749,3 +750,6 @@ body.markup-on .book { margin-bottom: 90px; }
   .book-sheet-col { padding: 0; }
   .nb-desk { padding: 0; }
 }
+/* add-forms: the name box gets its own line on phones instead of shrinking to a sliver */
+.row.wrap > input.grow { min-width: 150px; }
+@media (max-width: 600px) { .row.wrap[data-form] > input.grow { flex: 1 1 100%; } }

@@ -1469,6 +1469,18 @@
       addNode(p, state.ui.mmSel || p.nodes[0].id, ((e.clientX - r.left) / r.width) * 100, ((e.clientY - r.top) / r.height) * 100);
     });
   }
+  /* List items are written as one-line boxes; turn them into boxes that wrap, so long names are never cut off. */
+  function wrapTxt(root) {
+    Array.prototype.forEach.call(root.querySelectorAll('.list li input.txt[type="text"]'), function (i) {
+      var t = document.createElement("textarea");
+      t.rows = 1;
+      Array.prototype.forEach.call(i.attributes, function (a) { if (a.name !== "type" && a.name !== "value") t.setAttribute(a.name, a.value); });
+      t.value = i.value;
+      i.parentNode.replaceChild(t, i);
+    });
+    Array.prototype.forEach.call(root.querySelectorAll(".list li textarea.txt"), autosize);
+  }
+  window.addEventListener("resize", function () { Array.prototype.forEach.call(view.querySelectorAll(".list li textarea.txt"), autosize); });
   function autosize(el) { el.style.height = "auto"; el.style.height = el.scrollHeight + "px"; }
   function addNode(p, parentId, x, y) {
     var parent = p.nodes.filter(function (n) { return n.id === parentId; })[0] || p.nodes[0];
@@ -1590,6 +1602,7 @@
     $("#nb-topbar").hidden = r.name !== "notebook";
     document.body.classList.toggle("markup-on", r.name === "notebook" && state.ui.nbMode === "markup" && !!state.nbCurrent && !!state.notebook[state.nbCurrent] && DRAWABLE.indexOf(state.notebook[state.nbCurrent].paper) >= 0);
     view.innerHTML = html;
+    wrapTxt(view);
     if (mount) mount();
     closeSheet();
 
@@ -1655,6 +1668,7 @@
     var el = e.target;
     if (el.dataset.actInput === "ink-size") { pen.size = num(el.value); return; }
     applyInput(el);
+    if (el.tagName === "TEXTAREA" && el.classList.contains("txt")) autosize(el);
     if (el.type === "range" && el.dataset.item) {
       var b = el.parentNode.querySelector(".badge");
       if (b) b.textContent = el.value + "%";
@@ -1681,6 +1695,7 @@
     var el = e.target;
     if (e.key === "Escape") closeSheet();
     if (e.key !== "Enter" || e.isComposing) return;
+    if (el.tagName === "TEXTAREA" && el.classList.contains("txt")) { e.preventDefault(); el.blur(); return; }
     if (el.dataset && el.dataset.add) { e.preventDefault(); addToList(el.dataset.add); }
     else if (el.dataset && el.dataset.enter) { e.preventDefault(); act(el.dataset.enter, el); }
     else if (el.closest && el.closest("[data-form]") && el.tagName === "INPUT") {
