@@ -16,6 +16,10 @@ A warm, paper-and-sage yearly planner with a notebook of its own. Plain HTML, CS
 - **Habits** is a month grid with streaks. **Goals** breaks a goal into steps with a progress bar. **Reflect** has monthly and yearly prompts.
 - Works for any year. Use the arrows on the Year, Month and Week pages to move around.
 
+## Navigation
+
+On screens 1100px wide or more (laptops and desktops) a **left-hand menu** groups the pages: Plan (Today, Year, Month, Week, Day), Track (Habits, Goals, Reflect) and Journal (Notebook), with Personalise and Back up at the bottom. The Notebook still opens full-screen as its own book. On tablets in portrait and on phones the menu is replaced by the tab bar across the top.
+
 ## Personalise
 
 The palette button in the top bar (or "Personalise" in the footer) opens a panel with four choices. They save with the planner, so they travel with a backup:

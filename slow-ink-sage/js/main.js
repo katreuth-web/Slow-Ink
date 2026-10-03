@@ -57,6 +57,25 @@
     }).join("");
   }
 
+  /* The left-hand menu (wide screens). The same pages as the top tabs, grouped. */
+  var SIDE = [
+    ["Plan", [["today", "Today", "sun"], ["year", "Year", "grid"], ["month", "Month", "calendar"], ["week", "Week", "columns"], ["day", "Day", "clock"]]],
+    ["Track", [["habits", "Habits", "loop"], ["goals", "Goals", "target"], ["reflect", "Reflect", "moon"]]],
+    ["Journal", [["notebook", "Notebook", "book"]]]
+  ];
+  function buildSide(active) {
+    document.getElementById("side").innerHTML =
+      '<a class="side-brand" href="#/today" aria-label="Slow Ink Sage: Today"><span class="brand-mark" aria-hidden="true"></span><span class="brand-name">Slow Ink</span></a>' +
+      SIDE.map(function (g) {
+        return '<p class="side-label">' + g[0] + "</p>" + g[1].map(function (t) {
+          var on = t[0] === active;
+          return '<a class="side-link' + (t[0] === "notebook" ? " side-nb" : "") + (on ? " on" : "") + '" href="' + tabHref(t[0]) + '"' + (on ? ' aria-current="page"' : "") + ">" + ic(t[2]) + "<span>" + esc(t[1]) + "</span></a>";
+        }).join("");
+      }).join("") +
+      '<div class="side-foot"><button class="side-link" data-act="open-look">' + ic("palette") + "<span>Personalise</span></button>" +
+      '<button class="side-link" data-act="export">' + ic("download") + "<span>Back up planner</span></button></div>";
+  }
+
   /* Remember which control had the keyboard focus, so it still has it after a redraw. */
   var FOCUS_ATTRS = ["data-act", "data-day", "data-id", "data-h", "data-g", "data-v"];
   function focusSelector(el) {
@@ -89,6 +108,7 @@
     document.body.setAttribute("data-page", r.name);
     document.body.classList.toggle("markup-on", nb && SI.state.ui.nbMode === "markup" && !!SI.state.notebook.current);
     buildTabs(r.name);
+    buildSide(r.name);
     if (SI.after[r.name]) SI.after[r.name](r.args);
 
     if (!sameRoute) window.scrollTo(0, 0); else window.scrollTo(0, y);
