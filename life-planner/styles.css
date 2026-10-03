@@ -276,6 +276,7 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border-radius
 }
 .list li:last-child { border-bottom: 0; }
 .list li .txt { flex: 1; min-width: 0; border: 0; background: transparent; box-shadow: none; padding: 2px 4px; border-radius: 8px; }
+.list li textarea.txt { resize: none; min-height: 0; overflow: hidden; line-height: 1.35; display: block; padding: 4px 6px; }
 .list li .txt:focus { box-shadow: var(--press-sm); }
 .list li.done .txt { text-decoration: line-through; color: var(--muted); }
 .list li .del { opacity: 0; transition: opacity 0.15s; }
@@ -622,6 +623,7 @@ body.nb-mode .sidebar, body.nb-mode .dock, body.nb-mode .topbar { display: none;
 body.nb-mode .app { display: block; padding: 0 22px 30px; min-height: 0; max-width: 1440px; margin: 0 auto; }
 body.nb-mode .toast { background: var(--ink); color: var(--bg); }
 
+[hidden] { display: none !important; }
 .nb-topbar { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 1440px; margin: 0 auto; padding: 18px 26px 6px; color: #fff; }
 .nb-back { color: #fff; text-decoration: none; padding: 9px 18px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, 0.5); font-size: 13px; font-weight: 500; background: rgba(255, 255, 255, 0.12); }
 .nb-back:hover { background: rgba(255, 255, 255, 0.24); }
@@ -748,3 +750,29 @@ body.markup-on .book { margin-bottom: 90px; }
   .book-sheet-col { padding: 0; }
   .nb-desk { padding: 0; }
 }
+/* add-forms: the name box gets its own line on phones instead of shrinking to a sliver */
+.row.wrap > input.grow { min-width: 150px; }
+@media (max-width: 600px) { .row.wrap[data-form] > input.grow { flex: 1 1 100%; } }
+
+/* date boxes: always a visible box on iPhone (see wrapDates in app.js) */
+.datefield { position: relative; display: block; width: 100%; min-height: 38px; background: var(--surface); box-shadow: var(--press-sm); border-radius: 12px; padding: 9px 12px; font-size: 13px; line-height: 1.3; }
+.datefield .df-text { display: block; pointer-events: none; white-space: nowrap; }
+.datefield.unset .df-text { color: var(--muted); opacity: 0.8; }
+.datefield input[type="date"] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; font-size: 16px; box-shadow: none; background: transparent; -webkit-appearance: none; appearance: none; }
+.datefield:focus-within { box-shadow: var(--press-sm), 0 0 0 2px var(--pink); }
+
+/* travel: trips, then the open trip, then the bucket list (so the plan sits right under the trip list on phones) */
+.travel-grid { display: grid; gap: 22px; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-areas: "trips trips trips trips main main main main main main main main" "bucket bucket bucket bucket main main main main main main main main"; grid-template-rows: auto 1fr; align-items: start; }
+.tg-trips { grid-area: trips; } .tg-main { grid-area: main; min-width: 0; } .tg-bucket { grid-area: bucket; }
+.tg-trips > .card, .tg-bucket > .card { margin: 0; }
+@media (max-width: 900px) { .travel-grid { gap: 16px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "trips" "main" "bucket"; } }
+
+/* travel expenses: category, what, amount, delete. On phones the description gets its own line. */
+.exp-list { display: flex; flex-direction: column; }
+.exp-row { display: grid; grid-template-columns: minmax(120px, 150px) minmax(0, 1fr) 110px auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px dashed var(--line); }
+.exp-row:first-child { border-top: 0; }
+@media (max-width: 600px) { .exp-row { grid-template-columns: minmax(0, 1fr) 100px auto; grid-template-areas: "cat amt del" "txt txt txt"; } .exp-row > :nth-child(1) { grid-area: cat; } .exp-row > :nth-child(2) { grid-area: txt; } .exp-row > :nth-child(3) { grid-area: amt; } .exp-row > :nth-child(4) { grid-area: del; } }
+/* dropdowns inside any table never shrink below their longest word */
+.table td select { min-width: 8.5em; }
+.recipe .row select { flex: 0 0 auto; width: auto; min-width: 8.5em; }
+.recipe .row input { flex: 1 1 60px; }

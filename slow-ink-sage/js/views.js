@@ -176,7 +176,7 @@
     return head("Year at a glance", String(y), "Tap a month to open it, or any day to plan it.",
       stepper(href.year(y - 1), href.year(y + 1), y, y === SI.today().getFullYear() ? "" : href.year(SI.today().getFullYear()), "This year")) +
       '<div class="intention"><label for="yint" class="eyebrow">A word or line for ' + y + "</label>" +
-      bound("years." + y + ".intention", yrec.intention || "", 'id="yint" placeholder="What do you want this year to feel like?" maxlength="160"', "field intent-field") + "</div>" +
+      bound("years." + y + ".intention", yrec.intention || "", 'id="yint" placeholder="How should this year feel?" maxlength="160"', "field intent-field") + "</div>" +
       '<div class="year-grid">' + months + "</div>" +
       '<div class="cols cols-2 year-foot">' +
       card("Key dates in " + y, keyDateList(keyDatesIn(y + "-"), "Nothing marked yet. Tap the star beside any task to make it a key date, and it will appear here.")) +
@@ -256,7 +256,7 @@
     return head(d.getFullYear() + " · " + SI.MONTHS[d.getMonth()], esc(SI.longDate(d)), "",
       stepper(href.day(SI.addDays(d, -1)), href.day(SI.addDays(d, 1)), SI.DOW[SI.dowIndex(d)] + " " + d.getDate(), isNow ? "" : "#/today", "Today")) +
       '<div class="intention"><label for="intent" class="eyebrow">Intention</label>' +
-      bound("days." + key + ".intention", rec.intention, 'id="intent" placeholder="What would make this day a good one?" maxlength="160"', "field intent-field") + "</div>" +
+      bound("days." + key + ".intention", rec.intention, 'id="intent" placeholder="Today would be good if…" maxlength="160"', "field intent-field") + "</div>" +
       '<div class="cols cols-2"><div class="stack">' +
       card("To do", taskList(key, false, "Nothing planned yet. Add one small thing.") + addRow(key) + '<p class="small hint">Tap the star to mark something as a key date. It will show up in your year and month pages.</p>') +
       card("A few lines about the day", area("days." + key + ".note", rec.note, 'rows="6" placeholder="What happened? What are you noticing?"') +

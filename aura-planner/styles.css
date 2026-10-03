@@ -899,3 +899,9 @@ body.nb-mode .toast:not(.show) { visibility: hidden; }
 }
 @media (prefers-reduced-motion: reduce) { .vz-orb { transition: none; transform: scale(0.92); } }
 @media (max-width: 520px) { .mf-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; } .mf-stats .stat b { font-size: 18px; } .mf-stats .stat span { font-size: 9.5px; letter-spacing: 0; } }
+
+/* small phones: habit names get the full line, their badges drop below */
+@media (max-width: 520px) { .habit-li { flex-wrap: wrap; } .habit-li .field.bare { flex: 1 1 60%; } }
+/* the one-line prompts beside a label wrap under it instead of being squeezed */
+.row.wrap > .field.grow { min-width: 170px; }
+@media (max-width: 350px) { .slider-row { grid-template-columns: 12px minmax(0, 1fr) 70px 22px; gap: 6px; } }

@@ -619,3 +619,6 @@ body.markup-on .foot { padding-bottom: 110px; }
 @media (pointer: coarse) { .obj-h { width: 34px; height: 34px; } .obj-del { top: -24px; right: -24px; } .obj-res { bottom: -24px; right: -24px; } .obj-rot { top: -42px; margin-left: -17px; } }
 @media print { .nbtools, .tray, .obj-h { display: none !important; } .obj.sel { outline: none; } }
 @media (max-width: 760px) { .nbtools { position: static; } .tb-grow { display: none; } }
+
+/* very small phones: let the page title shrink so the whole name stays visible */
+@media (max-width: 400px) { .sheet-title { font-size: 19px; } }

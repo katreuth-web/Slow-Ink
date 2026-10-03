@@ -164,7 +164,7 @@
       '<div class="c4 stack">' +
         A.card("Monthly intention", '<label class="lbl">Word for the month</label>' + A.input("months." + key + ".word", 'placeholder="e.g. Steady"', "hand") +
           '<label class="lbl">Intentions</label>' + [0, 1, 2].map(function (i) { return '<div class="row" style="margin-bottom:6px"><span class="badge pink">' + (i + 1) + "</span>" + A.input("months." + key + ".intentions." + i, 'placeholder="I will…"', "grow") + "</div>"; }).join(""), { icon: "heart", tone: "pink", tint: "pink" }) +
-        A.card("Monthly intentions to act on", A.checklist("months." + key + ".goals", "Add something for " + A.MONTHS[m]), { icon: "flag" }) +
+        A.card("Monthly intentions to act on", A.checklist("months." + key + ".goals", "Add an intention"), { icon: "flag" }) +
       "</div>" +
       '<div class="c6">' + A.card("Reflect · " + A.MONTHS[prevFirst.getMonth()] + " recap", recap, { icon: "refresh", tone: "sky" }) + "</div>" +
       '<div class="c6">' + A.card("Focus areas", focus, { icon: "target", tone: "mint", sub: "Pick the life areas that get your energy this month." }) + "</div>" +
@@ -204,7 +204,7 @@
       A.head("Weekly spread", "Week " + A.isoWeek(mon) + ' <span class="soft">' + label + "</span>", "", pager(A.hrefWeek(A.addDays(mon, -7)), A.hrefWeek(A.addDays(mon, 7)))) +
       '<div class="grid" style="margin-bottom:16px">' +
       '<div class="c4">' + A.card("This week's focus", A.textarea("weeks." + wk + ".focus", 'rows="3" placeholder="This week I’m focusing on… and I want to feel…"'), { icon: "target", tint: "grad" }) + "</div>" +
-      '<div class="c4">' + A.card("Inspired actions", A.checklist("weeks." + wk + ".priorities", "Add an action for this week", "What small steps will you take?"), { icon: "star", tone: "pink" }) + "</div>" +
+      '<div class="c4">' + A.card("Inspired actions", A.checklist("weeks." + wk + ".priorities", "Add an action", "What small steps will you take?"), { icon: "star", tone: "pink" }) + "</div>" +
       '<div class="c4">' + A.card("Week pulse", '<div class="stats">' +
         '<div class="inner stat"><b>' + st.done + "/" + st.tasks + "</b><span>actions done</span></div>" +
         '<div class="inner stat"><b>' + (st.moodAvg ? st.moodAvg.toFixed(1) : "—") + "</b><span>mood</span></div>" +
@@ -286,7 +286,7 @@
     return crumbs([[d.getFullYear(), A.hrefYear(d.getFullYear())], [A.MONTHS[d.getMonth()], A.hrefMonth(d)], ["Week " + A.isoWeek(d), A.hrefWeek(d)], [String(d.getDate())]]) +
       A.head(k === tk ? "Today · daily practice" : "Daily practice", dateTitle, "", pager(A.hrefDay(A.addDays(d, -1)), A.hrefDay(A.addDays(d, 1)))) +
       strip +
-      '<div class="card tint-grad" style="margin-bottom:16px;padding:14px 18px"><div class="row wrap"><span class="eyebrow" style="margin:0">Today I choose to feel</span>' + A.input(base + ".intention", 'placeholder="calm, capable, open…"', "bare grow hand") + "</div>" +
+      '<div class="card tint-grad" style="margin-bottom:16px;padding:14px 18px"><div class="row wrap"><span class="eyebrow" style="margin:0">Today I choose to feel</span>' + A.input(base + ".intention", 'placeholder="calm, capable, open"', "bare grow hand") + "</div>" +
         '<div class="row wrap" style="margin-top:6px"><span class="eyebrow" style="margin:0">I am</span>' + A.input(base + ".feeling", 'placeholder="…"', "bare grow hand") + "</div></div>" +
       '<div class="grid">' +
       '<div class="c6"><div class="card moon-chip">' + moonChip + '<a class="btn xs ghost" href="#/rituals/moon">Moon</a></div></div>' +
