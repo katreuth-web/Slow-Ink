@@ -20,7 +20,9 @@
   document.getElementById("scrim").addEventListener("click", function () { A.closeDrawer(); A.render(); });
 
   A.acts["export"] = function () {
+    A.state.ui.backedUp = true;
     A.saveNow();
+    if (A.route.name === "home") A.render();
     A.images.exportAll().then(function (imgs) {
       var blob = new Blob([JSON.stringify({ app: "aura-planner", version: 2, exported: new Date().toISOString(), state: A.state, images: imgs })], { type: "application/json" });
       var a = document.createElement("a");
@@ -144,7 +146,9 @@
       out.notebook = { sections: secs, pages: pages, current: ID.test(nb.current) ? nb.current : "", section: ID.test(nb.section) ? nb.section : secs[0].id };
     }
     if (isObj(raw.coach)) out.coach = { key: str(raw.coach.key, 300), model: ["claude-opus-5", "claude-sonnet-5"].indexOf(raw.coach.model) >= 0 ? raw.coach.model : "claude-opus-5", analysis: str(raw.coach.analysis, 20000), analysisAt: str(raw.coach.analysisAt, 60), synthInput: str(raw.coach.synthInput, 20000), synth: null, synthAt: "" };
-    out.ui = { mmSel: str(isObj(raw.ui) ? raw.ui.mmSel : "root", 40) || "root", nbMode: isObj(raw.ui) && raw.ui.nbMode === "markup" ? "markup" : "type" };
+    var rui = isObj(raw.ui) ? raw.ui : {};
+    out.ui = { mmSel: str(rui.mmSel, 40) || "root", nbMode: rui.nbMode === "markup" ? "markup" : "type", look: A.validLook(rui.look),
+      onboardHidden: rui.onboardHidden === true, backedUp: rui.backedUp === true, sample: rui.sample === true };
     return out;
   };
   function cleanImages(map) {
@@ -170,7 +174,7 @@
         A.images.clear();
         A.images.importAll(cleanImages(data.images)).then(function () {
           localStorage.setItem("aura-planner-v1", JSON.stringify(clean));
-          A.load(); A.closeDrawer(); location.hash = "#/day/today"; A.render(); A.toast("Backup restored");
+          A.load(); A.applyLook(); A.closeDrawer(); location.hash = "#/home"; A.render(); A.toast("Backup restored");
         });
       } catch (err) { A.toast("That doesn’t look like an Aura backup."); }
     };
@@ -180,15 +184,16 @@
     if (!confirm("Erase all planner data and photos in this browser? Export a backup first if you want to keep it.")) return;
     A.images.clear();
     try { localStorage.removeItem("aura-planner-v1"); } catch (e) { /* ignore */ }
-    A.load(); A.closeDrawer(); location.hash = "#/day/today"; A.render(); A.toast("Planner reset");
+    A.load(); A.applyLook(); A.closeDrawer(); location.hash = "#/home"; A.render(); A.toast("Planner reset");
   };
 
   /* ------------------------------------------------------------ boot */
   A.load();
+  A.applyLook();
   document.querySelector('[data-act="open-settings"]').innerHTML = ic("gear");
   window.addEventListener("hashchange", A.render);
   A.images.init().then(function () {
-    if (!location.hash) location.replace("#/day/today");
+    if (!location.hash) location.replace("#/home");
     A.render();
   });
 })();

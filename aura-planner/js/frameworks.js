@@ -7,19 +7,19 @@
   function wheelSVG() {
     var areas = A.state.wheel.areas, n = areas.length || 1, cx = 210, cy = 210, R = 150;
     var s = '<svg viewBox="0 0 420 420" role="img" aria-label="Level 10 Life wheel">';
-    for (var r = 2; r <= 10; r += 2) s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * r / 10) + '" fill="none" stroke="rgba(155,123,255,' + (r === 10 ? 0.35 : 0.14) + ')" stroke-dasharray="' + (r === 10 ? "0" : "3 4") + '"/>';
+    for (var r = 2; r <= 10; r += 2) s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * r / 10) + '" fill="none" style="stroke:rgba(var(--ac),' + (r === 10 ? 0.35 : 0.14) + ')" stroke-dasharray="' + (r === 10 ? "0" : "3 4") + '"/>';
     areas.forEach(function (a, i) {
       var a0 = (i / n) * 2 * Math.PI - Math.PI / 2, a1 = ((i + 1) / n) * 2 * Math.PI - Math.PI / 2;
       var rr = R * A.clamp(a.score, 0, 10) / 10;
       var x0 = cx + rr * Math.cos(a0), y0 = cy + rr * Math.sin(a0), x1 = cx + rr * Math.cos(a1), y1 = cy + rr * Math.sin(a1);
-      s += '<path d="M' + cx + " " + cy + " L" + x0.toFixed(1) + " " + y0.toFixed(1) + " A" + rr + " " + rr + " 0 0 1 " + x1.toFixed(1) + " " + y1.toFixed(1) + ' Z" fill="' + a.color + '" fill-opacity=".72" stroke="#fff" stroke-width="2"/>';
+      s += '<path d="M' + cx + " " + cy + " L" + x0.toFixed(1) + " " + y0.toFixed(1) + " A" + rr + " " + rr + " 0 0 1 " + x1.toFixed(1) + " " + y1.toFixed(1) + ' Z" fill="' + a.color + '" fill-opacity=".72" style="stroke:var(--paper)" stroke-width="2"/>';
       var sx = cx + R * Math.cos(a0), sy = cy + R * Math.sin(a0);
-      s += '<line x1="' + cx + '" y1="' + cy + '" x2="' + sx.toFixed(1) + '" y2="' + sy.toFixed(1) + '" stroke="rgba(155,123,255,.18)"/>';
+      s += '<line x1="' + cx + '" y1="' + cy + '" x2="' + sx.toFixed(1) + '" y2="' + sy.toFixed(1) + '" style="stroke:rgba(var(--ac),.18)"/>';
       var am = (a0 + a1) / 2, lx = cx + (R + 26) * Math.cos(am), ly = cy + (R + 26) * Math.sin(am);
-      s += '<text x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="middle" dominant-baseline="middle" font-size="11.5" font-weight="600" fill="#4a4460">' + esc(a.name) + "</text>";
-      s += '<text x="' + (lx).toFixed(1) + '" y="' + (ly + 13).toFixed(1) + '" text-anchor="middle" font-size="10" fill="#847d99">' + a.score + "/10</text>";
+      s += '<text x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="middle" dominant-baseline="middle" font-size="11.5" font-weight="600" style="fill:var(--ink-2)">' + esc(a.name) + "</text>";
+      s += '<text x="' + (lx).toFixed(1) + '" y="' + (ly + 13).toFixed(1) + '" text-anchor="middle" font-size="10" style="fill:var(--muted)">' + a.score + "/10</text>";
     });
-    return s + '<circle cx="' + cx + '" cy="' + cy + '" r="5" fill="#fff" stroke="#B69CFF" stroke-width="2"/></svg>';
+    return s + '<circle cx="' + cx + '" cy="' + cy + '" r="5" style="fill:var(--paper);stroke:var(--lav)" stroke-width="2"/></svg>';
   }
   A.views.wheel = function () {
     var w = A.state.wheel, areas = w.areas;
@@ -65,11 +65,11 @@
   function ikigaiSVG() {
     var c = { love: [230, 150], good: [150, 230], need: [310, 230], paid: [230, 310] };
     var s = '<svg class="ikigai-svg" viewBox="0 0 460 460" role="img" aria-label="Ikigai diagram">';
-    IKI.forEach(function (x) { s += '<circle cx="' + c[x[0]][0] + '" cy="' + c[x[0]][1] + '" r="112" fill="' + x[2] + '" fill-opacity=".38" stroke="#fff" stroke-width="2"/>'; });
-    var t = function (x, y, txt, size, w, col) { return '<text x="' + x + '" y="' + y + '" text-anchor="middle" font-size="' + size + '" font-weight="' + w + '" fill="' + (col || "#4a4460") + '">' + txt + "</text>"; };
+    IKI.forEach(function (x) { s += '<circle cx="' + c[x[0]][0] + '" cy="' + c[x[0]][1] + '" r="112" fill="' + x[2] + '" fill-opacity=".38" style="stroke:var(--paper)" stroke-width="2"/>'; });
+    var t = function (x, y, txt, size, w, col) { return '<text x="' + x + '" y="' + y + '" text-anchor="middle" font-size="' + size + '" font-weight="' + w + '" style="fill:' + (col || "var(--ink-2)") + '">' + txt + "</text>"; };
     s += t(230, 88, "Love", 13, 600) + t(88, 234, "Skill", 13, 600) + t(372, 234, "Need", 13, 600) + t(230, 382, "Paid", 13, 600);
     s += t(172, 176, "Passion", 11.5, 500) + t(288, 176, "Mission", 11.5, 500) + t(172, 292, "Profession", 11.5, 500) + t(288, 292, "Vocation", 11.5, 500);
-    s += '<circle cx="230" cy="230" r="30" fill="#fff" fill-opacity=".9"/>' + t(230, 235, "Ikigai", 13, 700, "#7A5AF0");
+    s += '<circle cx="230" cy="230" r="30" style="fill:var(--paper)" fill-opacity=".9"/>' + t(230, 235, "Ikigai", 13, 700, "var(--accent-text)");
     return s + "</svg>";
   }
   A.views.ikigai = function () {

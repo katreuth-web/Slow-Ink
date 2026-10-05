@@ -78,7 +78,7 @@
         sections: [{ id: "s-journal", name: "Journal", tone: "lav" }, { id: "s-notes", name: "Notes", tone: "pink" }, { id: "s-ideas", name: "Ideas", tone: "mint" }]
       },
       coach: { key: "", model: "claude-opus-5", analysis: "", analysisAt: "", synthInput: "", synth: null, synthAt: "" },
-      ui: { mmSel: "root", nbMode: "type" }
+      ui: { mmSel: "root", nbMode: "type", look: { theme: "violet", mode: "light", font: "classic", bg: "soft" } }
     };
   };
 
@@ -332,6 +332,10 @@
 
   /* ------------------------------------------------------------ icons */
   var P = {
+    home: '<path d="M4 11.5 12 4l8 7.5V19a1.5 1.5 0 0 1-1.5 1.5H15v-5.5H9v5.5H5.5A1.5 1.5 0 0 1 4 19z"/>',
+    palette: '<path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.4 0 2-.9 2-1.8 0-.6-.3-1-.6-1.4-.4-.4-.6-.9-.6-1.4 0-1 .8-1.8 1.8-1.8H16.5a4 4 0 0 0 4-4C20.5 6.8 16.7 3.5 12 3.5z"/><circle cx="7.8" cy="11.5" r="1"/><circle cx="10.5" cy="7.6" r="1"/><circle cx="15" cy="7.8" r="1"/>',
+    moonic: '<path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.2 8.2 0 1 0 10.2 10.2z"/>',
+    sunic: '<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/>',
     calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="3.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
     compass: '<circle cx="12" cy="12" r="8.5"/><path d="m15.5 8.5-2 5-5 2 2-5z"/>',
     leaf: '<path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14"/><path d="M5 19 13 11"/>',
@@ -430,8 +434,8 @@
     size = size || 64; stroke = stroke || 7;
     var r = (size - stroke) / 2, c = 2 * Math.PI * r, off = c * (1 - A.clamp(pct, 0, 1));
     var gid = "rg" + Math.random().toString(36).slice(2, 7);
-    return '<span class="ring"><svg width="' + size + '" height="' + size + '"><defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B69CFF"/><stop offset="1" stop-color="#FF9ED2"/></linearGradient></defs>' +
-      '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="rgba(155,123,255,.14)" stroke-width="' + stroke + '"/>' +
+    return '<span class="ring"><svg width="' + size + '" height="' + size + '"><defs><linearGradient id="' + gid + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--lav)"/><stop offset="1" style="stop-color:var(--pink)"/></linearGradient></defs>' +
+      '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" style="stroke:rgba(var(--ac),.14)" stroke-width="' + stroke + '"/>' +
       '<circle cx="' + size / 2 + '" cy="' + size / 2 + '" r="' + r + '" fill="none" stroke="url(#' + gid + ')" stroke-width="' + stroke + '" stroke-linecap="round" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '"/></svg><b>' + (label == null ? Math.round(pct * 100) + "%" : label) + "</b></span>";
   };
   A.bar = function (pct, over) {
@@ -457,6 +461,7 @@
 
   /* ------------------------------------------------------------ router & navigation */
   A.GROUPS = [
+    { id: "home", label: "Home", icon: "home", items: [["home", "Home"]] },
     { id: "plan", label: "Planner", icon: "calendar", items: [["year", "Year"], ["month", "Month"], ["week", "Week"], ["day", "Daily Practice"]] },
     { id: "manifest", label: "Manifest", icon: "sparkle", items: [["manifest", "My Manifestations"], ["script", "Scripting"], ["visualize", "Visualize"], ["affirm", "Affirmations"], ["rituals", "Rituals & Moon"]] },
     { id: "align", label: "Align", icon: "compass", items: [["wheel", "Level 10 Life"], ["ikigai", "Ikigai"], ["vision", "Vision Board"], ["mindmap", "Dream Map"], ["habits", "Habits"]] },
@@ -490,6 +495,7 @@
   function groupHref(g) {
     var first = g.items[0][0];
     if (g.id === "plan") return "#/day/today";
+    if (g.id === "home") return "#/home";
     return "#/" + first;
   }
   function itemHref(name) {
