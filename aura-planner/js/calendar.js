@@ -151,7 +151,7 @@
     var areas = A.state.wheel.areas;
     var focus = '<div class="chips">' + areas.map(function (a) {
       var on = mo.focus.indexOf(a.name) >= 0;
-      return '<button class="chip' + (on ? "" : " grey") + '" style="border:0;cursor:pointer;' + (on ? "background:" + a.color + ";color:#fff" : "background:#f4f1fa;color:var(--muted)") + '" data-act="month-focus" data-key="' + key + '" data-area="' + esc(a.name) + '">' + (on ? "✓ " : "") + esc(a.name) + "</button>";
+      return '<button class="chip' + (on ? "" : " grey") + '" style="border:0;cursor:pointer;' + (on ? "background:" + a.color + ";color:var(--on-grad)" : "background:var(--grey-soft);color:var(--muted)") + '" data-act="month-focus" data-key="' + key + '" data-area="' + esc(a.name) + '">' + (on ? "✓ " : "") + esc(a.name) + "</button>";
     }).join("") + "</div>" + '<label class="lbl">How I\'ll show up for them</label>' + A.textarea("months." + key + ".focusNotes", 'rows="3" placeholder="One small action per focus area"');
 
     var dates = [];

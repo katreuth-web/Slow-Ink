@@ -28,7 +28,7 @@
     var todayLog = A.state.habitLog[A.todayKey()] || {};
     var todayChecks = '<div class="checks">' + hs.map(function (h) {
       var on = !!todayLog[h.id];
-      return '<button class="check-pill" style="' + (on ? "background:" + h.color + ";color:#fff;border-color:transparent" : "") + '" data-act="habit-toggle-re" data-k="' + A.todayKey() + '" data-h="' + h.id + '">' + (on ? "✓ " : "○ ") + esc(h.name) + "</button>";
+      return '<button class="check-pill" style="' + (on ? "background:" + h.color + ";color:var(--on-grad);border-color:transparent" : "") + '" data-act="habit-toggle-re" data-k="' + A.todayKey() + '" data-h="' + h.id + '">' + (on ? "✓ " : "○ ") + esc(h.name) + "</button>";
     }).join("") + "</div>";
     return A.head("Align", 'Habit <span class="soft">tracker</span>', "Small rituals, done often, become the person you’re becoming. Tap squares to check off any day.") +
       '<div class="grid">' +

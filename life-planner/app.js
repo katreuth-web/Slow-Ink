@@ -170,7 +170,7 @@
     return {
       version: 1,
       name: "",
-      theme: "light",
+      look: { theme: "blush", mode: "light", font: "classic", bg: "soft" },
       currency: "$",
       waterGoal: 8,
       days: {},
@@ -228,11 +228,40 @@
       if (raw) {
         var saved = JSON.parse(raw);
         if (saved) delete saved.sync; /* drop settings left over from the removed board sync */
-        return merge(defaults(), saved);
+        var merged = merge(defaults(), saved);
+        if (saved && !saved.look && saved.theme === "dark") merged.look.mode = "dark";   /* planners from before colour themes */
+        return merged;
       }
     } catch (e) { /* fall through to defaults */ }
     return defaults();
   }
+
+  /* ---- Personalise: colour theme, light / dark / auto, font and page background (saved with the planner) ---- */
+  var LOOK_THEMES = [["blush", "Blush", "#c9788b"], ["sage", "Sage", "#4f8a5e"], ["sky", "Sky", "#4a7aa6"], ["lilac", "Lilac", "#7e62b0"]];
+  var LOOK_MODES = [["light", "Light"], ["auto", "Auto"], ["dark", "Dark"]];
+  var LOOK_FONTS = [["classic", "Classic", "Cormorant and Poppins", '"Cormorant Garamond", Georgia, serif'], ["cozy", "Cozy", "Lora and Nunito", '"Lora", Georgia, serif'], ["modern", "Modern", "Inter", '"Inter", system-ui, sans-serif']];
+  var LOOK_BGS = [["soft", "Soft"], ["plain", "Plain"], ["dots", "Dotted"]];
+  function lookPick(list, v, d) { return list.some(function (x) { return x[0] === v; }) ? v : d; }
+  /* Always a valid choice, even from an odd backup. Planners saved before themes existed carried a plain light/dark word. */
+  function look() {
+    var l = state && state.look && typeof state.look === "object" ? state.look : {};
+    var legacy = state && state.theme === "dark" ? "dark" : "light";
+    return { theme: lookPick(LOOK_THEMES, l.theme, "blush"), mode: lookPick(LOOK_MODES, l.mode || legacy, "light"), font: lookPick(LOOK_FONTS, l.font, "classic"), bg: lookPick(LOOK_BGS, l.bg, "soft") };
+  }
+  var darkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  function isDark() { var m = look().mode; return m === "dark" || (m === "auto" && !!(darkQuery && darkQuery.matches)); }
+  function applyLook() {
+    var l = look(), root = document.documentElement;
+    root.setAttribute("data-theme", l.theme); root.setAttribute("data-mode", isDark() ? "dark" : "light");
+    root.setAttribute("data-font", l.font); root.setAttribute("data-bg", l.bg);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) { var c = getComputedStyle(root).getPropertyValue("--bg").trim(); if (c) meta.setAttribute("content", c); }
+  }
+  function setLook(key, val) {
+    var l = look(); l[key] = val; state.look = l;
+    save(); applyLook(); render();
+  }
+  if (darkQuery) { var onSys = function () { if (look().mode === "auto") { applyLook(); render(); } }; if (darkQuery.addEventListener) darkQuery.addEventListener("change", onSys); else if (darkQuery.addListener) darkQuery.addListener(onSys); }
 
   /* Recipe sections ("Breakfast", "Drinks", ...) are the covers on the Recipe cards page. Older planners only had a
      category word on each recipe, so give every recipe a section. */
@@ -552,7 +581,7 @@
         return '<a class="nav-link ' + (r.name === it[0] ? "active" : "") + '" href="' + navHref(it[0]) + '"' + (r.name === it[0] ? ' aria-current="page"' : "") + ">" + ic(it[2]) + "<span>" + esc(it[1]) + "</span></a>";
       }).join("") + "</div>";
     });
-    sb += '<div class="sidebar-foot"><button class="icon-btn" data-act="theme" aria-label="Toggle dark mode" title="Toggle light / dark">' + ic(state.theme === "dark" ? "sun" : "moon") + '</button><a class="icon-btn" href="#/settings" aria-label="Settings" title="Settings">' + ic("sliders") + "</a></div>";
+    sb += '<div class="sidebar-foot"><button class="icon-btn" data-act="theme" aria-label="Toggle dark mode" title="Toggle light / dark">' + ic(isDark() ? "sun" : "moon") + '</button><a class="icon-btn" href="#/settings" aria-label="Settings" title="Settings">' + ic("sliders") + "</a></div>";
     $("#sidebar").innerHTML = sb;
 
     var calendarNames = ["year", "month", "week", "day", "notebook"];
@@ -643,6 +672,95 @@
     return html + "</div>";
   }
 
+
+  /* ---- Home: getting-started checklist, sample data, numbers and the year ring ---- */
+  var START_STEPS = [
+    ["Add a task for today", function () { return "#/day/" + todayKey(); }, function () { return Object.keys(state.days).some(function (k) { return (state.days[k].tasks || []).length; }); }],
+    ["Tick off a habit", function () { return "#/habits"; }, function () { return Object.keys(state.habitLog).some(function (k) { return Object.keys(state.habitLog[k] || {}).some(function (h) { return state.habitLog[k][h]; }); }); }],
+    ["Set this month's intention", function () { return "#/month/" + monthKey(today()); }, function () { return Object.keys(state.months).some(function (k) { return state.months[k] && state.months[k].intention; }); }],
+    ["Add a recipe of your own", function () { return "#/meals"; }, function () { return state.recipes.length > 3; }],
+    ["Write a notebook page", function () { return "#/notebook"; }, function () { return Object.keys(state.notebook).length > 0; }],
+    ["Make it yours with colours and fonts", function () { return "#/settings"; }, function () { var l = look(); return !!state.name || l.theme !== "blush" || l.font !== "classic" || l.mode !== "light" || l.bg !== "soft"; }],
+    ["Back up your planner", null, function () { return !!state.ui.backedUp; }]
+  ];
+  function gettingStarted() {
+    if (state.sample || state.ui.onboardHidden) return "";
+    var done = START_STEPS.filter(function (x) { return x[2](); }).length, n = START_STEPS.length, all = done === n;
+    var list = START_STEPS.map(function (x) {
+      var ok = x[2]();
+      return '<li class="gs-step' + (ok ? " ok" : "") + '"><span class="gs-dot" aria-hidden="true">' + (ok ? ic("check") : "") + "</span>" +
+        (!ok && x[1] ? '<a href="' + x[1]() + '">' + esc(x[0]) + "</a>" : !ok ? '<button class="linklike" data-act="export">' + esc(x[0]) + "</button>" : "<span>" + esc(x[0]) + "</span>") + "</li>";
+    }).join("");
+    return '<section class="card gstart"><div class="gs-head"><h3>' + (all ? "You’re all set" : "Getting started") + '</h3><span class="gs-count">' + done + " of " + n + "</span></div>" +
+      progress(done / n * 100) + '<ul class="gs-list">' + list + "</ul>" +
+      '<div class="row wrap gs-actions"><button class="btn sm" data-act="load-sample">Look around with sample data</button><button class="btn sm ghost" data-act="hide-start">' + (all ? "Done, hide this" : "Hide this") + "</button></div></section>";
+  }
+
+  function loadSample() {
+    var keep = look(), t = today(), tk = ymd(t), mk = monthKey(t), i;
+    imgs.clear();
+    state = defaults(); ensureRecipes();
+    state.look = keep; state.sample = true; state.name = "Ava";
+    function task(text, done, prio) { return { id: uid(), text: text, done: !!done, prio: prio || 0 }; }
+    var plans = [
+      [["Plan the week ahead", 1, 2], ["Water the plants", 1], ["Call Mum", 0], ["Book dentist", 0, 1]],
+      [["Reply to emails", 1], ["Grocery run", 1], ["Tidy the desk", 1]],
+      [["Team catch-up", 1, 1], ["Pick up parcel", 1]],
+      [["Laundry", 1], ["Meal prep", 1], ["Read 20 pages", 0]],
+      [["Pay the electric bill", 1, 1], ["Yoga class", 1]],
+      [["Farmers market", 1], ["Birthday card for Jo", 1]],
+      [["Sunday reset", 1], ["Plan the meals", 1]]
+    ];
+    for (i = 0; i < 7; i++) {
+      var dk = ymd(addDays(t, -i)), day = ensureDay(dk);
+      day.tasks = plans[i].map(function (x) { return task(x[0], i > 0 || x[1], x[2]); });
+      if (i === 0) day.tasks.forEach(function (x, j) { x.done = j < 2; });
+      day.mood = [4, 5, 3, 4, 4, 5, 3][i]; day.water = [5, 8, 6, 7, 8, 6, 4][i];
+    }
+    [["Send the invoices", 1], ["Dinner with Sam", 1], ["Renew library books", 0]].forEach(function (x, j) { ensureDay(ymd(addDays(t, j + 1))).tasks.push(task(x[0], 0, x[1])); });
+    for (i = 0; i < 7; i++) {
+      var log = state.habitLog[ymd(addDays(t, -i))] = {};
+      state.habits.forEach(function (h, j) { if ((i + j) % 3 !== 2 && !(i === 0 && j > 1)) log[h.id] = true; });
+    }
+    state.months[mk] = { intention: "Slow down, notice more, and finish what matters.", goals: [task("Walk 3 times a week", 0), task("Cook five new recipes", 0), task("Read two books", 0)] };
+    [["Walk", 35, 0], ["Yoga", 45, 1], ["Strength", 40, 4], ["Run", 30, 6]].forEach(function (x) {
+      state.workouts.push({ id: uid(), date: ymd(addDays(t, -x[2])), type: x[0], minutes: x[1], notes: "" });
+    });
+    [[28, 64.8], [14, 64.3], [0, 63.9]].forEach(function (x) { state.weights.push({ id: uid(), date: ymd(addDays(t, -x[0])), value: x[1] }); });
+    var f = state.finance.months[mk] = { income: [], expenses: [] };
+    f.income.push({ id: uid(), date: mk + "-01", text: "Salary", amount: 3200 });
+    [["Groceries", "Groceries", 84], ["Coffee with Jo", "Dining", 12], ["Train pass", "Transport", 56], ["Yoga class", "Health", 18], ["Book", "Fun", 15], ["Dinner out", "Dining", 62]].forEach(function (x, j) {
+      f.expenses.push({ id: uid(), date: mk + "-" + pad(Math.max(1, t.getDate() - j)), text: x[0], cat: x[1], amount: x[2] });
+    });
+    state.finance.subs.push({ id: uid(), text: "Music streaming", amount: 11, cycle: "monthly", due: ymd(addDays(t, 5)) }, { id: uid(), text: "Cloud storage", amount: 3, cycle: "monthly", due: ymd(addDays(t, 11)) });
+    state.finance.pots.push({ id: uid(), text: "Holiday fund", target: 1500, saved: 620 }, { id: uid(), text: "Rainy day", target: 3000, saved: 1100 });
+    var tid = uid();
+    state.travel.trips[tid] = { id: tid, text: "Lisbon long weekend", dest: "Lisbon", start: ymd(addDays(t, 21)), end: ymd(addDays(t, 25)), budget: 1200, itinerary: [], packing: [task("Passport", 1), task("Walking shoes", 0), task("Sunscreen", 0)], outfits: [], expenses: [] };
+    state.ui.trip = tid;
+    var dinner = state.recipeSections.filter(function (x) { return x.name === "Dinner"; })[0] || state.recipeSections[0];
+    state.recipes.unshift({ id: uid(), text: "Sheet-pan salmon and greens", cat: dinner.name, sec: dinner.id, imgId: "", time: "25 min", serves: "2", ingredients: "Salmon fillets\nBroccoli\nLemon\nOlive oil\nGarlic", method: "Roast everything on one tray at 200°C for 15 minutes." });
+    state.meals = {};
+    var pg = newPage("lined", { section: state.nbSection, title: "Sunday reset", text: "A slow morning. Tidied the flat, planned the week, made soup. Feeling lighter already." });
+    state.nbCurrent = pg.id;
+    state.ui.backedUp = false;
+    saveNow(); go("#/home"); render(); toast("Sample planner loaded — look around!");
+  }
+  function startFresh() {
+    var keep = look();
+    imgs.clear();
+    state = defaults(); ensureRecipes(); state.look = keep;
+    saveNow(); go("#/home"); render(); toast("Fresh start ✨");
+  }
+
+  function yearRing(frac, big, small) {
+    var r = 46, c = 2 * Math.PI * r;
+    return '<div class="yring" role="img" aria-label="' + esc(big + " " + small) + '"><svg viewBox="0 0 110 110" aria-hidden="true"><circle class="yr-track" cx="55" cy="55" r="' + r + '"/><circle class="yr-arc" cx="55" cy="55" r="' + r +
+      '" stroke-dasharray="' + (c * frac).toFixed(1) + " " + c.toFixed(1) + '" transform="rotate(-90 55 55)"/></svg><div class="yr-text"><b>' + big + "</b><span>" + esc(small) + "</span></div></div>";
+  }
+  function kpi(num, label, href, frac) {
+    return '<a class="kpi" href="' + href + '"><span class="kpi-num">' + num + '</span><span class="kpi-label">' + esc(label) + "</span>" + (frac == null ? "" : progress(frac * 100)) + "</a>";
+  }
+
   function viewHome() {
     var t = today(), k = ymd(t);
     ensureDay(k);
@@ -658,7 +776,18 @@
       card("Habits today", habitChecks(k), { dot: "l", right: '<a class="btn sm ghost" href="#/habits">Tracker</a>' }) +
       card("Coming up", upcoming(), { dot: "k" }) +
       card(MONTHS[t.getMonth()] + " intention", bindArea("months." + mk + ".intention", "One sentence to steer the month…", 'style="min-height:64px"') + '<div class="spacer"></div><p class="quote">“' + esc(quote) + "”</p>", { cls: "tint-butter", dot: "b" });
-    return head(greeting(), prettyDay(t).replace(/, (.*)$/, ', <span class="em">$1</span>'), '<a class="btn pink" href="' + hrefDay(t) + '/review">' + ic("spark") + ' Reflect on today</a><a class="btn" href="' + hrefMonth(t) + '">' + ic("month") + " Month</a>") +
+    var y = t.getFullYear(), doy = daysBetween(new Date(y, 0, 1), t) + 1, ylen = daysInMonth(y, 1) === 29 ? 366 : 365, ypct = Math.round(doy / ylen * 100);
+    var wk = periodStats(mondayOf(t), addDays(mondayOf(t), 6)), tk = periodStats(t, t), mo = periodStats(new Date(y, t.getMonth(), 1), new Date(y, t.getMonth() + 1, 0));
+    var hDone = state.habits.filter(function (h) { return state.habitLog[k] && state.habitLog[k][h.id]; }).length;
+    var kpis = '<div class="kpis">' +
+      kpi(tk.tasks ? tk.done + "<small>/" + tk.tasks + "</small>" : "0", "tasks done today", hrefDay(t), tk.tasks ? tk.done / tk.tasks : 0) +
+      kpi(state.habits.length ? hDone + "<small>/" + state.habits.length + "</small>" : "0", "habits today", "#/habits", state.habits.length ? hDone / state.habits.length : 0) +
+      kpi(wk.minutes + "<small> min</small>", "moved this week", "#/habits") +
+      kpi(money(mo.spent), "spent in " + MONTHS[t.getMonth()], "#/finance") + "</div>";
+    var banner = state.sample ? '<div class="sample-banner" role="status"><span>You’re looking at a <b>sample planner</b>. Everything here is made up.</span><button class="btn sm pink" data-act="start-fresh">Start fresh</button></div>' : "";
+    return banner + '<div class="home-top">' + head(greeting(), prettyDay(t).replace(/, (.*)$/, ', <span class="em">$1</span>'), '<a class="btn pink" href="' + hrefDay(t) + '/review">' + ic("spark") + ' Reflect on today</a><a class="btn" href="' + hrefMonth(t) + '">' + ic("month") + " Month</a>") +
+      yearRing(doy / ylen, ypct + "%", "of " + y + " done") + "</div>" +
+      '<div class="yline">' + ypct + "% of " + y + " done" + progress(ypct) + "</div>" + kpis + gettingStarted() +
       '<div class="grid"><div class="c7 stack">' + left + '</div><div class="c5 stack">' + right + "</div></div>";
   }
 
@@ -1667,11 +1796,30 @@
 
   /* ------------------------------------------------------------ views: settings */
 
+  function lookControls() {
+    var l = look();
+    var themes = '<div class="lk-row">' + LOOK_THEMES.map(function (x) {
+      return '<button class="lk-opt' + (x[0] === l.theme ? " on" : "") + '" data-act="look-theme" data-val="' + x[0] + '" aria-pressed="' + (x[0] === l.theme) + '"><span class="lk-sw" style="background:' + x[2] + '"></span><span>' + x[1] + "</span></button>";
+    }).join("") + "</div>";
+    var modes = '<div class="chips">' + LOOK_MODES.map(function (x) {
+      return '<button class="chip ' + (x[0] === l.mode ? "on" : "") + '" data-act="look-mode" data-val="' + x[0] + '" aria-pressed="' + (x[0] === l.mode) + '">' + x[1] + "</button>";
+    }).join("") + "</div>";
+    var fonts = '<div class="lk-row lk-3">' + LOOK_FONTS.map(function (x) {
+      return '<button class="lk-opt' + (x[0] === l.font ? " on" : "") + '" data-act="look-font" data-val="' + x[0] + '" aria-pressed="' + (x[0] === l.font) + '"><span class="lk-aa" style="font-family:' + x[3] + '">Aa</span><span>' + x[1] + '<small>' + x[2] + "</small></span></button>";
+    }).join("") + "</div>";
+    var bgs = '<div class="chips">' + LOOK_BGS.map(function (x) {
+      return '<button class="chip ' + (x[0] === l.bg ? "on" : "") + '" data-act="look-bg" data-val="' + x[0] + '" aria-pressed="' + (x[0] === l.bg ? "true" : "false") + '">' + x[1] + "</button>";
+    }).join("") + "</div>";
+    return '<label class="lbl">Colour</label>' + themes + '<div class="spacer"></div><label class="lbl">Appearance</label>' + modes +
+      '<div class="spacer"></div><label class="lbl">Font</label>' + fonts + '<div class="spacer"></div><label class="lbl">Background</label>' + bgs +
+      '<div class="spacer"></div><button class="btn ghost sm" data-act="look-reset">Reset to defaults</button>';
+  }
+
   function viewSettings() {
     return head("System", 'Settings <span class="em">&amp; data</span>') +
       '<div class="grid"><div class="c6">' + card("Personalise", '<label class="lbl">Your name</label>' + bindInput("name", 'placeholder="For your greeting"') + '<div class="spacer"></div>' +
         '<div class="row" style="align-items:flex-end"><div class="grow"><label class="lbl">Currency symbol</label>' + bindInput("currency", 'maxlength="3"') + '</div><div class="grow"><label class="lbl">Water goal (glasses)</label>' + bindNum("waterGoal") + "</div></div>" +
-        '<div class="spacer"></div><label class="lbl">Theme</label><div class="chips"><button class="chip ' + (state.theme !== "dark" ? "on" : "") + '" data-act="set" data-path="theme" data-val="light">Soft light</button><button class="chip ' + (state.theme === "dark" ? "on" : "") + '" data-act="set" data-path="theme" data-val="dark">Soft dark</button></div>', { cls: "tint-pink", dot: "p" }) + "</div>" +
+        '<div class="spacer"></div>' + lookControls(), { cls: "tint-pink", dot: "p" }) + "</div>" +
       '<div class="c6">' + card("Your data", '<p class="small muted" style="margin-top:0">Everything is saved automatically in this browser. Export a backup to move between devices.</p><div class="row wrap"><button class="btn butter" data-act="export">' + ic("download") + ' Export JSON</button><label class="btn">' + ic("upload") + ' Import JSON<input type="file" accept="application/json" hidden data-import></label><button class="btn danger" data-act="reset">' + ic("trash") + " Reset planner</button></div>", { dot: "b" }) + "</div></div>";
   }
 
@@ -1745,7 +1893,7 @@
       html = head("Oops", "Something went sideways") + '<p class="muted">' + esc(err.message) + '</p><a class="btn" href="#/home">Go home</a>';
     }
 
-    document.documentElement.dataset.theme = state.theme === "dark" ? "dark" : "light";
+    applyLook();
     renderChrome(r);
     document.body.classList.toggle("nb-mode", r.name === "notebook");
     $("#nb-topbar").hidden = r.name !== "notebook";
@@ -1774,7 +1922,7 @@
     NAV.forEach(function (g) {
       html += '<div class="nav-label">' + g.group + '</div><div class="tile-links" style="margin-bottom:10px">' + g.items.map(function (it) { return '<a class="tile-link" href="' + navHref(it[0]) + '">' + ic(it[2]) + "<span>" + esc(it[1]) + "</span></a>"; }).join("") + "</div>";
     });
-    html += '<div class="row" style="margin-top:6px"><button class="btn" data-act="theme">' + ic(state.theme === "dark" ? "sun" : "moon") + (state.theme === "dark" ? " Light mode" : " Dark mode") + "</button></div>";
+    html += '<div class="row" style="margin-top:6px"><button class="btn" data-act="theme">' + ic(isDark() ? "sun" : "moon") + (isDark() ? " Light mode" : " Dark mode") + "</button></div>";
     $("#sheet").innerHTML = html;
     wrapDates($("#sheet"));
     $("#sheet").hidden = false;
@@ -1920,7 +2068,19 @@
       }
       case "tab": state.ui.tabs[d.key] = d.val; save(); render(); return;
       case "tab-go": state.ui.tabs[d.key] = d.val; save(); return;
-      case "theme": state.theme = state.theme === "dark" ? "light" : "dark"; save(); render(); return;
+      case "theme": setLook("mode", isDark() ? "light" : "dark"); return;
+      case "look-theme": setLook("theme", d.val); return;
+      case "look-mode": setLook("mode", d.val); return;
+      case "look-font": setLook("font", d.val); return;
+      case "look-bg": setLook("bg", d.val); return;
+      case "look-reset": state.look = { theme: "blush", mode: "light", font: "classic", bg: "soft" }; save(); applyLook(); render(); return;
+      case "load-sample":
+        if (START_STEPS.some(function (x) { return x[2](); }) && !confirm("The sample planner replaces what is in this planner right now. Export a backup first if you want to keep it. Continue?")) return;
+        loadSample(); return;
+      case "start-fresh":
+        if (!confirm("Clear the sample planner and start with an empty one?")) return;
+        startFresh(); return;
+      case "hide-start": state.ui.onboardHidden = true; save(); render(); return;
       case "sheet": openSheet(); return;
       case "sheet-close": closeSheet(); return;
       case "habit": {
@@ -2197,6 +2357,7 @@
   }
 
   function exportData() {
+    state.ui.backedUp = true;
     saveNow();
     imgs.exportAll().then(function (pics) {
       var blob = new Blob([JSON.stringify(Object.assign({}, state, { images: pics }), null, 2)], { type: "application/json" });

@@ -159,10 +159,10 @@
   function sparkline(rows) {
     var W = 300, H = 70, pts = [];
     rows.forEach(function (r, i) { if (r.mood) pts.push([8 + i / (rows.length - 1) * (W - 16), H - 8 - (r.mood - 1) / 9 * (H - 16)]); });
-    var s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Mood over time"><defs><linearGradient id="sg" x1="0" x2="1"><stop offset="0" stop-color="#B69CFF"/><stop offset="1" stop-color="#FF9ED2"/></linearGradient></defs>';
-    s += '<line x1="8" x2="' + (W - 8) + '" y1="' + (H / 2) + '" y2="' + (H / 2) + '" stroke="rgba(155,123,255,.15)" stroke-dasharray="3 4"/>';
+    var s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Mood over time"><defs><linearGradient id="sg" x1="0" x2="1"><stop offset="0" style="stop-color:var(--lav)"/><stop offset="1" style="stop-color:var(--pink)"/></linearGradient></defs>';
+    s += '<line x1="8" x2="' + (W - 8) + '" y1="' + (H / 2) + '" y2="' + (H / 2) + '" style="stroke:rgba(var(--ac),.15)" stroke-dasharray="3 4"/>';
     if (pts.length > 1) s += '<polyline points="' + pts.map(function (p) { return p[0].toFixed(1) + "," + p[1].toFixed(1); }).join(" ") + '" fill="none" stroke="url(#sg)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>';
-    pts.forEach(function (p) { s += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3" fill="#fff" stroke="#B69CFF" stroke-width="2"/>'; });
+    pts.forEach(function (p) { s += '<circle cx="' + p[0].toFixed(1) + '" cy="' + p[1].toFixed(1) + '" r="3" style="fill:var(--paper);stroke:var(--lav)" stroke-width="2"/>'; });
     return s + "</svg>";
   }
 

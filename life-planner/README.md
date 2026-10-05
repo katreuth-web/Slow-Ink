@@ -24,7 +24,7 @@ Navigation is a floating glass sidebar on desktop and an iOS-style neumorphic do
 | Home & Chores | Daily / weekly / monthly / seasonal chore charts by room, with an assignee field; check-offs reset automatically each period |
 | Notebook | A bound book with section tabs and a contents page. Blank, lined, square grid, dot grid, Cornell notes, two-column, three-column, mind map (drag bubbles, add branches) and vision board (image tiles). A **Type / Markup** toggle switches lined/grid/dot/Cornell/column pages between typing and drawing with a floating palette: pen, marker, pencil, eraser, seven inks, stroke width, undo/redo. Drawings are saved as strokes, and older drawings still show underneath. Journal pages linked from a day live in the Journal section. Print any page. |
 
-Soft light and soft dark themes; everything is saved to `localStorage`, with JSON export/import and reset under **Settings**.
+Four colour themes (Blush, Sage, Sky, Lilac), light / dark / auto, three font pairings and three page backgrounds (Settings → Personalise); a Today dashboard with number tiles, a year ring, a getting-started checklist and a one-click sample planner; everything is saved to `localStorage`, with JSON export/import and reset under **Settings**.
 
 ## Running locally
 
