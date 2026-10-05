@@ -78,7 +78,7 @@
         sections: [{ id: "s-journal", name: "Journal", tone: "lav" }, { id: "s-notes", name: "Notes", tone: "pink" }, { id: "s-ideas", name: "Ideas", tone: "mint" }]
       },
       coach: { key: "", model: "claude-opus-5", analysis: "", analysisAt: "", synthInput: "", synth: null, synthAt: "" },
-      ui: { mmSel: "root", nbMode: "type", look: { theme: "violet", mode: "light", font: "classic", bg: "soft" } }
+      ui: { mmSel: "root", nbMode: "type", look: { theme: "violet", mode: "light", font: "classic" } }
     };
   };
 

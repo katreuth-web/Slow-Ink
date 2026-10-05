@@ -1103,9 +1103,6 @@ body.nb-mode .toast:not(.show) { visibility: hidden; }
 /* ---------- Personalise: fonts, page background, and keeping notebook paper light in dark mode ---------- */
 html[data-font="cozy"] { --font: "Nunito", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
 html[data-font="modern"] { --font: "Inter", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; }
-html[data-bg="plain"] body:not(.nb-mode) .aurora { background: var(--bg); }
-html[data-bg="plain"] body:not(.nb-mode) .aurora i, html[data-bg="dots"] body:not(.nb-mode) .aurora i { display: none; }
-html[data-bg="dots"] body:not(.nb-mode) .aurora { background: radial-gradient(circle, rgba(var(--ac), 0.34) 1.1px, transparent 1.5px) 0 0 / 24px 24px, var(--bg); }
 html[data-theme="violet"], :root { --p-lsoft: 239, 232, 255; --p-psoft: 255, 232, 244; --p-pink-text: #b02c7e; }
 html[data-theme="rose"] { --p-lsoft: 255, 238, 242; --p-psoft: 255, 240, 230; --p-pink-text: #a8480f; }
 html[data-theme="ocean"] { --p-lsoft: 232, 241, 255; --p-psoft: 226, 248, 244; --p-pink-text: #0b7468; }
@@ -1133,10 +1130,6 @@ html[data-theme="meadow"] { --p-lsoft: 230, 247, 236; --p-psoft: 255, 246, 220; 
 .lk-sw { width: 34px; height: 34px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); }
 .lk-aa { font-size: 26px; line-height: 1; color: var(--ink); font-weight: 600; }
 .lk-font small { display: block; font-size: 10.5px; color: var(--muted); line-height: 1.25; margin-top: 2px; }
-.lk-prev { width: 100%; height: 34px; border-radius: 8px; border: 1px solid var(--line-strong); background-color: var(--bg); }
-.lk-bg-soft .lk-prev { background-image: radial-gradient(60px 40px at 90% 0, var(--aur-1), transparent 70%), radial-gradient(60px 40px at 0 100%, var(--aur-2), transparent 70%); }
-.lk-bg-dots .lk-prev { background-image: radial-gradient(circle, rgba(var(--ac), 0.5) 1.2px, transparent 1.6px); background-size: 9px 9px; }
-@media (max-width: 420px) { .lk-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } .lk-row.lk-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
 /* ---------- Home dashboard ---------- */
 .home-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; }

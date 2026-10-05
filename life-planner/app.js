@@ -170,7 +170,7 @@
     return {
       version: 1,
       name: "",
-      look: { theme: "blush", mode: "light", font: "classic", bg: "soft" },
+      look: { theme: "blush", mode: "light", font: "classic" },
       currency: "$",
       waterGoal: 8,
       days: {},
@@ -240,20 +240,19 @@
   var LOOK_THEMES = [["blush", "Blush", "#c9788b"], ["sage", "Sage", "#4f8a5e"], ["sky", "Sky", "#4a7aa6"], ["lilac", "Lilac", "#7e62b0"]];
   var LOOK_MODES = [["light", "Light"], ["auto", "Auto"], ["dark", "Dark"]];
   var LOOK_FONTS = [["classic", "Classic", "Cormorant and Poppins", '"Cormorant Garamond", Georgia, serif'], ["cozy", "Cozy", "Lora and Nunito", '"Lora", Georgia, serif'], ["modern", "Modern", "Inter", '"Inter", system-ui, sans-serif']];
-  var LOOK_BGS = [["soft", "Soft"], ["plain", "Plain"], ["dots", "Dotted"]];
   function lookPick(list, v, d) { return list.some(function (x) { return x[0] === v; }) ? v : d; }
   /* Always a valid choice, even from an odd backup. Planners saved before themes existed carried a plain light/dark word. */
   function look() {
     var l = state && state.look && typeof state.look === "object" ? state.look : {};
     var legacy = state && state.theme === "dark" ? "dark" : "light";
-    return { theme: lookPick(LOOK_THEMES, l.theme, "blush"), mode: lookPick(LOOK_MODES, l.mode || legacy, "light"), font: lookPick(LOOK_FONTS, l.font, "classic"), bg: lookPick(LOOK_BGS, l.bg, "soft") };
+    return { theme: lookPick(LOOK_THEMES, l.theme, "blush"), mode: lookPick(LOOK_MODES, l.mode || legacy, "light"), font: lookPick(LOOK_FONTS, l.font, "classic") };
   }
   var darkQuery = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
   function isDark() { var m = look().mode; return m === "dark" || (m === "auto" && !!(darkQuery && darkQuery.matches)); }
   function applyLook() {
     var l = look(), root = document.documentElement;
     root.setAttribute("data-theme", l.theme); root.setAttribute("data-mode", isDark() ? "dark" : "light");
-    root.setAttribute("data-font", l.font); root.setAttribute("data-bg", l.bg);
+    root.setAttribute("data-font", l.font);
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) { var c = getComputedStyle(root).getPropertyValue("--bg").trim(); if (c) meta.setAttribute("content", c); }
   }
@@ -680,7 +679,7 @@
     ["Set this month's intention", function () { return "#/month/" + monthKey(today()); }, function () { return Object.keys(state.months).some(function (k) { return state.months[k] && state.months[k].intention; }); }],
     ["Add a recipe of your own", function () { return "#/meals"; }, function () { return state.recipes.length > 3; }],
     ["Write a notebook page", function () { return "#/notebook"; }, function () { return Object.keys(state.notebook).length > 0; }],
-    ["Make it yours with colours and fonts", function () { return "#/settings"; }, function () { var l = look(); return !!state.name || l.theme !== "blush" || l.font !== "classic" || l.mode !== "light" || l.bg !== "soft"; }],
+    ["Make it yours with colours and fonts", function () { return "#/settings"; }, function () { var l = look(); return !!state.name || l.theme !== "blush" || l.font !== "classic" || l.mode !== "light"; }],
     ["Back up your planner", null, function () { return !!state.ui.backedUp; }]
   ];
   function gettingStarted() {
@@ -1807,11 +1806,8 @@
     var fonts = '<div class="lk-row lk-3">' + LOOK_FONTS.map(function (x) {
       return '<button class="lk-opt' + (x[0] === l.font ? " on" : "") + '" data-act="look-font" data-val="' + x[0] + '" aria-pressed="' + (x[0] === l.font) + '"><span class="lk-aa" style="font-family:' + x[3] + '">Aa</span><span>' + x[1] + '<small>' + x[2] + "</small></span></button>";
     }).join("") + "</div>";
-    var bgs = '<div class="chips">' + LOOK_BGS.map(function (x) {
-      return '<button class="chip ' + (x[0] === l.bg ? "on" : "") + '" data-act="look-bg" data-val="' + x[0] + '" aria-pressed="' + (x[0] === l.bg ? "true" : "false") + '">' + x[1] + "</button>";
-    }).join("") + "</div>";
     return '<label class="lbl">Colour</label>' + themes + '<div class="spacer"></div><label class="lbl">Appearance</label>' + modes +
-      '<div class="spacer"></div><label class="lbl">Font</label>' + fonts + '<div class="spacer"></div><label class="lbl">Background</label>' + bgs +
+      '<div class="spacer"></div><label class="lbl">Font</label>' + fonts +
       '<div class="spacer"></div><button class="btn ghost sm" data-act="look-reset">Reset to defaults</button>';
   }
 
@@ -2072,8 +2068,7 @@
       case "look-theme": setLook("theme", d.val); return;
       case "look-mode": setLook("mode", d.val); return;
       case "look-font": setLook("font", d.val); return;
-      case "look-bg": setLook("bg", d.val); return;
-      case "look-reset": state.look = { theme: "blush", mode: "light", font: "classic", bg: "soft" }; save(); applyLook(); render(); return;
+      case "look-reset": state.look = { theme: "blush", mode: "light", font: "classic" }; save(); applyLook(); render(); return;
       case "load-sample":
         if (START_STEPS.some(function (x) { return x[2](); }) && !confirm("The sample planner replaces what is in this planner right now. Export a backup first if you want to keep it. Continue?")) return;
         loadSample(); return;
