@@ -35,7 +35,8 @@ WHAT'S INSIDE
   papers: blank, lined, squared, dot grid, Cornell, two and three columns,
   mind map and vision board. Switch between Type and Markup to handwrite with a
   pen, marker or pencil.
-- Soft light and soft dark themes (Settings, or the moon/sun button).
+- Four colour themes, light / dark / auto, three fonts and three backgrounds (Settings, or the moon/sun button for quick dark mode).
+- A Today dashboard with a getting-started checklist. Use "Look around with sample data" to explore, then "Start fresh" when you're ready.
 
 TERMS OF USE
 Personal use only. Please don't share, resell, redistribute or upload these
