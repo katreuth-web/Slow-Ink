@@ -105,8 +105,6 @@
 :root { --hstyle: italic; }
 html[data-font="modern"] { --serif: "Inter", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; --sans: "Inter", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; --hstyle: normal; }
 html[data-font="cozy"] { --serif: "Lora", Georgia, "Times New Roman", serif; --sans: "Nunito", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; --hstyle: italic; }
-html[data-bg="plain"] body:not(.nb-mode)::before { display: none; }
-html[data-bg="dots"] body:not(.nb-mode)::before { background: radial-gradient(circle, var(--rule-strong) 1.1px, transparent 1.5px) 0 0 / 24px 24px; opacity: 0.55; }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }

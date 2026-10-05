@@ -810,17 +810,8 @@ body.markup-on .foot { padding-bottom: 110px; }
 .lk-sw { width: 34px; height: 34px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12); }
 .lk-aa { font-size: 26px; line-height: 1; color: var(--ink); font-weight: 700; }
 .lk-font small { display: block; font-size: 10.5px; color: var(--ink-mute); line-height: 1.25; margin-top: 2px; }
-.lk-prev { width: 100%; height: 34px; border-radius: 6px; border: 1px solid var(--rule-2); background-color: var(--cream); }
-.lk-bg-paper .lk-prev { background-image: radial-gradient(60px 40px at 90% 0, var(--glow-1), transparent 70%), radial-gradient(60px 40px at 0 100%, var(--glow-2), transparent 70%); }
-.lk-bg-dots .lk-prev { background-image: radial-gradient(circle, var(--rule-2) 1.2px, transparent 1.6px); background-size: 9px 9px; }
-.look .seg { width: 100%; } .look .seg button { flex: 1; justify-content: center; }
 @media (max-width: 420px) { .lk-row { grid-template-columns: repeat(2, minmax(0, 1fr)); } .lk-row.lk-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 
-/* page backgrounds (the notebook desk keeps its own) */
-html[data-bg="plain"] body:not(.nb-mode) { background: var(--cream); }
-html[data-bg="plain"] body:not(.nb-mode)::before { display: none; }
-html[data-bg="dots"] body:not(.nb-mode) { background: radial-gradient(circle, var(--rule-2) 1.1px, transparent 1.5px) 0 0 / 24px 24px, var(--cream); background-attachment: fixed; }
-html[data-bg="dots"] body:not(.nb-mode)::before { display: none; }
 html[data-mode="dark"] body::before { opacity: 0.12; }
 html[data-mode="dark"] .topbar, html[data-mode="dark"] .look-btn { background-color: var(--bar-bg); }
 html[data-mode="dark"] .stk svg { filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 0.4)); }

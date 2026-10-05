@@ -11,7 +11,7 @@
     ["Say today’s affirmation", "#/affirm", function () { return anyDay(function (d) { return d.affirmed > 0; }); }],
     ["Try a 369 set", "#/rituals/369", function () { return anyDay(function (d) { return d.r369 && (d.r369.m || d.r369.a || d.r369.e); }); }],
     ["Write a notebook page", "#/notebook", function () { return A.state.notebook.pages.length > 0; }],
-    ["Make it yours with colours and fonts", null, function () { var l = A.look(); return l.theme !== "violet" || l.mode !== "light" || l.font !== "classic" || l.bg !== "soft"; }, "open-look"],
+    ["Make it yours with colours and fonts", null, function () { var l = A.look(); return l.theme !== "violet" || l.mode !== "light" || l.font !== "classic"; }, "open-look"],
     ["Back up your planner", null, function () { return !!ui().backedUp; }, "export"]
   ];
 

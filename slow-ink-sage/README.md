@@ -22,12 +22,11 @@ On screens 1100px wide or more (laptops and desktops) a **left-hand menu** group
 
 ## Personalise
 
-The palette button in the top bar (or "Personalise" in the footer) opens a panel with four choices. They save with the planner, so they travel with a backup:
+The palette button in the top bar (or "Personalise" in the footer) opens a panel with three choices. They save with the planner, so they travel with a backup:
 
 - **Colour:** Sage, Clay, Dusk or Rose.
 - **Appearance:** Light, Dark, or Auto (follows the phone or computer). The notebook paper stays light in dark mode, so ink, photos and stickers look right.
 - **Font:** Classic (Fraunces and Questrial), Cozy (Lora and Nunito) or Modern (Inter).
-- **Background:** Paper (soft glow and grain), Plain or Dotted.
 
 ## The Notebook
 
