@@ -30,7 +30,7 @@ KEEP YOUR WORK SAFE  (please read - it's important)
 WHAT'S INSIDE
 - HOME: your day at a glance, with a short getting-started checklist. Click
   "Look around with sample data" to see the planner filled in, then "Start fresh".
-- PERSONALISE (the palette button, top right): four colour themes, light / dark /
+- PERSONALISE (the palette button, top right): your name for the greeting, four colour themes, light / dark /
   auto, and three fonts. The moon / sun button switches dark mode.
 - PLANNER: Year, Month, Week and a Daily Practice page (intention, moon of the
   day, affirmation of the day, practice checklist, gratitude, feelings, reflection).

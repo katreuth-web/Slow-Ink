@@ -1172,3 +1172,4 @@ html[data-theme="meadow"] { --p-lsoft: 230, 247, 236; --p-psoft: 255, 246, 220; 
 @media (max-width: 600px) { .gs-list { grid-template-columns: minmax(0, 1fr); } .home-ring .small { display: none; } }
 
 .day-cell .small.muted, .day-cell .muted { color: var(--ink-2); }
+.lk > .lbl:first-child { margin-top: 12px; }

@@ -43,6 +43,7 @@
       return '<button class="lk-opt lk-font' + (on ? " on" : "") + '" data-act="' + act + '" data-v="' + x[0] + '" aria-pressed="' + on + '"><span class="lk-aa" style="font-family:' + x[3] + '">Aa</span><span>' + x[1] + '<small>' + x[2] + "</small></span></button>";
     });
     return '<h2 class="lk-title">Personalise</h2>' +
+      '<p class="lk-label">Your name</p><input class="field lk-name" data-bind="name" value="' + esc(SI.state.name || "") + '" placeholder="For your greeting" maxlength="40" autocomplete="given-name" aria-label="Your name" />' +
       '<p class="lk-label">Colour</p><div class="lk-row">' + themes + "</div>" +
       '<p class="lk-label">Appearance</p>' + modes +
       '<p class="lk-label">Font</p><div class="lk-row lk-3">' + fonts + "</div>" +
@@ -70,7 +71,7 @@
   SI.actions["look-mode"] = function (el) { set("mode", el.getAttribute("data-v")); };
   SI.actions["look-font"] = function (el) { set("font", el.getAttribute("data-v")); };
   SI.actions["look-reset"] = function () { SI.state.ui.look = Object.assign({}, DEFAULT); SI.save(); SI.applyLook(); refresh(); };
-  SI.actions["look-close"] = function () { var d = document.getElementById("look"); if (d && d.close) d.close(); else if (d) d.removeAttribute("open"); };
+  SI.actions["look-close"] = function () { var d = document.getElementById("look"); if (d && d.close) d.close(); else if (d) d.removeAttribute("open"); SI.render(); };
   document.addEventListener("click", function (e) { var d = document.getElementById("look"); if (d && d.open && e.target === d) SI.actions["look-close"](); });
 
   var lb = document.querySelector(".look-btn");

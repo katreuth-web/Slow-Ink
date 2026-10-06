@@ -849,3 +849,4 @@ html[data-mode="dark"] .stk svg { filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 
   .week-grid { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
 }
 @media print { .side { display: none !important; } body { padding-left: 0 !important; } }
+.lk-name { width: 100%; }

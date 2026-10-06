@@ -696,10 +696,10 @@
   }
 
   function loadSample() {
-    var keep = look(), t = today(), tk = ymd(t), mk = monthKey(t), i;
+    var keep = look(), keepName = state.name || "", t = today(), tk = ymd(t), mk = monthKey(t), i;
     imgs.clear();
     state = defaults(); ensureRecipes();
-    state.look = keep; state.sample = true; state.name = "Ava";
+    state.look = keep; state.sample = true; state.name = keepName;
     function task(text, done, prio) { return { id: uid(), text: text, done: !!done, prio: prio || 0 }; }
     var plans = [
       [["Plan the week ahead", 1, 2], ["Water the plants", 1], ["Call Mum", 0], ["Book dentist", 0, 1]],
@@ -745,9 +745,9 @@
     saveNow(); go("#/home"); render(); toast("Sample planner loaded — look around!");
   }
   function startFresh() {
-    var keep = look();
+    var keep = look(), keepName = state.name || "";
     imgs.clear();
-    state = defaults(); ensureRecipes(); state.look = keep;
+    state = defaults(); ensureRecipes(); state.look = keep; state.name = keepName;
     saveNow(); go("#/home"); render(); toast("Fresh start ✨");
   }
 
