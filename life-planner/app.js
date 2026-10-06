@@ -387,7 +387,7 @@
   }
   function tabs(key, list) {
     var cur = state.ui.tabs[key] || list[0][0];
-    return { cur: cur, html: '<div class="tabs" role="tablist">' + list.map(function (t) {
+    return { cur: cur, html: '<div class="tabs' + (list.length > 4 ? " tabs-many" : "") + '" role="tablist">' + list.map(function (t) {
       return '<button class="tab ' + (t[0] === cur ? "on" : "") + '" role="tab" aria-selected="' + (t[0] === cur) + '" data-act="tab" data-key="' + key + '" data-val="' + t[0] + '">' + t[1] + "</button>";
     }).join("") + "</div>" };
   }
@@ -1226,6 +1226,57 @@
 
   /* ------------------------------------------------------------ views: travel */
 
+  function outfitCards(p, trip, dayMeta) {
+    var path = p + ".outfits", list = listAt(path);
+    var cards = list.map(function (o) {
+      var u = imgs.url(o.imgId);
+      var ph = u
+        ? '<div class="of-photo"><img alt="" src="' + u + '"><div class="v-actions">' + photoLabel(path, o, "Change photo") + '<button class="icon-btn sm" data-act="photo-remove" data-path="' + path + '" data-id="' + o.id + '" aria-label="Remove photo">' + ic("x") + "</button></div></div>"
+        : '<label class="of-photo of-empty">' + ic("image") + "<span>Add a photo</span>" + '<input type="file" accept="image/*" hidden data-photo="' + path + "|" + o.id + '"></label>';
+      return '<div class="outfit' + (o.done ? " done" : "") + '">' + ph +
+        '<input class="txt" type="text" aria-label="Outfit" placeholder="Linen dress + sandals…" value="' + esc(o.text) + '" data-item="' + path + "|" + o.id + '|text">' +
+        '<div class="of-row">' + dayMeta(o) + '<label class="of-pack"><input type="checkbox" class="check" aria-label="Packed" data-item="' + path + "|" + o.id + '|done" data-rerender ' + (o.done ? "checked" : "") + "> Packed</label>" +
+        '<button class="del" data-act="list-del" data-path="' + path + '" data-id="' + o.id + '" aria-label="Delete outfit">' + ic("x") + "</button></div></div>";
+    }).join("");
+    return '<p class="small muted" style="margin:0 0 12px">Plan a look per day so packing is easy. Add a photo of each outfit, or several at once.</p>' +
+      '<div class="rs-adds of-adds"><button class="v-add" data-act="outfit-add" data-id="' + trip.id + '">' + ic("plus") + "<span>Add an outfit</span></button>" +
+      '<label class="v-add">' + ic("image") + "<span>Add from photos</span>" + '<input type="file" accept="image/*" multiple hidden data-bulk="outfits|' + trip.id + '"></label></div>' +
+      (list.length ? '<div class="outfits">' + cards + "</div>" : '<div class="empty">No outfits planned yet.</div>');
+  }
+  function albumGrid(trip) {
+    var path = "travel.trips." + trip.id + ".album", list = listAt(path);
+    var items = list.map(function (a, i) {
+      var u = imgs.url(a.imgId);
+      return '<figure class="al-item"><button class="al-img" data-act="album-view" data-trip="' + trip.id + '" data-i="' + i + '" aria-label="Open photo ' + (i + 1) + '">' + (u ? '<img alt="" src="' + u + '">' : ic("image")) + "</button>" +
+        '<div class="al-cap"><input type="text" class="txt" aria-label="Caption" placeholder="Add a caption…" maxlength="120" value="' + esc(a.caption) + '" data-item="' + path + "|" + a.id + '|caption">' +
+        '<button class="del" data-act="album-del" data-trip="' + trip.id + '" data-id="' + a.id + '" aria-label="Remove photo">' + ic("x") + "</button></div></figure>";
+    }).join("");
+    return '<div class="row" style="margin-bottom:12px"><span class="grow small muted">Keep your photos from ' + esc(trip.text || "this trip") + " here.</span>" + (list.length ? '<span class="badge">' + list.length + (list.length === 1 ? " photo" : " photos") + "</span>" : "") + "</div>" +
+      '<div class="album"><label class="v-add al-add">' + ic("plus") + "<span>Add photos</span>" + '<input type="file" accept="image/*" multiple hidden data-bulk="album|' + trip.id + '"></label>' + items + "</div>" +
+      (list.length ? "" : '<p class="empty" style="margin-top:14px">Your trip album is empty. Add photos from the trip and they will live here.</p>');
+  }
+  var lightbox = null;
+  function closeLightbox() { if (lightbox) { lightbox.remove(); lightbox = null; } }
+  function openLightbox(tripId, i) {
+    var trip = state.travel.trips[tripId], list = trip && trip.album || [];
+    if (!list.length) return;
+    i = (i + list.length) % list.length;
+    var a = list[i], u = imgs.url(a.imgId);
+    closeLightbox();
+    lightbox = document.createElement("div");
+    lightbox.className = "lightbox"; lightbox.setAttribute("role", "dialog"); lightbox.setAttribute("aria-label", "Photo " + (i + 1) + " of " + list.length);
+    lightbox.innerHTML = '<button class="lb-x icon-btn" data-lb="close" aria-label="Close">' + ic("x") + "</button>" +
+      (list.length > 1 ? '<button class="lb-nav lb-prev icon-btn" data-lb="prev" aria-label="Previous photo">' + ic("left") + '</button><button class="lb-nav lb-next icon-btn" data-lb="next" aria-label="Next photo">' + ic("arrow") + "</button>" : "") +
+      '<img alt="" src="' + u + '">' + (a.caption ? '<p class="lb-cap">' + esc(a.caption) + "</p>" : "");
+    lightbox.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-lb]"), k = b && b.getAttribute("data-lb");
+      if (k === "prev") openLightbox(tripId, i - 1); else if (k === "next") openLightbox(tripId, i + 1); else if (e.target === lightbox || k === "close") closeLightbox();
+    });
+    document.body.appendChild(lightbox);
+    lightbox.querySelector(".lb-x").focus();
+  }
+  document.addEventListener("keydown", function (e) { if (lightbox && e.key === "Escape") closeLightbox(); });
+
   function viewTravel() {
     var trips = Object.keys(state.travel.trips).map(function (id) { return state.travel.trips[id]; }).sort(function (a, b) { return (a.start || "9") < (b.start || "9") ? -1 : 1; });
     var cur = state.ui.trip && state.travel.trips[state.ui.trip] ? state.travel.trips[state.ui.trip] : trips[0];
@@ -1241,14 +1292,15 @@
       var p = "travel.trips." + cur.id;
       var nights = cur.start && cur.end ? daysBetween(parseD(cur.start), parseD(cur.end)) : null;
       var until = cur.start ? daysBetween(today(), parseD(cur.start)) : null;
-      var tt = tabs("trip", [["itinerary", "Itinerary"], ["packing", "Packing"], ["outfits", "Outfits"], ["budget", "Budget"]]);
+      var tt = tabs("trip", [["itinerary", "Itinerary"], ["packing", "Packing"], ["outfits", "Outfits"], ["budget", "Budget"], ["album", "Album"]]);
       var inner = "";
       var dayMeta = function (path) { return function (it) { return '<input type="date" data-item="' + path + "|" + it.id + '|day" value="' + esc(it.day || "") + '" style="max-width:150px;padding:5px 8px;font-size:12px" aria-label="Day">'; }; };
       if (tt.cur === "itinerary") inner = listEd(p + ".itinerary", { noCheck: false, meta: dayMeta(p + ".itinerary"), placeholder: "Add a plan, booking or reservation…", empty: "Flights, stays, tables booked, sights to see…" });
       else if (tt.cur === "packing") {
         var pk = listAt(p + ".packing"), got = pk.filter(function (x) { return x.done; }).length;
         inner = '<div class="row" style="margin-bottom:12px"><span class="grow">' + progress(pk.length ? (got / pk.length) * 100 : 0) + '</span><span class="badge">' + got + "/" + pk.length + ' packed</span><button class="btn sm" data-act="pack-essentials" data-id="' + cur.id + '">Add essentials</button></div>' + listEd(p + ".packing", { placeholder: "Add something to pack…" });
-      } else if (tt.cur === "outfits") inner = listEd(p + ".outfits", { meta: dayMeta(p + ".outfits"), placeholder: "Linen dress + sandals for dinner…", empty: "Plan a look per day so packing is easy." });
+      } else if (tt.cur === "outfits") inner = outfitCards(p, cur, dayMeta(p + ".outfits"));
+      else if (tt.cur === "album") inner = albumGrid(cur);
       else {
         var ex = listAt(p + ".expenses"), total = sum(ex, function (x) { return x.amount; }), budget = num(cur.budget);
         inner = '<div class="row" style="margin-bottom:12px"><span class="grow">' + progress(budget ? (total / budget) * 100 : 0) + '</span><span class="badge ' + (budget && total > budget ? "pink" : "") + '">' + money(total) + " of " + money(budget) + "</span></div>" +
@@ -1762,7 +1814,32 @@
     img.src = url;
   }
   function photoUsed(id) {
-    return state.recipes.some(function (r) { return r.imgId === id; }) || state.recipeSections.some(function (x) { return x.imgId === id; });
+    if (state.recipes.some(function (r) { return r.imgId === id; }) || state.recipeSections.some(function (x) { return x.imgId === id; })) return true;
+    return Object.keys(state.travel.trips).some(function (k) {
+      var t = state.travel.trips[k];
+      return (t.outfits || []).some(function (o) { return o.imgId === id; }) || (t.album || []).some(function (a) { return a.imgId === id; });
+    });
+  }
+  /* Several pictures at once (outfit photos, trip album). The state keeps ids, the pictures live in IndexedDB. */
+  function addPhotos(kind, tripId, files) {
+    var trip = state.travel.trips[tripId];
+    if (!trip || !files || !files.length) return;
+    var list = Array.prototype.slice.call(files, 0, 40).filter(function (f) { return /^image\//.test(f.type); });
+    if (!list.length) { toast("Those files aren't pictures."); return; }
+    var made = list.map(function (f) {
+      return new Promise(function (res) {
+        shrinkToBlob(f, kind === "album" ? 1400 : 1000, function (blob) {
+          var id = "img_" + uid();
+          imgs.put(id, blob).then(function () { res(id); });
+        });
+      });
+    });
+    Promise.all(made).then(function (ids) {
+      if (kind === "album") { if (!Array.isArray(trip.album)) trip.album = []; ids.forEach(function (i) { trip.album.push({ id: uid(), imgId: i, caption: "" }); }); }
+      else { if (!Array.isArray(trip.outfits)) trip.outfits = []; ids.forEach(function (i) { trip.outfits.push({ id: uid(), text: "", done: false, day: "", imgId: i }); }); }
+      save(); render();
+      toast(ids.length + (ids.length === 1 ? " photo added" : " photos added"));
+    });
   }
   function setPhoto(item, file) {
     shrinkToBlob(file, 1000, function (blob) {
@@ -1979,6 +2056,12 @@
       el.value = "";
       return;
     }
+    if (el.dataset.bulk) {
+      var bk = el.dataset.bulk.split("|");
+      addPhotos(bk[0], bk[1], el.files);
+      el.value = "";
+      return;
+    }
     if (el.dataset.upload) {
       var parts = el.dataset.upload.split("|"), f = el.files[0];
       if (!f) return;
@@ -2047,6 +2130,7 @@
         var arr = listAt(d.path), i = arr.findIndex(function (x) { return x.id === d.id; });
         if (i < 0) return;
         var removed = arr.splice(i, 1)[0];
+        if (removed.imgId) setTimeout(function () { if (!photoUsed(removed.imgId)) imgs.remove(removed.imgId); }, 4500);   /* after the Undo window */
         if (d.path === "habits") Object.keys(state.habitLog).forEach(function (k) { delete state.habitLog[k][d.id]; });
         save(); render();
         toastUndo("Removed", function () { arr.splice(i, 0, removed); save(); render(); });
@@ -2207,7 +2291,26 @@
       case "trip-open": state.ui.trip = d.id; save(); render(); return;
       case "trip-del":
         if (!confirm("Delete this trip and all its lists?")) return;
-        delete state.travel.trips[d.id]; state.ui.trip = null; save(); render(); return;
+        var dead = state.travel.trips[d.id], deadIds = dead ? (dead.outfits || []).concat(dead.album || []).map(function (x) { return x.imgId; }) : [];
+        delete state.travel.trips[d.id]; state.ui.trip = null;
+        deadIds.forEach(function (id) { if (id && !photoUsed(id)) imgs.remove(id); });
+        save(); render(); return;
+      case "outfit-add": {
+        var otr = state.travel.trips[d.id];
+        if (!otr) return;
+        if (!Array.isArray(otr.outfits)) otr.outfits = [];
+        otr.outfits.push({ id: uid(), text: "", done: false, day: "", imgId: "" });
+        save(); render(); return;
+      }
+      case "album-view": openLightbox(d.trip, parseInt(d.i, 10) || 0); return;
+      case "album-del": {
+        var atr = state.travel.trips[d.trip], aj = atr && (atr.album || []).findIndex(function (x) { return x.id === d.id; });
+        if (!atr || aj < 0) return;
+        if (!confirm("Remove this photo from the album?")) return;
+        var gone = atr.album.splice(aj, 1)[0];
+        if (gone.imgId && !photoUsed(gone.imgId)) imgs.remove(gone.imgId);
+        save(); render(); return;
+      }
       case "trip-expense": listAt("travel.trips." + d.id + ".expenses").push({ id: uid(), cat: "Food", text: "", amount: 0 }); save(); render(); return;
       case "pack-essentials": {
         var pk = listAt("travel.trips." + d.id + ".packing"), have = pk.map(function (x) { return x.text.toLowerCase(); });
@@ -2379,6 +2482,28 @@
       var pg = data.notebook[k];
       if (pg && Array.isArray(pg.tiles)) pg.tiles.forEach(function (t) { if (t && typeof t === "object") t.color = safeColor(t.color); });
     });
+    /* Trips: ids end up in page markup, so keep only safe ones; photo ids must look like ours. */
+    var tr = data.travel && typeof data.travel === "object" ? data.travel : null;
+    if (tr && tr.trips && typeof tr.trips === "object") {
+      var cleanList = function (arr, keep) {
+        return (Array.isArray(arr) ? arr : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 500).map(function (x) {
+          var o = Object.assign({}, x); o.id = String(x.id);
+          if ("imgId" in o || keep) o.imgId = SAFE_ID.test(String(x.imgId)) ? String(x.imgId) : "";
+          return o;
+        });
+      };
+      var safeTrips = {};
+      Object.keys(tr.trips).slice(0, 200).forEach(function (k) {
+        var t = tr.trips[k];
+        if (!SAFE_ID.test(k) || !t || typeof t !== "object") return;
+        t.id = k;
+        t.itinerary = cleanList(t.itinerary); t.packing = cleanList(t.packing); t.expenses = cleanList(t.expenses);
+        t.outfits = cleanList(t.outfits, true); t.album = cleanList(t.album, true);
+        t.album.forEach(function (a) { a.caption = str(a.caption, 120); });
+        safeTrips[k] = t;
+      });
+      tr.trips = safeTrips;
+    }
     var pics = {};
     if (data.images && typeof data.images === "object") Object.keys(data.images).slice(0, 2000).forEach(function (id) {
       var v = data.images[id];

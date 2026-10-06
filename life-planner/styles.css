@@ -885,3 +885,34 @@ body.markup-on .book { margin-bottom: 90px; }
   .kpi { padding: 12px 14px 10px; } .kpi-num { font-size: 1.65rem; }
 }
 @media (max-width: 600px) { .gs-list { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- Travel: outfit cards, trip album and the photo viewer ---------- */
+.outfits { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 16px; }
+.outfit { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 20px; background: var(--surface); box-shadow: var(--raise-sm); min-width: 0; }
+.outfit.done { opacity: 0.8; }
+.of-photo { position: relative; display: block; height: 220px; border-radius: 14px; overflow: hidden; background: var(--surface); box-shadow: var(--press-sm); }
+.of-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.of-photo .v-actions { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; }
+.of-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: var(--muted); font-size: 13px; cursor: pointer; }
+.of-empty svg { width: 24px; height: 24px; }
+.of-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; }
+.of-row input[type="date"], .of-row .datefield { max-width: none; width: 100%; min-width: 0; }
+.of-pack { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-soft); }
+.of-adds { margin-bottom: 16px; }
+.album { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+.al-add { aspect-ratio: 1; min-height: 0; }
+.al-item { margin: 0; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.al-img { display: block; width: 100%; aspect-ratio: 1; padding: 0; border: 0; border-radius: 16px; overflow: hidden; background: var(--surface); box-shadow: var(--raise-sm); cursor: zoom-in; color: var(--muted); }
+.al-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.al-cap { display: flex; align-items: center; gap: 4px; }
+.al-cap .txt { min-width: 0; flex: 1; font-size: 12.5px; }
+.lightbox { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 56px 16px 24px; background: rgba(15, 12, 14, 0.9); }
+.lightbox img { max-width: 100%; max-height: calc(100vh - 140px); object-fit: contain; border-radius: 10px; }
+.lb-cap { margin: 0; color: #f4efec; font-size: 14px; text-align: center; max-width: 60ch; }
+.lb-x { position: absolute; top: 14px; right: 14px; }
+.lb-nav { position: absolute; top: 50%; transform: translateY(-50%); }
+.lb-prev { left: 12px; } .lb-next { right: 12px; }
+@media (max-width: 600px) { .of-photo { height: 200px; } .outfits { gap: 12px; } .album { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.of-row > :first-child { max-width: none; min-width: 0; }
+@media (max-width: 480px) { .tabs.tabs-many { gap: 2px; padding: 4px; } .tabs.tabs-many .tab { padding: 8px 2px; font-size: 12px; } }
+@media (max-width: 520px) { .outfits { grid-template-columns: minmax(0, 1fr); } }
