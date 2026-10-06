@@ -730,7 +730,7 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 .mk-tool svg { width: 34px; height: 50px; display: block; }
 .mk-color { width: 26px; height: 26px; border-radius: 50%; border: 0; cursor: pointer; flex: 0 0 auto; box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08); padding: 0; }
 .mk-color.on { box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink-2); }
-.markup-bar .mk-size { width: 76px; flex: 0 0 auto; }
+.markup-bar .mk-size { width: 76px; flex: 0 0 auto; background: rgba(var(--ink-rgb), 0.28); }
 .mk-btn { width: 32px; height: 32px; border-radius: 10px; border: 0; background: transparent; color: var(--ink-2); cursor: pointer; display: grid; place-items: center; flex: 0 0 auto; }
 .mk-btn:hover { background: rgba(118, 104, 160, 0.1); }
 .mk-btn[disabled] { opacity: 0.35; }
