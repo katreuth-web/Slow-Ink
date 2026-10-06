@@ -48,7 +48,8 @@
   A.views.home = function () {
     var t = A.today(), k = A.ymd(t), day = A.day(k), h = new Date().getHours(), mon = A.mondayOf(t);
     A.ctxDate = t;
-    var hello = h < 5 ? "Still up?" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+    var who = A.state.name ? esc(A.state.name) : "";
+    var hello = h < 5 ? (who ? "Still up, " + who + "?" : "Still up?") : (h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening") + (who ? ", " + who : "");
     var np = A.PRACTICES.length, pc = A.practiceCount(day), streak = practiceStreak();
     var live = A.state.manifest.items.filter(function (m) { return m.status === "planted" || m.status === "growing"; });
     var ph = A.moonPhase(t), aff = A.affirmOfDay(t);
@@ -106,9 +107,10 @@
   /* ------------------------------------------------------------ sample planner */
   function loadSample() {
     var keep = A.look(), t = A.today(), i;
+    var keepName = A.state.name || "";
     A.images.clear();
     A.state = A.defaults();
-    A.state.ui.look = keep; A.state.ui.sample = true;
+    A.state.ui.look = keep; A.state.ui.sample = true; A.state.name = keepName;
     var S = A.state;
     var feel = ["calm, capable, open", "grateful and light", "focused and warm", "steady and kind", "curious", "joyful", "rested"];
     var thanks = [["My morning coffee in the sun", "A kind message from a friend", "Feeling well"], ["A walk after lunch", "Good music on the way home", "A tidy desk"], ["Fresh bread", "The quiet evening", "Learning something new"]];
@@ -153,9 +155,9 @@
     A.saveNow(); A.applyLook(); location.hash = "#/home"; A.render(); A.toast("Sample planner loaded. Look around!");
   }
   function startFresh() {
-    var keep = A.look();
+    var keep = A.look(), keepName = A.state.name || "";
     A.images.clear();
-    A.state = A.defaults(); A.state.ui.look = keep;
+    A.state = A.defaults(); A.state.ui.look = keep; A.state.name = keepName;
     A.saveNow(); A.applyLook(); location.hash = "#/home"; A.render(); A.toast("Fresh start ✨");
   }
   A.acts["load-sample"] = function () {

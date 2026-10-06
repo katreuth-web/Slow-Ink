@@ -169,7 +169,8 @@
       goals: [],
       reflections: {},
       notebook: { sections: secs, pages: [page], current: page.id, section: "s-journal" },
-      ui: { nbMode: "type" }
+      ui: { nbMode: "type" },
+      name: ""
     };
   }
 
@@ -383,6 +384,7 @@
       var imgs = s.images; delete s.images;
       if (!stateOk(s)) { SI.toast("That backup has unexpected contents, so it wasn’t restored."); return; }
       if (!window.confirm("Restore this backup? It will replace everything currently in this planner.")) return;
+      s.name = typeof s.name === "string" ? s.name.slice(0, 40) : "";
       var nb = s.notebook;
       nb.pages = (Array.isArray(nb.pages) ? nb.pages : []).map(cleanPage).filter(Boolean);
       nb.sections = (Array.isArray(nb.sections) ? nb.sections : []).filter(function (x) { return x && ID_RE.test(String(x.id)); })

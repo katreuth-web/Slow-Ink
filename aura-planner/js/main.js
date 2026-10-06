@@ -104,6 +104,7 @@
   A.cleanState = function (raw) {
     if (!isObj(raw)) return null;
     var out = A.defaults();
+    out.name = str(raw.name, 40);
     out.days = {}; Object.keys(isObj(raw.days) ? raw.days : {}).slice(0, 4000).forEach(function (k) { if (DKEY.test(k)) { var d = cleanDay(raw.days[k]); if (d) out.days[k] = d; } });
     ["weeks"].forEach(function (f) { out[f] = {}; Object.keys(isObj(raw[f]) ? raw[f] : {}).slice(0, 1000).forEach(function (k) { if (DKEY.test(k)) out[f][k] = plain(raw[f][k], 1); }); });
     out.months = {}; Object.keys(isObj(raw.months) ? raw.months : {}).slice(0, 600).forEach(function (k) { if (MKEY.test(k)) out.months[k] = plain(raw.months[k], 1); });

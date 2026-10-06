@@ -58,6 +58,7 @@
     });
     return {
       v: 2,
+      name: "",
       days: {},
       weeks: {},
       months: {},

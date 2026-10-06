@@ -53,6 +53,7 @@
   };
   function panelHtml() {
     return '<div class="card-head"><h2 class="card-title"><span class="ico">' + ic("palette") + '</span>Personalise</h2><button class="icon-btn sm" data-act="close-drawer" aria-label="Close">' + ic("x") + "</button></div>" +
+      '<label class="lbl">Your name</label>' + A.input("name", 'placeholder="For your greeting" maxlength="40" autocomplete="given-name" aria-label="Your name"') +
       A.lookControls() + '<div class="row" style="margin-top:18px;justify-content:flex-end;gap:8px"><button class="btn ghost sm" data-act="look-reset">Reset</button><button class="btn sm" data-act="close-drawer">Done</button></div>';
   }
   function refresh() {

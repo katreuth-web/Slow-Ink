@@ -148,7 +148,8 @@
 
   SI.views.today = function () {
     var t = SI.today(), key = SI.key(t), h = new Date().getHours(), s = S(), rec = SI.peekDay(key);
-    var hello = h < 5 ? "Still up?" : h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+    var who = s.name ? esc(s.name) : "";
+    var hello = h < 5 ? (who ? "Still up, " + who + "?" : "Still up?") : (h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening") + (who ? ", " + who : "");
     var mon = SI.mondayOf(t), week = "";
     for (var i = 0; i < 7; i++) {
       var d = SI.addDays(mon, i), k = SI.key(d), st = SI.dayStats(k);
