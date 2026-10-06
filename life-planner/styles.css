@@ -759,7 +759,12 @@ body.nb-mode .toast { background: var(--ink); color: var(--bg); }
 .mk-colors { display: flex; gap: 6px; align-self: center; margin-top: -8px; }
 .mk-color { flex: none; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--rule-strong); padding: 0; }
 .mk-color.on { box-shadow: 0 0 0 2px var(--ink); }
-.markup-bar .mk-size { flex: none; width: 84px !important; padding: 0; box-shadow: none; background: transparent; accent-color: var(--pink-deep); align-self: center; margin-top: -8px; }
+/* Stroke-width slider: the bar has no background of its own to show a track, so draw one (and a thumb that stands out). */
+.markup-bar .mk-size { -webkit-appearance: none; appearance: none; flex: none; width: 110px !important; height: 28px; padding: 0; box-shadow: none; background: transparent; align-self: center; margin-top: -8px; }
+.markup-bar .mk-size::-webkit-slider-runnable-track { height: 4px; border-radius: 99px; background: var(--muted); }
+.markup-bar .mk-size::-moz-range-track { height: 4px; border-radius: 99px; background: var(--muted); }
+.markup-bar .mk-size::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; margin-top: -9px; border-radius: 50%; background: var(--pink-deep); border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--rule-strong), 0 2px 5px rgba(0, 0, 0, 0.25); }
+.markup-bar .mk-size::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--pink-deep); border: 3px solid var(--surface); box-shadow: 0 0 0 1px var(--rule-strong), 0 2px 5px rgba(0, 0, 0, 0.25); }
 body.markup-on .book { margin-bottom: 90px; }
 
 .ask { border: 0; border-radius: 22px; padding: 22px; background: var(--surface); color: var(--ink); box-shadow: var(--raise), 0 24px 60px -20px rgba(30, 20, 22, 0.5); width: min(92vw, 380px); }
