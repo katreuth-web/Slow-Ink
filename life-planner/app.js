@@ -100,6 +100,7 @@
     upload: '<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>',
     branch: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.3 11l7.4-4M8.3 13l7.4 4"/>',
     check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+    pin: '<path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/>',
     arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>'
   };
   function ic(n) {
@@ -528,9 +529,26 @@
     state.ui.cmpB = typeof state.ui.cmpB === "string" ? state.ui.cmpB : "";
   }
 
+  /* Travel map: the bucket list holds the pins (x and y are 0-1 positions on the map). */
+  function ensureTravelMap() {
+    var t = state.travel;
+    if (!t || typeof t !== "object" || Array.isArray(t)) t = state.travel = { trips: {}, bucket: [] };
+    if (!t.trips || typeof t.trips !== "object") t.trips = {};
+    if (!Array.isArray(t.bucket)) t.bucket = [];
+    t.bucket.forEach(function (b) {
+      if (typeof b.x !== "number" || typeof b.y !== "number" || !isFinite(b.x) || !isFinite(b.y)) { delete b.x; delete b.y; }
+    });
+    if (!state.ui) state.ui = { tabs: {}, nbMode: "type" };
+    state.ui.mapZoom = Math.max(1, Math.min(4, parseInt(state.ui.mapZoom, 10) || 1));
+    state.ui.pinSel = typeof state.ui.pinSel === "string" ? state.ui.pinSel : "";
+    state.ui.pinPlace = "";
+    state.ui.pinDraft = null;
+  }
+
   function ensureRecipes() {
     ensureRoutines();
     ensureHealth();
+    ensureTravelMap();
     if (!state.projects || typeof state.projects !== "object" || Array.isArray(state.projects)) state.projects = {};
     ensureGoals();
     if (!Array.isArray(state.recipes)) state.recipes = [];
@@ -1019,6 +1037,9 @@
     state.finance.subs.push({ id: uid(), text: "Music streaming", amount: 11, cycle: "monthly", due: ymd(addDays(t, 5)) }, { id: uid(), text: "Cloud storage", amount: 3, cycle: "monthly", due: ymd(addDays(t, 11)) });
     state.finance.pots.push({ id: uid(), text: "Holiday fund", target: 1500, saved: 620 }, { id: uid(), text: "Rainy day", target: 3000, saved: 1100 });
     var tid = uid();
+    state.travel.bucket = [["Kyoto in spring", 0.856, 0.354, 0], ["Northern lights", 0.452, 0.180, 0], ["Patagonia", 0.323, 0.887, 0], ["Santorini", 0.566, 0.345, 1], ["New York", 0.310, 0.318, 1], ["Cape Town", 0.549, 0.783, 0], ["Bali"]].map(function (x) {
+      var b = { id: uid(), text: x[0], done: x[3] === 1 }; if (x[1] != null) { b.x = x[1]; b.y = x[2]; } return b;
+    });
     state.travel.trips[tid] = { id: tid, text: "Lisbon long weekend", dest: "Lisbon", start: ymd(addDays(t, 21)), end: ymd(addDays(t, 25)), budget: 1200, itinerary: [], packing: [task("Passport", 1), task("Walking shoes", 0), task("Sunscreen", 0)], outfits: [], expenses: [] };
     state.ui.trip = tid;
     var g1 = newGoal("Run a 5k"); g1.area = "Health"; g1.why = "I want more energy and a goal that gets me outdoors."; g1.plan = "Three short runs a week, adding a little each week. Rest day after each run.";
@@ -2355,6 +2376,35 @@
   }
   document.addEventListener("keydown", function (e) { if (lightbox && e.key === "Escape") closeLightbox(); });
 
+
+  /* ---- the world map: tap to drop a pin; pins are bucket-list entries that have a position ---- */
+  var mapFocus = "";
+  function r3(n) { return Math.round(n * 1000) / 1000; }
+  function mapPins() { return state.travel.bucket.filter(function (b) { return typeof b.x === "number" && typeof b.y === "number"; }); }
+  function pinSvg() { return '<svg viewBox="0 0 24 32" aria-hidden="true"><path d="M12 0C5.4 0 0 5.2 0 11.7 0 20 12 32 12 32s12-12 12-20.3C24 5.2 18.6 0 12 0z"/><circle cx="12" cy="11.5" r="4.4"/></svg>'; }
+  function worldMap() {
+    var W = window.LIFE_WORLD;
+    if (!W || !Array.isArray(W.countries)) return "";
+    var ui = state.ui, zoom = ui.mapZoom, pins = mapPins(), seen = pins.filter(function (b) { return b.done; }).length, dr = ui.pinDraft;
+    var place = ui.pinPlace ? state.travel.bucket.filter(function (b) { return b.id === ui.pinPlace; })[0] : null;
+    var sel = !place && !dr && ui.pinSel ? pins.filter(function (b) { return b.id === ui.pinSel; })[0] : null;
+    var svg = '<svg class="wmap-svg" viewBox="0 0 ' + W.w + " " + W.h + '" role="img" aria-label="World map. Tap a spot to drop a pin.">' +
+      W.countries.map(function (c) { return '<path data-n="' + esc(c[0]) + '" d="' + c[1] + '"/>'; }).join("") + "</svg>";
+    var marks = pins.map(function (b) {
+      var on = sel && b.id === sel.id;
+      return '<button class="wpin' + (b.done ? " seen" : "") + (on ? " sel" : "") + '" style="left:' + (b.x * 100).toFixed(2) + "%;top:" + (b.y * 100).toFixed(2) + '%" data-act="pin-sel" data-id="' + b.id + '" aria-label="' + esc((b.text || "Pin") + (b.done ? ", been there" : "")) + '">' + pinSvg() +
+        ((zoom > 1 || on) && b.text ? '<span class="wpin-l">' + esc(b.text) + "</span>" : "") + "</button>";
+    }).join("") + (dr ? '<span class="wpin draft" style="left:' + (dr.x * 100).toFixed(2) + "%;top:" + (dr.y * 100).toFixed(2) + '%">' + pinSvg() + "</span>" : "");
+    var below;
+    if (place) below = '<div class="wmap-note row wrap"><span class="grow">Tap the map to place <b>' + esc(place.text || "this place") + '</b>.</span><button class="btn sm ghost" data-act="pin-cancel">Cancel</button></div>';
+    else if (dr) below = '<div class="wmap-note"><label class="lbl" for="pin-label">Name this place</label><div class="row wrap" data-form="pin-add"><input type="text" id="pin-label" name="label" class="grow" style="min-width:160px" maxlength="120" value="' + esc(dr.name) + '" placeholder="e.g. Kyoto in spring"><button class="btn pink" data-act="pin-add">' + ic("pin") + ' Add pin</button><button class="btn ghost" data-act="pin-cancel">Cancel</button></div><p class="small muted" style="margin:8px 0 0">It will be added to your bucket list too.</p></div>';
+    else if (sel) below = '<div class="wmap-note"><div class="row wrap"><input type="text" class="grow" style="min-width:150px" maxlength="120" aria-label="Pin name" value="' + esc(sel.text) + '" data-item="travel.bucket|' + sel.id + '|text"><label class="of-pack"><input type="checkbox" class="check" data-item="travel.bucket|' + sel.id + '|done" data-rerender ' + (sel.done ? "checked" : "") + '> Been there</label><button class="btn sm ghost" data-act="pin-unpin" data-id="' + sel.id + '">Remove from map</button><button class="icon-btn sm" data-act="pin-close" aria-label="Close">' + ic("x") + "</button></div></div>";
+    else below = '<p class="small muted wmap-note">' + (pins.length ? "Tap a pin to edit it, or tap anywhere to add another." : "Tap anywhere on the map to drop your first pin. Each pin joins your bucket list.") + "</p>";
+    var bar = '<div class="row wrap wmap-bar"><div class="row"><button class="icon-btn sm" data-act="map-zoom" data-val="-1" aria-label="Zoom out"' + (zoom <= 1 ? " disabled" : "") + ">−</button><span class=\"small muted\">" + (zoom === 1 ? "Whole world" : zoom + "× zoom") + '</span><button class="icon-btn sm" data-act="map-zoom" data-val="1" aria-label="Zoom in"' + (zoom >= 4 ? " disabled" : "") + ">+</button></div>" +
+      '<span class="grow"></span>' + (pins.length ? '<span class="badge">' + pins.length + (pins.length === 1 ? " place" : " places") + (seen ? " · " + seen + " visited" : "") + "</span>" : "") + "</div>";
+    return card("My world", bar + '<div class="wmap-scroll"><div class="wmap-inner' + (place ? " placing" : "") + '" style="width:' + zoom * 100 + '%" data-act="map-tap">' + svg + marks + "</div></div>" + below, { cls: "wmap-card", dot: "k" });
+  }
+
   function viewTravel() {
     var trips = Object.keys(state.travel.trips).map(function (id) { return state.travel.trips[id]; }).sort(function (a, b) { return (a.start || "9") < (b.start || "9") ? -1 : 1; });
     var cur = state.ui.trip && state.travel.trips[state.ui.trip] ? state.travel.trips[state.ui.trip] : trips[0];
@@ -2362,7 +2412,11 @@
       return '<button class="trip-pill ' + (cur && cur.id === t.id ? "on" : "") + '" data-act="trip-open" data-id="' + t.id + '"><b>' + esc(t.text || "Untitled trip") + '</b><span class="small muted">' + esc(t.dest || "Somewhere lovely") + (t.start ? " · " + shortDay(parseD(t.start)) : "") + "</span></button>";
     }).join("");
     var tripsCard = card("Trips", (trips.length > 1 ? '<p class="small muted" style="margin:0 0 10px">Tap a trip to open its plan.</p>' : "") + '<div class="trip-list">' + list + '</div><div class="spacer"></div><button class="btn pink" data-act="trip-add">' + ic("plus") + " Plan a trip</button>", { dot: "p" });
-    var bucketCard = card("Bucket list", listEd("travel.bucket", { placeholder: "Somewhere you dream of…", empty: "Northern lights? Kyoto in spring?" }), { cls: "tint-butter", dot: "b" });
+    var bucketCard = card("Bucket list", '<p class="small muted" style="margin:0 0 10px">Tap a pin icon to place a place on your world map. Ticking one marks it as visited.</p>' + listEd("travel.bucket", { placeholder: "Somewhere you dream of…", empty: "Northern lights? Kyoto in spring?", meta: function (b) {
+      var pinned = typeof b.x === "number" && typeof b.y === "number";
+      return pinned ? '<button class="icon-btn sm pin-btn on" data-act="pin-sel" data-go="1" data-id="' + b.id + '" aria-label="Show on the map" title="Show on the map">' + ic("pin") + "</button>"
+        : '<button class="icon-btn sm pin-btn" data-act="pin-place" data-id="' + b.id + '" aria-label="Place on the map" title="Place on the map">' + ic("pin") + "</button>";
+    } }), { cls: "tint-butter", dot: "b" });
     var main = "";
     if (!cur) {
       main = card("", '<div class="empty" style="padding:40px 10px;text-align:center">Plan your first getaway — itinerary, packing, outfits and budget all in one place.</div>');
@@ -2391,7 +2445,7 @@
         '<button class="del" data-act="trip-del" data-id="' + cur.id + '" aria-label="Delete trip" title="Delete trip">' + ic("trash") + "</button></div>", { cls: "tint-pink" }) +
         '<div class="spacer"></div>' + tt.html + card("", inner);
     }
-    return head("Life · Adventure", 'Travel <span class="em">&amp; vacations</span>') + '<div class="travel-grid"><div class="tg-trips">' + tripsCard + '</div><div class="tg-main">' + main + '</div><div class="tg-bucket">' + bucketCard + "</div></div>";
+    return head("Life · Adventure", 'Travel <span class="em">&amp; vacations</span>') + worldMap() + '<div class="travel-grid"><div class="tg-trips">' + tripsCard + '</div><div class="tg-main">' + main + '</div><div class="tg-bucket">' + bucketCard + "</div></div>";
   }
 
   /* ------------------------------------------------------------ views: home care */
@@ -2996,6 +3050,9 @@
       try { ss = active.selectionStart; se = active.selectionEnd; } catch (e) { /* not a text input */ }
     }
 
+    var mapSc = !routeChanged && view.querySelector(".wmap-scroll"), mapKeep = null;
+    if (mapSc && mapSc.firstElementChild && mapSc.firstElementChild.offsetWidth) mapKeep = { x: (mapSc.scrollLeft + mapSc.clientWidth / 2) / mapSc.firstElementChild.offsetWidth, y: (mapSc.scrollTop + mapSc.clientHeight / 2) / mapSc.firstElementChild.offsetHeight };
+
     var html = "", mount = null;
     try {
       switch (r.name) {
@@ -3067,6 +3124,14 @@
     wrapDates(view);
     if (mount) mount();
     closeSheet();
+    var ms = view.querySelector(".wmap-scroll"), mi = ms && ms.firstElementChild;
+    if (mi) {
+      var cx = mapKeep ? mapKeep.x : 0.5, cy = mapKeep ? mapKeep.y : 0.45, pe = mapFocus && mapFocus !== "top" ? mi.querySelector('.wpin[data-id="' + mapFocus + '"]') : null;
+      if (pe) { cx = parseFloat(pe.style.left) / 100; cy = parseFloat(pe.style.top) / 100; }
+      ms.scrollLeft = cx * mi.offsetWidth - ms.clientWidth / 2; ms.scrollTop = cy * mi.offsetHeight - ms.clientHeight / 2;
+      if (mapFocus) { var mc = view.querySelector(".wmap-card"); if (mc && mc.scrollIntoView) mc.scrollIntoView({ block: "start", behavior: "smooth" }); }
+    }
+    mapFocus = "";
 
     if (routeChanged) {
       window.scrollTo(0, 0);
@@ -3207,6 +3272,7 @@
     var el = e.target.closest("[data-act]");
     if (!el || el.tagName === "SELECT" || (el.tagName === "INPUT" && el.type !== "button")) return;
     if (el.tagName === "A" && el.dataset.act !== "tab-go") e.preventDefault();
+    lastEv = e;
     act(el.dataset.act, el);
   });
   $("#sheet-scrim").addEventListener("click", closeSheet);
@@ -3214,6 +3280,7 @@
 
   /* ------------------------------------------------------------ actions */
 
+  var lastEv = null;
   function act(name, el) {
     var d = el.dataset;
     switch (name) {
@@ -3275,6 +3342,47 @@
         state.workouts.push({ id: uid(), date: w.date, type: w.type, minutes: num(w.minutes), notes: w.notes });
         save(); render(); toast("Workout logged 💪"); return;
       }
+      case "map-tap": {
+        var le = lastEv, mr = el.getBoundingClientRect();
+        if (!le || !mr.width || !mr.height) return;
+        var mx = r3(clamp((le.clientX - mr.left) / mr.width, 0, 1)), my = r3(clamp((le.clientY - mr.top) / mr.height, 0, 1));
+        if (state.ui.pinPlace) {
+          var pb = state.travel.bucket.filter(function (b) { return b.id === state.ui.pinPlace; })[0];
+          state.ui.pinPlace = "";
+          if (pb) { pb.x = mx; pb.y = my; state.ui.pinSel = pb.id; toast("Pinned " + (pb.text || "it")); }
+          save(); render(); return;
+        }
+        var cp = le.target && le.target.closest ? le.target.closest("path[data-n]") : null;
+        state.ui.pinDraft = { x: mx, y: my, name: cp ? cp.getAttribute("data-n") : "" };
+        state.ui.pinSel = "";
+        save(); render();
+        var pl = view.querySelector("#pin-label"); if (pl) pl.focus({ preventScroll: true });
+        return;
+      }
+      case "pin-add": {
+        var pd = state.ui.pinDraft, pv = formVals(el), pn = (pv.label || "").trim().slice(0, 120);
+        if (!pd) return;
+        if (!pn) { toast("Give this place a name."); return; }
+        var nb = { id: uid(), text: pn, done: false, x: pd.x, y: pd.y };
+        state.travel.bucket.push(nb); state.ui.pinDraft = null; state.ui.pinSel = nb.id;
+        save(); render(); toast("Pinned — and added to your bucket list"); return;
+      }
+      case "pin-cancel": state.ui.pinDraft = null; state.ui.pinPlace = ""; save(); render(); return;
+      case "pin-close": state.ui.pinSel = ""; save(); render(); return;
+      case "pin-sel":
+        state.ui.pinSel = d.go || state.ui.pinSel !== d.id ? d.id : "";
+        state.ui.pinDraft = null; state.ui.pinPlace = "";
+        if (d.go) mapFocus = d.id;
+        save(); render(); return;
+      case "pin-place":
+        state.ui.pinPlace = d.id; state.ui.pinDraft = null; state.ui.pinSel = "";
+        mapFocus = "top"; save(); render(); toast("Now tap the map where it goes."); return;
+      case "pin-unpin": {
+        var up = state.travel.bucket.filter(function (b) { return b.id === d.id; })[0];
+        if (up) { delete up.x; delete up.y; }
+        state.ui.pinSel = ""; save(); render(); toast("Removed from the map (still on your list)"); return;
+      }
+      case "map-zoom": state.ui.mapZoom = clamp(state.ui.mapZoom + (parseInt(d.val, 10) || 0), 1, 4); save(); render(); return;
       case "body-add": {
         var be = { id: uid(), date: todayKey(), note: "" };
         BODY_FIELDS.forEach(function (f) { be[f[0]] = ""; });
@@ -3908,6 +4016,13 @@
       data[k] = { items: items, log: log };
     });
 
+    /* Bucket list and map pins. */
+    var bk = data.travel && typeof data.travel === "object" && !Array.isArray(data.travel) ? data.travel : null;
+    if (bk) bk.bucket = (Array.isArray(bk.bucket) ? bk.bucket : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 500).map(function (x) {
+      var o = { id: String(x.id), text: str(x.text, 120), done: x.done === true };
+      if (typeof x.x === "number" && typeof x.y === "number" && isFinite(x.x) && isFinite(x.y)) { o.x = Math.max(0, Math.min(1, x.x)); o.y = Math.max(0, Math.min(1, x.y)); }
+      return o;
+    });
     /* Trips: ids end up in page markup, so keep only safe ones; photo ids must look like ours. */
     var tr = data.travel && typeof data.travel === "object" ? data.travel : null;
     if (tr && tr.trips && typeof tr.trips === "object") {
