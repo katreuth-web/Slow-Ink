@@ -32,7 +32,9 @@ WHAT'S INSIDE
 - Fitness, Meals & Recipes (recipe cards in sections like Breakfast and Drinks, with cover photos and photos on each recipe), Finance, Mind & Ikigai, Travel (itinerary, packing, outfit photos, budget and a photo album for each trip), Home & Chores.
 - PRODUCTIVITY: Habits, Mood Log, Goals (plan, action steps, target date, progress
   and a review of how the plan is going), Projects (a planning framework, phases and steps
-  with progress and a review), Vision Board and Mind Map (keep as many boards
+  with progress and a review), Routines & To-Dos (to-do list, daily and weekly routines,
+  time blocking, a Pomodoro focus timer, a weekly time review and the Eisenhower matrix),
+  Vision Board and Mind Map (keep as many boards
   and maps as you like).
 - NOTEBOOK (left menu > Journal > Notebook): a separate bound book with coloured
   section tabs (Journal, Notes, Ideas - add your own with the + tab). Seven

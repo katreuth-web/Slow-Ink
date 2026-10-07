@@ -201,6 +201,11 @@
       goals: {},
       goalsFromSmart: true,
       projects: {},
+      todos: [],
+      routines: {},
+      blocks: {},
+      usualDay: [],
+      focus: { settings: { focus: 25, short: 5, long: 15, every: 4, awake: true, sound: true }, sessions: [], run: null, round: 0, label: "" },
       workouts: [],
       milestones: [],
       weights: [],
@@ -426,7 +431,63 @@
     return out;
   }
 
+  /* ---- Routines & To-Dos (Productivity): to-dos, routines, time blocks, focus timer and a weekly time review ---- */
+  var RT_CATS = [["focus", "Focus work", "var(--sage)"], ["admin", "Admin & chores", "var(--butter)"], ["health", "Health & movement", "var(--sky)"],
+    ["leisure", "Leisure & rest", "var(--lilac)"], ["essential", "Essentials", "var(--rule-strong)"], ["wasted", "Wasted / unplanned", "var(--pink)"]];
+  var RT_PRIOS = [[0, "No priority"], [1, "High"], [2, "Medium"], [3, "Low"]];
+  var RT_TEMPLATES = {
+    morning: { title: "Morning routine", freq: "daily", steps: [["Drink a glass of water", 2], ["Stretch or move", 10], ["Shower and get dressed", 20], ["Look at today's plan", 5]] },
+    evening: { title: "Evening routine", freq: "daily", steps: [["Tidy up", 10], ["Prepare for tomorrow", 10], ["Screens off", 0], ["Read or unwind", 20]] },
+    weekly: { title: "Weekly reset", freq: "weekly", steps: [["Review the week", 15], ["Plan the week ahead", 20], ["Laundry", 30], ["Groceries", 45]] }
+  };
+  var FOCUS_DEFAULTS = { focus: 25, short: 5, long: 15, every: 4, awake: true, sound: true };
+  function rtCat(id) { return RT_CATS.filter(function (c) { return c[0] === id; })[0] || RT_CATS[0]; }
+  function tmin(s) { var m = /^(\d{2}):(\d{2})$/.exec(s || ""); return m && +m[1] < 24 && +m[2] < 60 ? +m[1] * 60 + +m[2] : null; }
+  function tstr(n) { n = clamp(Math.round(n), 0, 1439); return pad(Math.floor(n / 60)) + ":" + pad(n % 60); }
+  function tlabel(s) { var n = tmin(s); if (n == null) return ""; var h = Math.floor(n / 60), m = n % 60, ap = h >= 12 ? "pm" : "am"; h = h % 12 || 12; return h + (m ? ":" + pad(m) : "") + " " + ap; }
+  function hlabel(h) { h = ((h % 24) + 24) % 24; var ap = h >= 12 ? "pm" : "am"; return (h % 12 || 12) + " " + ap; }
+  function blockDur(b) { var a = tmin(b.start), z = tmin(b.end); return a != null && z != null && z > a ? z - a : 0; }
+  function hm(mins) { mins = Math.round(mins); var h = Math.floor(mins / 60), m = mins % 60; return h ? h + " h" + (m ? " " + m + " min" : "") : m + " min"; }
+  function blocksFor(k) { return Array.isArray(state.blocks[k]) ? state.blocks[k] : []; }
+  function byStart(a, b) { return (tmin(a.start) || 0) - (tmin(b.start) || 0); }
+  function ensureRoutines() {
+    if (!Array.isArray(state.todos)) state.todos = [];
+    if (!state.routines || typeof state.routines !== "object" || Array.isArray(state.routines)) state.routines = {};
+    if (!state.blocks || typeof state.blocks !== "object" || Array.isArray(state.blocks)) state.blocks = {};
+    if (!Array.isArray(state.usualDay)) state.usualDay = [];
+    if (!state.focus || typeof state.focus !== "object") state.focus = {};
+    state.focus.settings = Object.assign({}, FOCUS_DEFAULTS, state.focus.settings || {});
+    if (!Array.isArray(state.focus.sessions)) state.focus.sessions = [];
+    if (state.focus.run === undefined) state.focus.run = null;
+  }
+  /* routines are ticked per day (daily) or per week (weekly); ticks live in routine.log[period][stepId] */
+  function rtKey(freq, d) { d = d || today(); return freq === "weekly" ? "w" + ymd(mondayOf(d)) : ymd(d); }
+  function rtPrev(freq, d) { return addDays(d, freq === "weekly" ? -7 : -1); }
+  function rtTicked(r, key) { var log = (r.log || {})[key] || {}; return (r.steps || []).filter(function (s) { return log[s.id]; }).length; }
+  function rtDone(r, key) { var n = (r.steps || []).length; return n > 0 && rtTicked(r, key) === n; }
+  function rtStreak(r) {
+    var d = today(), n = 0;
+    if (!rtDone(r, rtKey(r.freq, d))) d = rtPrev(r.freq, d);
+    while (n < 1000 && rtDone(r, rtKey(r.freq, d))) { n++; d = rtPrev(r.freq, d); }
+    return n;
+  }
+  function rtRate(r, count) {
+    var d = today(), ok = 0;
+    for (var i = 0; i < count; i++) { if (rtDone(r, rtKey(r.freq, d))) ok++; d = rtPrev(r.freq, d); }
+    return ok;
+  }
+  function rtMinutes(r) { return sum(r.steps || [], function (s) { return num(s.mins); }); }
+  function todoSorted(list) {
+    var rank = function (p) { return p ? p : 9; };
+    return list.slice().sort(function (a, b) {
+      if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+      if (rank(a.prio) !== rank(b.prio)) return rank(a.prio) - rank(b.prio);
+      return (a.due || "9") < (b.due || "9") ? -1 : (a.due || "9") > (b.due || "9") ? 1 : 0;
+    });
+  }
+
   function ensureRecipes() {
+    ensureRoutines();
     if (!state.projects || typeof state.projects !== "object" || Array.isArray(state.projects)) state.projects = {};
     ensureGoals();
     if (!Array.isArray(state.recipes)) state.recipes = [];
@@ -726,7 +787,7 @@
   var NAV = [
     { group: "Plan", items: [["home", "Today", "home"], ["year", "Year", "year"], ["month", "Month", "month"], ["week", "Week", "week"], ["day", "Day", "sun"]] },
     { group: "Life", items: [["fitness", "Fitness", "dumbbell"], ["meals", "Meals & Recipes", "bowl"], ["finance", "Finance", "wallet"], ["mind", "Mind & Ikigai", "lotus"], ["travel", "Travel", "plane"], ["home-care", "Home & Chores", "house"]] },
-    { group: "Productivity", items: [["habits", "Habits", "check"], ["mood", "Mood Log", "smile"], ["goals", "Goals", "target"], ["projects", "Projects", "layers"], ["vision", "Vision Board", "image"], ["mindmap", "Mind Map", "branch"]] },
+    { group: "Productivity", items: [["habits", "Habits", "check"], ["mood", "Mood Log", "smile"], ["goals", "Goals", "target"], ["projects", "Projects", "layers"], ["routines", "Routines & To-Dos", "clock"], ["vision", "Vision Board", "image"], ["mindmap", "Mind Map", "branch"]] },
     { group: "Journal", items: [["notebook", "Notebook", "book"]] },
     { group: "System", items: [["settings", "Settings", "sliders"]] }
   ];
@@ -915,6 +976,21 @@
       return { id: uid(), title: x[0], steps: x[1].map(function (y) { return { id: uid(), text: y[0], done: !!y[1], due: ymd(addDays(t, y[2])) }; }) };
     });
     state.projects[pj.id] = pj; state.ui.project = pj.id;
+    state.todos = [["Reply to the supplier email", 1, 0, 10], ["Order packaging", 2, 2, 15], ["Book dentist", 0, 5, 5], ["Write product descriptions", 1, -1, 60], ["Sort the photo backlog", 3, 0, 0], ["Pay the electric bill", 1, 1, 5]].map(function (x) { return { id: uid(), text: x[0], done: false, prio: x[1], due: ymd(addDays(t, x[2])), est: x[3] }; });
+    state.todos[1].done = true;
+    var mr = { id: uid(), title: "Morning routine", freq: "daily", steps: RT_TEMPLATES.morning.steps.map(function (x) { return { id: uid(), text: x[0], mins: x[1], done: false }; }), log: {}, created: Date.now() };
+    for (i = 0; i < 6; i++) { if (i === 3) continue; var lk = ymd(addDays(t, -i)); mr.log[lk] = {}; mr.steps.forEach(function (s0, j) { if (i === 0 ? j < 2 : true) mr.log[lk][s0.id] = true; }); }
+    var wr = { id: uid(), title: "Weekly reset", freq: "weekly", steps: RT_TEMPLATES.weekly.steps.map(function (x) { return { id: uid(), text: x[0], mins: x[1], done: false }; }), log: {}, created: Date.now() };
+    wr.log["w" + ymd(addDays(mondayOf(t), -7))] = {}; wr.steps.forEach(function (s1) { wr.log["w" + ymd(addDays(mondayOf(t), -7))][s1.id] = true; });
+    state.routines[mr.id] = mr; state.routines[wr.id] = wr;
+    var dayPlan = [["07:30", "08:15", "Morning routine", "essential"], ["09:00", "11:00", "Write product descriptions", "focus"], ["11:00", "11:30", "Emails and admin", "admin"], ["12:30", "13:15", "Lunch and a walk", "health"], ["14:00", "16:00", "Photograph new stock", "focus"], ["16:00", "16:45", "Scrolling and snacks", "wasted"], ["18:30", "19:30", "Cook and eat", "essential"], ["20:00", "21:30", "Reading and a film", "leisure"]];
+    for (i = 0; i < 6; i++) {
+      var bk = ymd(addDays(t, -i)); state.blocks[bk] = dayPlan.filter(function (x, j) { return i === 0 || (i + j) % 7 !== 3; }).map(function (x, j) { return { id: uid(), start: x[0], end: x[1], title: x[2], cat: x[3], done: i > 0 ? (i + j) % 4 !== 0 : j < 3 }; });
+    }
+    state.usualDay = dayPlan.map(function (x) { return { start: x[0], end: x[1], title: x[2], cat: x[3] }; });
+    state.focus.sessions = [[0, 25, "Write product descriptions"], [0, 25, "Write product descriptions"], [-1, 25, "Photograph new stock"], [-1, 25, "Photograph new stock"], [-1, 25, "Emails"], [-2, 25, "Write product descriptions"], [-4, 25, "Photograph new stock"]].map(function (x) { return { id: uid(), date: ymd(addDays(t, x[0])), mins: x[1], label: x[2] }; });
+    state.focus.round = 2;
+
     var dinner = state.recipeSections.filter(function (x) { return x.name === "Dinner"; })[0] || state.recipeSections[0];
     state.recipes.unshift({ id: uid(), text: "Sheet-pan salmon and greens", cat: dinner.name, sec: dinner.id, imgId: "", time: "25 min", serves: "2", ingredients: "Salmon fillets\nBroccoli\nLemon\nOlive oil\nGarlic", method: "Roast everything on one tray at 200°C for 15 minutes." });
     state.meals = {};
@@ -1374,8 +1450,8 @@
 
   function viewMind() {
     if (state.ui.tabs.mind === "mood") state.ui.tabs.mind = "ikigai";
-    if (state.ui.tabs.mind === "smart") state.ui.tabs.mind = "ikigai";
-    var tb = tabs("mind", [["ikigai", "Ikigai"], ["wheel", "Level 10 Life"], ["matrix", "Eisenhower matrix"]]);
+    if (state.ui.tabs.mind === "smart" || state.ui.tabs.mind === "matrix") state.ui.tabs.mind = "ikigai";
+    var tb = tabs("mind", [["ikigai", "Ikigai"], ["wheel", "Level 10 Life"]]);
     var body = "";
     if (tb.cur === "ikigai") {
       var focus = state.ui.ikigai || "love";
@@ -1398,9 +1474,6 @@
       var avg = sum(vals) / vals.length;
       body = '<div class="grid"><div class="c6">' + card("Your wheel", radar(vals, WHEEL) + '<div class="stats" style="margin-top:12px"><div class="stat"><span class="v">' + avg.toFixed(1) + '</span><span class="k">Average</span></div><div class="stat"><span class="v text">' + esc(WHEEL[vals.indexOf(Math.min.apply(null, vals))]) + '</span><span class="k">Needs love</span></div></div>', { dot: "p" }) + "</div>" +
         '<div class="c6">' + card("Rate each area 1–10", '<div class="stack">' + sliders + "</div>", { dot: "b" }) + "</div></div>";
-    } else {
-      var q = [["q1", "Do first", "Urgent · Important"], ["q2", "Schedule", "Not urgent · Important"], ["q3", "Delegate", "Urgent · Not important"], ["q4", "Let go", "Not urgent · Not important"]];
-      body = '<div class="matrix">' + q.map(function (x) { return '<div class="quad ' + x[0] + '"><h4>' + x[1] + '</h4><div class="tiny">' + x[2] + "</div>" + listEd("mind.matrix." + x[0], { placeholder: "Add…" }) + "</div>"; }).join("") + "</div>";
     }
     return head("Life · Mind", 'Mental <span class="em">wellbeing</span>') + tb.html + body;
   }
@@ -1570,6 +1643,284 @@
     }
     return head_ + card("", stats) + '<div class="spacer"></div><div class="trip-list board-list goal-list">' + pills + "</div>" + header + '<div class="spacer"></div>' + tt.html + inner;
   }
+
+  /* ------------------------------------------------------------ views: routines & to-dos */
+
+  function viewRoutines() {
+    var tt = tabs("rt", [["todo", "To-Dos"], ["routines", "Routines"], ["blocks", "Time blocking"], ["focus", "Focus timer"], ["review", "Time review"], ["matrix", "Prioritise"]]);
+    var run = state.focus.run, body = "";
+    var banner = run && tt.cur !== "focus" ? '<p style="margin:-6px 0 14px"><button class="btn sm pink" data-act="tab" data-key="rt" data-val="focus">' + ic("clock") + " " + (run.phase === "focus" ? "Focus" : "Break") + ' timer running · <span data-focus-clock>' + fmtClock(focusRemaining(run)) + "</span></button></p>" : "";
+    if (tt.cur === "todo") body = todoTab();
+    else if (tt.cur === "routines") body = routinesTab();
+    else if (tt.cur === "blocks") body = blocksTab();
+    else if (tt.cur === "focus") body = focusTab();
+    else if (tt.cur === "review") body = reviewTab();
+    else body = matrixTab();
+    return head("Productivity", 'Routines <span class="em">&amp; to-dos</span>') + tt.html + banner + body;
+  }
+
+  /* ---- To-dos ---- */
+  function todoTab() {
+    var f = state.ui.todoFilter || "open", tk = todayKey(), all = state.todos, open = all.filter(function (x) { return !x.done; });
+    var shown = all.filter(function (x) {
+      if (f === "done") return x.done;
+      if (x.done) return false;
+      if (f === "today") return x.due && x.due <= tk;
+      if (f === "soon") return x.due && x.due > tk;
+      if (f === "nodate") return !x.due;
+      return true;
+    });
+    var filters = [["open", "Open"], ["today", "Due today"], ["soon", "Upcoming"], ["nodate", "No date"], ["done", "Done"]];
+    var chips = '<div class="chips">' + filters.map(function (x) { return '<button class="chip' + (x[0] === f ? " on" : "") + '" data-act="todo-filter" data-val="' + x[0] + '" aria-pressed="' + (x[0] === f) + '">' + x[1] + "</button>"; }).join("") + "</div>";
+    var overdue = open.filter(function (x) { return x.due && x.due < tk; }).length, today_ = open.filter(function (x) { return x.due === tk; }).length, est = sum(open, function (x) { return num(x.est); });
+    var summary = '<p class="small muted" style="margin:10px 0 0">' + open.length + " open" + (overdue ? " · <b>" + overdue + " overdue</b>" : "") + (today_ ? " · " + today_ + " due today" : "") + (est ? " · about " + hm(est) + " of work" : "") + "</p>";
+    var form = '<div class="row wrap todo-form" data-form="todo"><input type="text" name="text" class="grow" style="min-width:200px" placeholder="Add a to-do…" aria-label="To-do" maxlength="160">' +
+      '<input type="date" name="due" style="max-width:150px" aria-label="Due date"><input type="number" name="est" inputmode="numeric" min="0" placeholder="min" style="max-width:80px" aria-label="Minutes it will take">' +
+      '<select name="prio" style="max-width:130px" aria-label="Priority">' + RT_PRIOS.map(function (p) { return '<option value="' + p[0] + '">' + p[1] + "</option>"; }).join("") + '</select><button class="btn pink" data-act="todo-add">' + ic("plus") + " Add</button></div>";
+    var rows = todoSorted(shown).map(function (it) {
+      var over = it.due && it.due < tk && !it.done;
+      return '<li class="todo' + (it.done ? " done" : "") + '"><input type="checkbox" class="check" aria-label="Done" data-item="todos|' + it.id + '|done" data-rerender ' + (it.done ? "checked" : "") + ">" +
+        '<button class="prio p' + (it.prio || 0) + '" data-act="prio" data-path="todos" data-id="' + it.id + '" title="Priority (tap to change)" aria-label="Cycle priority"></button>' +
+        '<input class="txt" type="text" aria-label="To-do" value="' + esc(it.text) + '" data-item="todos|' + it.id + '|text">' +
+        '<span class="todo-meta' + (over ? " over" : "") + '"><input type="date" data-item="todos|' + it.id + '|due" value="' + esc(it.due || "") + '" aria-label="Due date"><input type="number" inputmode="numeric" min="0" data-type="num" placeholder="min" value="' + (num(it.est) || "") + '" data-item="todos|' + it.id + '|est" aria-label="Minutes"></span>' +
+        '<button class="del" data-act="list-del" data-path="todos" data-id="' + it.id + '" aria-label="Delete">' + ic("x") + "</button></li>";
+    }).join("");
+    return card("To-do list", form + '<div class="spacer"></div>' + chips + summary + '<div class="spacer"></div>' +
+      (rows ? '<ul class="list todo-list">' + rows + "</ul>" : '<div class="empty">' + (f === "done" ? "Nothing ticked off yet." : all.length ? "Nothing here. Try another filter." : "Nothing on the list. What is one thing to get done?") + "</div>") +
+      (f === "done" && shown.length ? '<div class="spacer"></div><button class="btn sm" data-act="todo-clear">' + ic("trash") + " Clear done</button>" : ""), { dot: "p" });
+  }
+
+  /* ---- Routines ---- */
+  function routinesTab() {
+    var rs = Object.keys(state.routines).map(function (id) { return state.routines[id]; }).sort(function (a, b) { return (a.created || 0) - (b.created || 0); });
+    var starters = '<div class="row wrap"><button class="btn pink" data-act="rt-add" data-val="">' + ic("plus") + " New routine</button>" + Object.keys(RT_TEMPLATES).map(function (k) { return '<button class="btn sm" data-act="rt-add" data-val="' + k + '">' + esc(RT_TEMPLATES[k].title) + "</button>"; }).join("") + "</div>";
+    if (!rs.length) return card("Routines", '<p class="muted" style="margin-top:0">A routine is a short list of steps you repeat, every day or every week. Tick the steps as you go; the list resets by itself each day or week and keeps your streak.</p>' + starters, { dot: "s" });
+    var cards = rs.map(function (r) {
+      var p = "routines." + r.id, key = rtKey(r.freq), n = (r.steps || []).length, tk = rtTicked(r, key), log = (r.log || {})[key] || {}, per = r.freq === "weekly" ? "this week" : "today";
+      var steps = (r.steps || []).map(function (s) {
+        var on = !!log[s.id];
+        return '<li class="' + (on ? "done" : "") + '"><button class="rt-tick' + (on ? " on" : "") + '" data-act="rt-tick" data-id="' + r.id + '" data-step="' + s.id + '" aria-pressed="' + on + '" aria-label="Done ' + per + '">' + (on ? ic("check") : "") + "</button>" +
+          '<input class="txt" type="text" aria-label="Step" value="' + esc(s.text) + '" data-item="' + p + ".steps|" + s.id + '|text">' +
+          '<input type="number" inputmode="numeric" min="0" data-type="num" class="rt-mins" placeholder="min" value="' + (num(s.mins) || "") + '" data-item="' + p + ".steps|" + s.id + '|mins" aria-label="Minutes">' +
+          '<button class="del" data-act="list-del" data-path="' + p + '.steps" data-id="' + s.id + '" aria-label="Delete step">' + ic("x") + "</button></li>";
+      }).join("");
+      var streak = rtStreak(r), span = r.freq === "weekly" ? 4 : 7, rate = rtRate(r, span);
+      return card("", '<div class="row wrap" style="align-items:center"><div class="grow" style="min-width:180px">' + bindInput(p + ".title", 'placeholder="Routine name" maxlength="80" style="font-family:var(--serif);font-size:1.25rem;font-weight:600"') + '</div><div style="flex:0 0 120px">' + bindSelect(p + ".freq", [["daily", "Daily"], ["weekly", "Weekly"]], 'data-rerender aria-label="How often"') + '</div><button class="del" data-act="rt-del" data-id="' + r.id + '" aria-label="Delete routine">' + ic("trash") + "</button></div>" +
+        '<div class="row wrap" style="margin:12px 0 6px"><span class="grow" style="flex:1 1 200px">' + progress(n ? 100 * tk / n : 0, "sage") + '</span><span class="badge">' + tk + "/" + n + " " + per + "</span>" + (streak ? '<span class="badge pink">' + streak + (r.freq === "weekly" ? " week" : " day") + (streak === 1 ? "" : "s") + " 🔥</span>" : "") + '<span class="badge">' + rate + "/" + span + (r.freq === "weekly" ? " weeks" : " days") + "</span>" + (rtMinutes(r) ? '<span class="badge">about ' + hm(rtMinutes(r)) + "</span>" : "") + "</div>" +
+        (n ? '<ul class="list rt-steps">' + steps + "</ul>" : '<div class="empty">No steps yet. Add the first one below.</div>') +
+        '<div class="adder"><input type="text" placeholder="Add a step…" data-add="' + p + '.steps" aria-label="Add a step"><button class="icon-btn sm" data-act="list-add" data-path="' + p + '.steps" aria-label="Add">' + ic("plus") + "</button></div>", { cls: "tint-sage" });
+    }).join('<div class="spacer"></div>');
+    return starters + '<div class="spacer"></div>' + cards;
+  }
+
+  /* ---- Time blocking ---- */
+  function blockLanes(sorted) {
+    var lanes = [], out = {};
+    sorted.forEach(function (b) {
+      var a = tmin(b.start), z = a + Math.max(blockDur(b), 15), i = 0;
+      while (lanes[i] != null && lanes[i] > a) i++;
+      lanes[i] = z; out[b.id] = i;
+    });
+    return { of: out, count: Math.max(1, lanes.length) };
+  }
+  function nextFree(k) {
+    var l = blocksFor(k).map(function (b) { return tmin(b.end); }).filter(function (x) { return x != null; });
+    return l.length ? Math.max.apply(null, l) : 9 * 60;
+  }
+  function blocksTab() {
+    var k = /^\d{4}-\d{2}-\d{2}$/.test(state.ui.blockDay || "") ? state.ui.blockDay : todayKey(), d = parseD(k), isToday = k === todayKey();
+    var path = "blocks." + k, arr = blocksFor(k), sorted = arr.slice().sort(byStart);
+    var first = 6, last = 22;
+    sorted.forEach(function (b) { var a = tmin(b.start), z = tmin(b.end); if (a != null) first = Math.min(first, Math.floor(a / 60)); if (z != null) last = Math.max(last, Math.ceil(z / 60)); });
+    var PX = 44, lanes = blockLanes(sorted), grid = "";
+    for (var h = first; h <= last; h++) grid += '<div class="tl-hour" style="top:' + (h - first) * PX + 'px"><span>' + hlabel(h) + "</span></div>";
+    var items = sorted.map(function (b) {
+      var a = tmin(b.start), dur = blockDur(b); if (a == null) return "";
+      var c = rtCat(b.cat), w = 100 / lanes.count;
+      return '<div class="tl-block' + (b.done ? " done" : "") + '" style="top:' + ((a / 60 - first) * PX) + "px;height:" + Math.max(dur / 60 * PX, 22) + "px;left:calc(" + (lanes.of[b.id] * w) + "% + 52px);width:calc(" + w + "% - 56px);background:" + c[2] + '"><b>' + esc(b.title || c[1]) + "</b><span>" + tlabel(b.start) + " – " + tlabel(b.end) + "</span></div>";
+    }).join("");
+    var now = "";
+    if (isToday) { var n = new Date(), nm = n.getHours() * 60 + n.getMinutes(); if (nm / 60 >= first && nm / 60 <= last) now = '<div class="tl-now" style="top:' + ((nm / 60 - first) * PX) + 'px"></div>'; }
+    var timeline = '<div class="timeline" style="height:' + (last - first) * PX + 'px">' + grid + items + now + "</div>";
+    var tot = {}; sorted.forEach(function (b) { tot[b.cat] = (tot[b.cat] || 0) + blockDur(b); });
+    var planned = sum(sorted, blockDur);
+    var summary = sorted.length ? '<div class="chips" style="margin-bottom:10px">' + RT_CATS.filter(function (c) { return tot[c[0]]; }).map(function (c) { return '<span class="chip"><i class="cdot" style="background:' + c[2] + '"></i>' + c[1] + " " + hm(tot[c[0]]) + "</span>"; }).join("") + '<span class="badge">' + hm(planned) + " planned</span></div>" : "";
+    var prev = 0;
+    var rows = sorted.map(function (b) {
+      var a = tmin(b.start), over = a != null && prev > a; prev = Math.max(prev, tmin(b.end) || 0);
+      return '<div class="blk-row' + (b.done ? " done" : "") + '"><input type="checkbox" class="check" aria-label="Done" data-item="' + path + "|" + b.id + '|done" data-rerender ' + (b.done ? "checked" : "") + ">" +
+        '<input type="time" data-item="' + path + "|" + b.id + '|start" value="' + esc(b.start || "") + '" data-rerender aria-label="Start"><input type="time" data-item="' + path + "|" + b.id + '|end" value="' + esc(b.end || "") + '" data-rerender aria-label="End">' +
+        '<input type="text" class="txt grow" data-item="' + path + "|" + b.id + '|title" value="' + esc(b.title) + '" placeholder="What is this block for?" aria-label="Title" maxlength="80">' +
+        '<select data-item="' + path + "|" + b.id + '|cat" data-rerender aria-label="Category">' + RT_CATS.map(function (c) { return '<option value="' + c[0] + '"' + (b.cat === c[0] ? " selected" : "") + ">" + c[1] + "</option>"; }).join("") + "</select>" +
+        (over ? '<span class="badge pink" title="Overlaps the block before it">overlap</span>' : "") + (blockDur(b) ? '<span class="badge">' + hm(blockDur(b)) + "</span>" : '<span class="badge pink">check times</span>') +
+        '<button class="btn sm ghost" data-act="focus-block" data-title="' + esc(b.title || "") + '" aria-label="Start a focus timer for this block">' + ic("clock") + " Focus</button>" +
+        '<button class="del" data-act="list-del" data-path="' + path + '" data-id="' + b.id + '" aria-label="Delete block">' + ic("x") + "</button></div>";
+    }).join("");
+    var s0 = nextFree(k);
+    var form = '<div class="row wrap" data-form="block"><input type="text" name="title" class="grow" style="min-width:180px" placeholder="e.g. Write product listings" maxlength="80" aria-label="Title">' +
+      '<input type="time" name="start" value="' + tstr(s0) + '" aria-label="Start"><input type="time" name="end" value="' + tstr(Math.min(s0 + 60, 1439)) + '" aria-label="End">' +
+      '<select name="cat" aria-label="Category">' + RT_CATS.map(function (c) { return '<option value="' + c[0] + '">' + c[1] + "</option>"; }).join("") + '</select><button class="btn pink" data-act="block-add" data-day="' + k + '">' + ic("plus") + " Add block</button></div>";
+    var openTodos = state.todos.filter(function (x) { return !x.done; }), rtl = Object.keys(state.routines).map(function (id) { return state.routines[id]; });
+    var pull = '<div class="row wrap" data-form="pull" style="margin-top:12px"><select name="todo" aria-label="Pick a to-do" style="flex:1 1 200px"><option value="">Pull in a to-do…</option>' + openTodos.map(function (x) { return '<option value="' + x.id + '">' + esc((x.text || "Untitled").slice(0, 60)) + (num(x.est) ? " (" + num(x.est) + " min)" : "") + "</option>"; }).join("") + '</select><button class="btn sm" data-act="block-from-todo" data-day="' + k + '">Add</button>' +
+      '<select name="routine" aria-label="Pick a routine" style="flex:1 1 200px"><option value="">Pull in a routine…</option>' + rtl.map(function (r) { return '<option value="' + r.id + '">' + esc(r.title || "Routine") + "</option>"; }).join("") + '</select><button class="btn sm" data-act="block-from-routine" data-day="' + k + '">Add</button></div>';
+    var tools = '<div class="row wrap" style="margin-top:12px"><button class="btn sm" data-act="block-copy" data-day="' + k + '">Copy from yesterday</button><button class="btn sm" data-act="block-usual-load" data-day="' + k + '"' + (state.usualDay.length ? "" : " disabled") + '>Use my usual day</button><button class="btn sm" data-act="block-usual-save" data-day="' + k + '"' + (arr.length ? "" : " disabled") + '>Save as my usual day</button><button class="btn sm ghost danger" data-act="block-clear" data-day="' + k + '"' + (arr.length ? "" : " disabled") + ">Clear day</button></div>";
+    var nav = '<div class="nav-arrows"><button class="icon-btn sm" data-act="block-day" data-val="-1" aria-label="Previous day">' + ic("left") + '</button><button class="btn sm" data-act="block-day" data-val="0">Today</button><button class="icon-btn sm" data-act="block-day" data-val="1" aria-label="Next day">' + ic("right") + "</button></div>";
+    return '<div class="grid"><div class="c7 stack">' + card(prettyDay(d), summary + (rows ? '<div class="blk-list">' + rows + "</div>" : '<div class="empty">No blocks yet. Add one below, or copy a day you liked.</div>') + '<div class="spacer"></div>' + form + pull + tools, { dot: "s", right: nav }) + "</div>" +
+      '<div class="c5">' + card("Day view", timeline, { dot: "b" }) + "</div></div>";
+  }
+
+  /* ---- Focus timer (Pomodoro) ---- */
+  function fmtClock(sec) { sec = Math.max(0, sec); return pad(Math.floor(sec / 60)) + ":" + pad(sec % 60); }
+  function focusRemaining(run) { return run.paused ? run.remaining : Math.max(0, Math.round((run.endsAt - Date.now()) / 1000)); }
+  function focusTab() {
+    var S = state.focus.settings, run = state.focus.run, tk = todayKey(), ses = state.focus.sessions;
+    var todays = ses.filter(function (x) { return x.date === tk; }), wk = ymd(mondayOf(today()));
+    var weekS = ses.filter(function (x) { return x.date >= wk; });
+    var rem = run ? focusRemaining(run) : S.focus * 60, total = run ? run.total : S.focus * 60;
+    var phase = run ? (run.phase === "focus" ? "Focus" : run.phase === "long" ? "Long break" : "Short break") : "Ready to focus";
+    var C = 2 * Math.PI * 54, off = C * (run ? Math.min(1, Math.max(0, rem / total)) : 1);
+    var ring = '<div class="focus-wrap"><div class="focus-ring"><svg viewBox="0 0 120 120" aria-hidden="true"><circle class="fr-track" cx="60" cy="60" r="54"/><circle class="fr-arc' + (run && run.phase !== "focus" ? " brk" : "") + '" data-focus-arc cx="60" cy="60" r="54" stroke-dasharray="' + C.toFixed(1) + '" stroke-dashoffset="' + (C - off).toFixed(1) + '" transform="rotate(-90 60 60)"/></svg>' +
+      '<div class="fr-text"><b data-focus-clock>' + fmtClock(rem) + "</b><span>" + phase + (run && run.paused ? " · paused" : "") + "</span></div></div>";
+    var dots = ""; for (var i = 0; i < S.every; i++) dots += '<i class="rd' + (i < (state.focus.round || 0) ? " on" : "") + '"></i>';
+    var label = run ? run.label : (state.focus.label || "");
+    var controls = !run ? '<button class="btn pink big" data-act="focus-start">' + ic("clock") + " Start focus</button>" :
+      (run.paused ? '<button class="btn pink big" data-act="focus-resume">Resume</button>' : '<button class="btn big" data-act="focus-pause">Pause</button>') + '<button class="btn" data-act="focus-skip">' + (run.phase === "focus" ? "Stop" : "Skip break") + '</button><button class="btn ghost" data-act="focus-reset">Reset</button>';
+    var todoList = '<datalist id="focus-todos">' + state.todos.filter(function (x) { return !x.done; }).slice(0, 40).map(function (x) { return '<option value="' + esc(x.text) + '">'; }).join("") + "</datalist>";
+    var left = card("Pomodoro timer", ring + '<div class="rounds" aria-label="Rounds in this cycle">' + dots + "</div></div>" +
+      '<label class="lbl">Working on</label><input type="text" id="focus-label" list="focus-todos" maxlength="80" placeholder="What is this round for?" value="' + esc(label) + '"' + (run ? " disabled" : "") + ">" + todoList +
+      '<div class="row wrap focus-controls" style="margin-top:14px;justify-content:center">' + controls + "</div>" +
+      '<p class="small muted" style="margin:14px 0 0;text-align:center">' + S.focus + " min focus · " + S.short + " min break · a " + S.long + " min break after " + S.every + " rounds. The timer keeps the right time if you leave this page; it only beeps while the page is open.</p>", { dot: "s" });
+    var recent = ses.slice().reverse().slice(0, 8).map(function (x) { return '<li><span class="badge">' + x.mins + ' min</span><span class="meta">' + esc(shortDay(parseD(x.date))) + '</span><span class="grow small">' + esc(x.label || "Focus round") + '</span><button class="del" data-act="list-del" data-path="focus.sessions" data-id="' + x.id + '" aria-label="Delete">' + ic("x") + "</button></li>"; }).join("");
+    var right = card("Today", '<div class="stats"><div class="stat"><span class="v">' + todays.length + '</span><span class="k">Rounds today</span></div><div class="stat"><span class="v">' + hm(sum(todays, function (x) { return x.mins; })) + '</span><span class="k">Focused today</span></div><div class="stat"><span class="v">' + weekS.length + '</span><span class="k">Rounds this week</span></div></div>' +
+      '<div class="spacer"></div>' + (recent ? '<ul class="list">' + recent + "</ul>" : '<div class="empty">Finish a round and it shows up here, and in your Time review.</div>'), { dot: "p" }) +
+      '<div class="spacer"></div>' + card("Timer settings", '<div class="row wrap focus-set"><div><label class="lbl">Focus (min)</label>' + bindNum("focus.settings.focus", 'min="1" max="180"') + '</div><div><label class="lbl">Break (min)</label>' + bindNum("focus.settings.short", 'min="1" max="60"') + '</div><div><label class="lbl">Long break</label>' + bindNum("focus.settings.long", 'min="1" max="90"') + '</div><div><label class="lbl">Rounds before long</label>' + bindNum("focus.settings.every", 'min="2" max="10"') + "</div></div>" +
+      '<div class="row wrap" style="margin-top:12px"><label class="row" style="gap:8px"><input type="checkbox" class="check" data-bind="focus.settings.awake" data-rerender ' + (S.awake ? "checked" : "") + '> Keep the screen awake while running</label><label class="row" style="gap:8px"><input type="checkbox" class="check" data-bind="focus.settings.sound" data-rerender ' + (S.sound ? "checked" : "") + '> Beep when a round ends</label></div>', { dot: "b" });
+    return '<div class="grid"><div class="c6">' + left + '</div><div class="c6">' + right + "</div></div>";
+  }
+
+  /* ---- Time review ---- */
+  function weekStats(mon) {
+    var s = { cat: {}, days: [], planned: 0, blocks: 0, blocksDone: 0, withBlocks: 0, overlaps: 0, rounds: 0, focusMin: 0, tod: { morning: 0, afternoon: 0, evening: 0 } };
+    RT_CATS.forEach(function (c) { s.cat[c[0]] = 0; });
+    for (var i = 0; i < 7; i++) {
+      var k = ymd(addDays(mon, i)), list = blocksFor(k).slice().sort(byStart), day = { k: k, cat: {}, total: 0 }, prev = 0, over = false;
+      list.forEach(function (b) {
+        var dur = blockDur(b); if (!dur) return;
+        s.cat[b.cat] = (s.cat[b.cat] || 0) + dur; day.cat[b.cat] = (day.cat[b.cat] || 0) + dur; day.total += dur; s.planned += dur; s.blocks++; if (b.done) s.blocksDone++;
+        var a = tmin(b.start); if (a < prev) over = true; prev = Math.max(prev, tmin(b.end));
+        if (b.cat === "focus") s.tod[a < 720 ? "morning" : a < 1020 ? "afternoon" : "evening"] += dur;
+      });
+      if (day.total) s.withBlocks++;
+      if (over) s.overlaps++;
+      s.days.push(day);
+    }
+    var a0 = ymd(mon), z0 = ymd(addDays(mon, 6));
+    state.focus.sessions.forEach(function (x) { if (x.date >= a0 && x.date <= z0) { s.rounds++; s.focusMin += x.mins; } });
+    return s;
+  }
+  function reviewTab() {
+    var mon = state.ui.reviewWeek ? parseD(state.ui.reviewWeek) : mondayOf(today()), cur = weekStats(mon), prev = weekStats(addDays(mon, -7)), sun = addDays(mon, 6);
+    var label = shortDay(mon) + " – " + shortDay(sun), isNow = ymd(mon) === ymd(mondayOf(today()));
+    var nav = '<div class="nav-arrows"><button class="icon-btn sm" data-act="rv-week" data-val="-1" aria-label="Previous week">' + ic("left") + '</button><button class="btn sm" data-act="rv-week" data-val="0">This week</button><button class="icon-btn sm" data-act="rv-week" data-val="1" aria-label="Next week">' + ic("right") + "</button></div>";
+    var max = Math.max.apply(null, RT_CATS.map(function (c) { return Math.max(cur.cat[c[0]], prev.cat[c[0]]); }).concat([1]));
+    var bars = RT_CATS.map(function (c) {
+      var m = cur.cat[c[0]], dlt = m - prev.cat[c[0]];
+      return '<div class="rv-row"><span class="rv-name"><i class="cdot" style="background:' + c[2] + '"></i>' + c[1] + '</span><span class="rv-bar"><i style="width:' + (100 * m / max) + "%;background:" + c[2] + '"></i></span><span class="rv-val">' + (m ? hm(m) : "—") + (prev.planned && dlt ? ' <small class="muted">' + (dlt > 0 ? "+" : "−") + hm(Math.abs(dlt)) + "</small>" : "") + "</span></div>";
+    }).join("");
+    var dmax = Math.max.apply(null, cur.days.map(function (d) { return d.total; }).concat([60]));
+    var dayRows = cur.days.map(function (d, i) {
+      return '<div class="rv-row"><span class="rv-name">' + DOW3[i] + " " + parseD(d.k).getDate() + '</span><span class="rv-bar stack-bar">' + RT_CATS.filter(function (c) { return d.cat[c[0]]; }).map(function (c) { return '<i style="width:' + (100 * d.cat[c[0]] / dmax) + "%;background:" + c[2] + '" title="' + c[1] + " " + hm(d.cat[c[0]]) + '"></i>'; }).join("") + '</span><span class="rv-val">' + (d.total ? hm(d.total) : "—") + "</span></div>";
+    }).join("");
+    var ins = [];
+    function add(k, t) { ins.push({ k: k, t: t }); }
+    if (!cur.planned) add("info", "No time blocks planned for this week. Plan a few days on the Time blocking tab and this review fills in.");
+    else {
+      add("info", "You planned " + hm(cur.planned) + " across " + cur.withBlocks + (cur.withBlocks === 1 ? " day" : " days") + " (" + hm(cur.planned / cur.withBlocks) + " on average).");
+      var wasted = cur.cat.wasted, pw = Math.round(100 * wasted / cur.planned);
+      if (wasted && pw >= 10) add("warn", hm(wasted) + " (" + pw + "% of planned time) is marked wasted or unplanned" + (prev.cat.wasted > wasted ? ", down from " + hm(prev.cat.wasted) + " last week. That is progress." : prev.cat.wasted && prev.cat.wasted < wasted ? ", up from " + hm(prev.cat.wasted) + " last week." : ".") + " Look at when it happens and give that slot a purpose, or a limit.");
+      else if (wasted) add("good", "Only " + hm(wasted) + " marked wasted or unplanned (" + pw + "%).");
+      else add("info", "Nothing is marked wasted or unplanned. If that is not quite true, an honest block or two will make this review more useful.");
+      if (cur.withBlocks >= 3 && !cur.cat.leisure) add("warn", "No leisure or rest time is planned this week. Rest is part of being productive, so protect a block or two.");
+      else if (cur.cat.focus && cur.cat.leisure > cur.cat.focus * 1.5) add("info", "You planned more leisure (" + hm(cur.cat.leisure) + ") than focus work (" + hm(cur.cat.focus) + "). Fine if that is the goal; if not, move a block or two.");
+      else if (cur.cat.leisure && cur.cat.focus) add("good", "A balance of " + hm(cur.cat.focus) + " focus work and " + hm(cur.cat.leisure) + " leisure and rest.");
+      var tod = cur.tod, best = Object.keys(tod).sort(function (a, b) { return tod[b] - tod[a]; })[0];
+      if (tod[best] > 0 && cur.cat.focus >= 120) add("info", "Most of your focus work (" + Math.round(100 * tod[best] / cur.cat.focus) + "%) is in the " + best + ". Keep your hardest work there if it suits you.");
+      if (cur.blocks >= 4) { var pc = Math.round(100 * cur.blocksDone / cur.blocks); add(pc < 50 ? "warn" : "good", "You ticked off " + cur.blocksDone + " of " + cur.blocks + " blocks (" + pc + "%)." + (pc < 50 ? " If blocks keep slipping, try fewer or shorter ones." : "")); }
+      var empty = 7 - cur.withBlocks;
+      if (empty >= 4 && cur.withBlocks) add("info", empty + " days have no blocks. Even a rough shape for the day helps.");
+      if (cur.overlaps) add("warn", cur.overlaps + (cur.overlaps === 1 ? " day has" : " days have") + " overlapping blocks. You can't do two things at once, so move one.");
+    }
+    if (cur.rounds) add("good", "Focus timer: " + cur.rounds + (cur.rounds === 1 ? " round" : " rounds") + " (" + hm(cur.focusMin) + ") of deep focus this week" + (prev.rounds ? ", compared with " + prev.rounds + " last week." : "."));
+    var daily = Object.keys(state.routines).map(function (id) { return state.routines[id]; }).filter(function (r) { return r.freq === "daily"; }), rm = sum(daily, rtMinutes);
+    if (rm >= 150) add("info", "Your daily routines take about " + hm(rm) + " a day. Check that every step earns its place.");
+    else if (daily.length && !rm) add("info", "Add minutes to your routine steps and I can show how much time your routines take.");
+    var warn = ins.filter(function (x) { return x.k === "warn"; }).length;
+    return '<div class="grid"><div class="c7 stack">' + card("Where the time went", bars + '<p class="small muted" style="margin:10px 0 0">Planned time from your blocks' + (prev.planned ? ", with the change since last week." : ".") + "</p>", { dot: "s", right: nav }) +
+      card("The week at a glance", dayRows, { dot: "b" }) + "</div>" +
+      '<div class="c5">' + card("What stands out", '<p class="small muted" style="margin:0 0 8px">' + esc(label) + (isNow ? " (this week)" : "") + '</p><p class="review-verdict ' + (warn ? "warn" : "good") + '">' + (!cur.planned ? "Nothing planned yet" : warn ? "A few things to look at" : "Looking balanced") + '</p><ul class="insights">' + ins.map(function (x) { return '<li class="k-' + x.k + '"><span class="i-dot" aria-hidden="true"></span><span>' + esc(x.t) + "</span></li>"; }).join("") + "</ul>", { dot: "k" }) + "</div></div>";
+  }
+
+  /* ---- Prioritise (the Eisenhower matrix moved here from Mind & Ikigai) ---- */
+  function matrixTab() {
+    var q = [["q1", "Do first", "Urgent · Important"], ["q2", "Schedule", "Not urgent · Important"], ["q3", "Delegate", "Urgent · Not important"], ["q4", "Let go", "Not urgent · Not important"]];
+    return '<p class="small muted" style="margin:0 0 12px">Sort what is on your plate. Do the urgent and important first, schedule the important, hand off or drop the rest.</p><div class="matrix">' + q.map(function (x) { return '<div class="quad ' + x[0] + '"><h4>' + x[1] + '</h4><div class="tiny">' + x[2] + "</div>" + listEd("mind.matrix." + x[0], { placeholder: "Add…" }) + "</div>"; }).join("") + "</div>";
+  }
+
+
+  /* ---- Focus timer: the run is saved with an end time, so it keeps right time while the page is closed ---- */
+  var audioCtx = null, wakeLock = null;
+  function unlockAudio() {
+    try { var C = window.AudioContext || window.webkitAudioContext; if (!C) return; audioCtx = audioCtx || new C(); if (audioCtx.state === "suspended") audioCtx.resume(); } catch (e) { /* ignore */ }
+  }
+  function beep() {
+    if (state.focus.settings.sound) {
+      try {
+        unlockAudio();
+        if (audioCtx) [0, 0.28, 0.56].forEach(function (t, i) {
+          var o = audioCtx.createOscillator(), g = audioCtx.createGain(), at = audioCtx.currentTime + t;
+          o.frequency.value = [660, 880, 990][i];
+          g.gain.setValueAtTime(0.0001, at); g.gain.exponentialRampToValueAtTime(0.25, at + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, at + 0.24);
+          o.connect(g); g.connect(audioCtx.destination); o.start(at); o.stop(at + 0.26);
+        });
+      } catch (e) { /* ignore */ }
+    }
+    try { if (navigator.vibrate && navigator.userActivation && navigator.userActivation.hasBeenActive) navigator.vibrate([200, 100, 200]); } catch (e) { /* ignore */ }
+  }
+  function wakeSync() {
+    var run = state.focus.run, want = !!run && !run.paused && state.focus.settings.awake;
+    if (want && !wakeLock && navigator.wakeLock && !document.hidden) {
+      navigator.wakeLock.request("screen").then(function (l) { wakeLock = l; l.addEventListener("release", function () { wakeLock = null; }); }).catch(function () { /* not available */ });
+    } else if (!want && wakeLock) { try { wakeLock.release(); } catch (e) { /* ignore */ } wakeLock = null; }
+  }
+  function focusFinish() {
+    var run = state.focus.run, S = state.focus.settings, now = Date.now();
+    if (!run) return;
+    if (run.phase === "focus") {
+      state.focus.sessions.push({ id: uid(), date: ymd(new Date(run.endsAt)), mins: Math.max(1, Math.round(run.total / 60)), label: run.label || "" });
+      state.focus.round = (state.focus.round || 0) + 1;
+      var long = state.focus.round >= S.every;
+      if (long) state.focus.round = 0;
+      var mins = long ? S.long : S.short, endsAt = run.endsAt + mins * 60000;
+      state.focus.run = endsAt > now ? { phase: long ? "long" : "short", total: mins * 60, endsAt: endsAt, paused: false, remaining: 0, label: run.label } : null;
+      toast("Focus round done 🎉" + (state.focus.run ? " Take a " + mins + " minute break." : ""));
+    } else {
+      state.focus.run = null;
+      toast("Break over. Ready for the next round?");
+    }
+    beep(); save(); wakeSync();
+    if (location.hash.indexOf("#/routines") === 0) render();
+  }
+  function focusTick() {
+    var run = state.focus && state.focus.run;
+    if (!run || run.paused) return;
+    var rem = focusRemaining(run);
+    if (rem <= 0) { focusFinish(); return; }
+    Array.prototype.forEach.call(document.querySelectorAll("[data-focus-clock]"), function (e) { e.textContent = fmtClock(rem); });
+    var arc = document.querySelector("[data-focus-arc]");
+    if (arc) { var C = 2 * Math.PI * 54; arc.setAttribute("stroke-dashoffset", (C - C * Math.min(1, rem / run.total)).toFixed(1)); }
+  }
+  setInterval(focusTick, 1000);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden) { focusTick(); wakeSync(); } });
 
   /* ------------------------------------------------------------ views: travel */
 
@@ -2296,6 +2647,7 @@
         case "mood": html = viewMood(); break;
         case "goals": html = viewGoals(); break;
         case "projects": html = viewProjects(); break;
+        case "routines": html = viewRoutines(); break;
         case "vision":
         case "mindmap":
           html = viewBoards(r.name);
@@ -2803,6 +3155,85 @@
         var tmp = pm.phases[mi]; pm.phases[mi] = pm.phases[mj]; pm.phases[mj] = tmp;
         save(); render(); return;
       }
+      case "todo-filter": state.ui.todoFilter = d.val; save(); render(); return;
+      case "todo-add": {
+        var tv = formVals(el);
+        if (!tv.text || !tv.text.trim()) { var ti = view.querySelector('[data-form="todo"] [name="text"]'); if (ti) ti.focus(); return; }
+        state.todos.push({ id: uid(), text: tv.text.trim().slice(0, 160), done: false, prio: num(tv.prio) || 0, due: /^\d{4}-\d{2}-\d{2}$/.test(tv.due) ? tv.due : "", est: Math.max(0, num(tv.est)) });
+        save(); render(); var again2 = view.querySelector('[data-form="todo"] [name="text"]'); if (again2) again2.focus({ preventScroll: true }); return;
+      }
+      case "todo-clear": {
+        var nd = state.todos.filter(function (x) { return x.done; }).length;
+        if (!nd || !confirm("Remove " + nd + " done to-do" + (nd === 1 ? "" : "s") + "?")) return;
+        state.todos = state.todos.filter(function (x) { return !x.done; }); save(); render(); return;
+      }
+      case "rt-add": {
+        var tpl = RT_TEMPLATES[d.val], rid = uid();
+        state.routines[rid] = { id: rid, title: tpl ? tpl.title : "", freq: tpl ? tpl.freq : "daily", steps: tpl ? tpl.steps.map(function (x) { return { id: uid(), text: x[0], mins: x[1], done: false }; }) : [], log: {}, created: Date.now() };
+        state.ui.tabs.rt = "routines"; save(); render(); return;
+      }
+      case "rt-del": if (state.routines[d.id] && confirm("Delete this routine?")) { delete state.routines[d.id]; save(); render(); } return;
+      case "rt-tick": {
+        var rr = state.routines[d.id]; if (!rr) return;
+        var rk = rtKey(rr.freq); rr.log = rr.log || {}; rr.log[rk] = rr.log[rk] || {};
+        if (rr.log[rk][d.step]) delete rr.log[rk][d.step]; else rr.log[rk][d.step] = true;
+        save(); render(); return;
+      }
+      case "block-day": {
+        var cb = /^\d{4}-\d{2}-\d{2}$/.test(state.ui.blockDay || "") ? state.ui.blockDay : todayKey();
+        state.ui.blockDay = num(d.val) === 0 ? todayKey() : ymd(addDays(parseD(cb), num(d.val))); save(); render(); return;
+      }
+      case "block-add": {
+        var bv = formVals(el), bs = tmin(bv.start), be = tmin(bv.end);
+        if (bs == null || be == null || be <= bs) { toast("Pick a start time before the end time."); return; }
+        listAt("blocks." + d.day).push({ id: uid(), start: bv.start, end: bv.end, title: (bv.title || "").trim().slice(0, 80), cat: rtCat(bv.cat)[0], done: false });
+        save(); render(); return;
+      }
+      case "block-from-todo": {
+        var pv = formVals(el), td = state.todos.filter(function (x) { return x.id === pv.todo; })[0];
+        if (!td) { toast("Pick a to-do first."); return; }
+        var st0 = nextFree(d.day), dur0 = Math.max(15, num(td.est) || 30);
+        listAt("blocks." + d.day).push({ id: uid(), start: tstr(st0), end: tstr(Math.min(st0 + dur0, 1439)), title: td.text.slice(0, 80), cat: "focus", done: false });
+        save(); render(); return;
+      }
+      case "block-from-routine": {
+        var pv2 = formVals(el), ro = state.routines[pv2.routine];
+        if (!ro) { toast("Pick a routine first."); return; }
+        var st1 = nextFree(d.day), dur1 = Math.max(15, rtMinutes(ro) || 30);
+        listAt("blocks." + d.day).push({ id: uid(), start: tstr(st1), end: tstr(Math.min(st1 + dur1, 1439)), title: (ro.title || "Routine").slice(0, 80), cat: "essential", done: false });
+        save(); render(); return;
+      }
+      case "block-copy": {
+        var yk = ymd(addDays(parseD(d.day), -1)), src = blocksFor(yk);
+        if (!src.length) { toast("Yesterday has no blocks to copy."); return; }
+        var dest = listAt("blocks." + d.day);
+        src.forEach(function (b) { dest.push({ id: uid(), start: b.start, end: b.end, title: b.title, cat: b.cat, done: false }); });
+        save(); render(); return;
+      }
+      case "block-usual-save": {
+        state.usualDay = blocksFor(d.day).map(function (b) { return { start: b.start, end: b.end, title: b.title, cat: b.cat }; });
+        save(); render(); toast("Saved as your usual day"); return;
+      }
+      case "block-usual-load": {
+        if (!state.usualDay.length) return;
+        var dst = listAt("blocks." + d.day);
+        state.usualDay.forEach(function (b) { dst.push({ id: uid(), start: b.start, end: b.end, title: b.title, cat: b.cat, done: false }); });
+        save(); render(); return;
+      }
+      case "block-clear": if (blocksFor(d.day).length && confirm("Clear every block on this day?")) { delete state.blocks[d.day]; save(); render(); } return;
+      case "rv-week": state.ui.reviewWeek = num(d.val) === 0 ? "" : ymd(addDays(state.ui.reviewWeek ? parseD(state.ui.reviewWeek) : mondayOf(today()), 7 * num(d.val))); save(); render(); return;
+      case "focus-start": {
+        unlockAudio();
+        var inp = view.querySelector("#focus-label"), S = state.focus.settings, lab = inp ? inp.value.trim().slice(0, 80) : "";
+        state.focus.label = lab;
+        state.focus.run = { phase: "focus", total: S.focus * 60, endsAt: Date.now() + S.focus * 60000, paused: false, remaining: 0, label: lab };
+        save(); wakeSync(); render(); return;
+      }
+      case "focus-pause": { var r1 = state.focus.run; if (!r1) return; r1.remaining = focusRemaining(r1); r1.paused = true; save(); wakeSync(); render(); return; }
+      case "focus-resume": { var r2 = state.focus.run; if (!r2) return; unlockAudio(); r2.endsAt = Date.now() + r2.remaining * 1000; r2.paused = false; save(); wakeSync(); render(); return; }
+      case "focus-skip": state.focus.run = null; save(); wakeSync(); render(); return;
+      case "focus-reset": state.focus.run = null; state.focus.round = 0; save(); wakeSync(); render(); return;
+      case "focus-block": state.focus.label = (d.title || "").slice(0, 80); state.ui.tabs.rt = "focus"; save(); render(); return;
       case "goal-go": state.ui.goal = d.id; save(); go("#/goals"); return;
       case "goal-open": state.ui.goal = d.id; save(); render(); return;
       case "goal-del": {
@@ -2945,6 +3376,43 @@
       pout[k] = o;
     });
     data.projects = pout;
+    /* Routines & to-dos: rebuilt from known fields only. */
+    var TKEY = /^([01]\d|2[0-3]):[0-5]\d$/, CATS_OK = ["focus", "admin", "health", "leisure", "essential", "wasted"], cn = function (v, lo, hi) { return Math.max(lo, Math.min(hi, Number(v) || 0)); };
+    data.todos = (Array.isArray(data.todos) ? data.todos : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 2000).map(function (x) {
+      return { id: String(x.id), text: str(x.text, 160), done: x.done === true, prio: [0, 1, 2, 3].indexOf(Number(x.prio)) >= 0 ? Number(x.prio) : 0, due: DKEY.test(String(x.due)) ? x.due : "", est: cn(x.est, 0, 1440) };
+    });
+    var rin = data.routines && typeof data.routines === "object" && !Array.isArray(data.routines) ? data.routines : {}, rout = {};
+    Object.keys(rin).slice(0, 100).forEach(function (k) {
+      var r = rin[k];
+      if (!SAFE_ID.test(k) || !r || typeof r !== "object") return;
+      var steps = (Array.isArray(r.steps) ? r.steps : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 100).map(function (x) { return { id: String(x.id), text: str(x.text, 160), mins: cn(x.mins, 0, 600), done: false }; });
+      var log = {}, lg = r.log && typeof r.log === "object" ? r.log : {};
+      Object.keys(lg).slice(0, 800).forEach(function (pk) {
+        if (!/^w?\d{4}-\d{2}-\d{2}$/.test(pk) || !lg[pk] || typeof lg[pk] !== "object") return;
+        var o = {}; Object.keys(lg[pk]).slice(0, 100).forEach(function (sid) { if (SAFE_ID.test(sid) && lg[pk][sid] === true) o[sid] = true; }); log[pk] = o;
+      });
+      rout[k] = { id: k, title: str(r.title, 80), freq: r.freq === "weekly" ? "weekly" : "daily", steps: steps, log: log, created: Number(r.created) || Date.now() };
+    });
+    data.routines = rout;
+    var cleanBlock = function (b, needId) {
+      var o = { start: TKEY.test(String(b && b.start)) ? b.start : "09:00", end: TKEY.test(String(b && b.end)) ? b.end : "10:00", title: str(b && b.title, 80), cat: CATS_OK.indexOf(b && b.cat) >= 0 ? b.cat : "focus" };
+      if (needId) { o.id = String(b.id); o.done = b.done === true; }
+      return o;
+    };
+    var bin = data.blocks && typeof data.blocks === "object" && !Array.isArray(data.blocks) ? data.blocks : {}, bout = {};
+    Object.keys(bin).slice(0, 800).forEach(function (k) {
+      if (!DKEY.test(k) || !Array.isArray(bin[k])) return;
+      bout[k] = bin[k].filter(function (b) { return b && typeof b === "object" && SAFE_ID.test(String(b.id)); }).slice(0, 80).map(function (b) { return cleanBlock(b, true); });
+    });
+    data.blocks = bout;
+    data.usualDay = (Array.isArray(data.usualDay) ? data.usualDay : []).filter(function (b) { return b && typeof b === "object"; }).slice(0, 80).map(function (b) { return cleanBlock(b, false); });
+    var fo = data.focus && typeof data.focus === "object" ? data.focus : {}, fs = fo.settings && typeof fo.settings === "object" ? fo.settings : {};
+    data.focus = {
+      settings: { focus: cn(fs.focus || 25, 1, 180), short: cn(fs.short || 5, 1, 60), long: cn(fs.long || 15, 1, 90), every: cn(fs.every || 4, 2, 10), awake: fs.awake !== false, sound: fs.sound !== false },
+      sessions: (Array.isArray(fo.sessions) ? fo.sessions : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)) && DKEY.test(String(x.date)); }).slice(0, 5000).map(function (x) { return { id: String(x.id), date: x.date, mins: cn(x.mins, 1, 600), label: str(x.label, 80) }; }),
+      run: null, round: cn(fo.round, 0, 10), label: str(fo.label, 80)
+    };
+
     /* Trips: ids end up in page markup, so keep only safe ones; photo ids must look like ours. */
     var tr = data.travel && typeof data.travel === "object" ? data.travel : null;
     if (tr && tr.trips && typeof tr.trips === "object") {
