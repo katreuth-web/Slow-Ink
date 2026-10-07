@@ -1027,3 +1027,81 @@ body.markup-on .book { margin-bottom: 90px; }
 @media (max-width: 600px) { .dump-send { flex: 1 1 140px; } }
 .dump-list li.dump-item textarea.txt { flex: 1 1 260px; min-width: 0; width: auto; }
 @media (max-width: 600px) { .dump-list li.dump-item textarea.txt { flex: 1 1 100%; } .dump-when { flex: 1 1 auto; } }
+
+/* ---------- Fitness: measurements, progress photos, vitamins and medication ---------- */
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.badge.warn { background: var(--pink-soft); color: var(--ink); }
+.sub-h { margin: 18px 0 10px; font-family: var(--serif); font-size: 1.05rem; font-weight: 600; }
+.body-fig { display: block; width: 100%; max-width: 340px; margin: 0 auto; height: auto; }
+.bf-skin { fill: var(--surface); stroke: var(--rule-strong); stroke-width: 1.4; }
+.bf-tape { stroke: var(--pink-deep); stroke-width: 2.4; stroke-linecap: round; }
+.bf-lead { stroke: var(--rule-strong); stroke-width: 1; stroke-dasharray: 3 3; }
+.bf-name { fill: var(--muted); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; }
+.bf-val { fill: var(--ink); font-size: 15px; font-weight: 600; }
+.bm-set { display: grid; grid-template-columns: minmax(0, 1fr) 84px 84px; gap: 8px 10px; align-items: center; }
+.bm-set .bm-h { font-size: 12px; text-align: center; color: var(--muted); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.bm-set .bm-l { font-size: 13.5px; color: var(--ink-soft); }
+.bm-set .bm-l small { color: var(--muted); }
+.bm-set input { width: 100%; min-width: 0; text-align: center; }
+.bm-row { padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.bm-row:last-child { border-bottom: 0; }
+.bm-row .progress { margin-top: 8px; height: 7px; }
+.bm-now { font-weight: 600; }
+.bm-entries { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.bm-entry { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 18px; box-shadow: var(--press-sm); min-width: 0; }
+.bm-fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px 10px; }
+.bm-f { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.bm-f span { font-size: 11.5px; color: var(--muted); }
+.bm-f input { width: 100%; min-width: 0; }
+.bm-note { width: 100%; }
+.ps-grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); align-items: start; }
+.ps-item { gap: 8px; }
+.ps-meta { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ps-meta select, .ps-meta input, .ps-meta .datefield { width: 100%; min-width: 0; max-width: none; }
+.ps-w { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.ps-w input { flex: 1; }
+.cmp { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.cmp-side { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.cmp-side select { width: 100%; min-width: 0; font-size: 12.5px; }
+.cmp-img { display: block; width: 100%; aspect-ratio: 3 / 4; padding: 0; border: 0; border-radius: 16px; overflow: hidden; background: var(--surface); box-shadow: var(--raise-sm); cursor: zoom-in; color: var(--muted); }
+.cmp-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cmp-diff { margin: 12px 0 0; text-align: center; font-weight: 600; }
+.hw-nav { align-items: center; margin-bottom: 12px; gap: 8px; }
+.hgrid { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.hgrid th, .hgrid td { padding: 6px 2px; text-align: center; }
+.hg-name { width: 34%; text-align: left !important; font-weight: 400; padding-right: 8px !important; }
+.hg-name b { display: block; font-size: 13.5px; overflow-wrap: break-word; }
+.hg-name small { display: block; font-size: 11.5px; color: var(--muted); overflow-wrap: break-word; }
+.hg-day { font-size: 12px; color: var(--muted); font-weight: 600; }
+.hg-day small { display: block; font-weight: 400; font-size: 11px; }
+.hg-day.today { color: var(--ink); }
+.hg-day.today small { color: var(--pink-deep); font-weight: 700; }
+.hgrid tr + tr > * { border-top: 1px solid var(--rule); }
+.hdot { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border-radius: 50%; border: 2px solid var(--rule-strong); background: transparent; color: var(--ink); cursor: pointer; flex: none; }
+.hdot svg { width: 15px; height: 15px; stroke-width: 2.4; }
+.hdot.on { background: var(--sage); border-color: var(--sage-deep); }
+.hdot:disabled { opacity: 0.35; cursor: default; }
+.hdot:focus-visible { outline: 2px solid var(--pink-deep); outline-offset: 2px; }
+.hl { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.hl-item { display: flex; flex-direction: column; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.hl-item:last-child { border-bottom: 0; padding-bottom: 0; }
+.hl-top { display: flex; align-items: center; gap: 8px; }
+.hl-top .txt { min-width: 0; flex: 1; }
+.hl-top .hl-dose { flex: 0 0 34%; max-width: 150px; }
+.hl-extra { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.hl-extra select { max-width: 160px; }
+.hl-times { display: flex; gap: 6px; }
+.hl-refill { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted); }
+.hl-refill .datefield { width: auto; min-width: 130px; }
+.ideas { margin-top: 12px; }
+.hl-today { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.hl-today li { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+@media (max-width: 520px) {
+  .cmp { gap: 10px; }
+  .bm-entries { grid-template-columns: minmax(0, 1fr); }
+  .ps-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hdot { width: 26px; height: 26px; }
+  .hg-name { width: 32%; }
+  .bm-set { grid-template-columns: minmax(0, 1fr) 72px 72px; }
+}
+@media (max-width: 360px) { .hdot { width: 22px; height: 22px; border-width: 1.5px; } .hdot svg { width: 13px; height: 13px; } .hg-name { width: 35%; } .hg-name b { font-size: 12.5px; } .hg-name small { font-size: 10.5px; } .hgrid th, .hgrid td { padding: 6px 0; } }

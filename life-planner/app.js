@@ -210,6 +210,10 @@
       workouts: [],
       milestones: [],
       weights: [],
+      body: { unit: "cm", height: "", start: {}, goal: {}, log: [], notes: "" },
+      progress: { shots: [] },
+      supps: { items: [], log: {} },
+      meds: { items: [], log: {} },
       meals: {},
       recipes: seedRecipes(),
       grocery: [],
@@ -500,8 +504,33 @@
     });
   }
 
+  /* Fitness extras: body measurements, progress photos, vitamins and medication. */
+  function ensureHealth() {
+    var isObj = function (v) { return v && typeof v === "object" && !Array.isArray(v); };
+    if (!isObj(state.body)) state.body = {};
+    var b = state.body;
+    if (b.unit !== "in") b.unit = "cm";
+    if (b.height == null) b.height = "";
+    if (!isObj(b.start)) b.start = {};
+    if (!isObj(b.goal)) b.goal = {};
+    if (!Array.isArray(b.log)) b.log = [];
+    if (typeof b.notes !== "string") b.notes = "";
+    if (!isObj(state.progress)) state.progress = {};
+    if (!Array.isArray(state.progress.shots)) state.progress.shots = [];
+    ["supps", "meds"].forEach(function (k) {
+      if (!isObj(state[k])) state[k] = {};
+      if (!Array.isArray(state[k].items)) state[k].items = [];
+      if (!isObj(state[k].log)) state[k].log = {};
+    });
+    if (!state.ui) state.ui = { tabs: {}, nbMode: "type" };
+    state.ui.hwOff = Math.max(-520, Math.min(0, parseInt(state.ui.hwOff, 10) || 0));
+    state.ui.cmpA = typeof state.ui.cmpA === "string" ? state.ui.cmpA : "";
+    state.ui.cmpB = typeof state.ui.cmpB === "string" ? state.ui.cmpB : "";
+  }
+
   function ensureRecipes() {
     ensureRoutines();
+    ensureHealth();
     if (!state.projects || typeof state.projects !== "object" || Array.isArray(state.projects)) state.projects = {};
     ensureGoals();
     if (!Array.isArray(state.recipes)) state.recipes = [];
@@ -966,6 +995,22 @@
       state.workouts.push({ id: uid(), date: ymd(addDays(t, -x[2])), type: x[0], minutes: x[1], notes: "" });
     });
     [[28, 64.8], [14, 64.3], [0, 63.9]].forEach(function (x) { state.weights.push({ id: uid(), date: ymd(addDays(t, -x[0])), value: x[1] }); });
+    state.body.height = 168;
+    state.body.start = { neck: 32, chest: 88, arm: 27, waist: 74, hips: 98, thigh: 57, calf: 36, weight: 64.8 };
+    state.body.goal = { neck: "", chest: "", arm: "", waist: 70, hips: 94, thigh: 54, calf: "", weight: 62 };
+    [[28, [32, 88, 27, 74, 98, 57, 36]], [14, [32, 87.5, 27, 73, 97, 56.5, 36]], [0, [31.5, 87, 26.5, 72, 96, 56, 35.5]]].forEach(function (x) {
+      var e = { id: uid(), date: ymd(addDays(t, -x[0])), note: x[0] === 0 ? "Clothes fit looser around the waist." : "" };
+      BODY_FIELDS.forEach(function (f, j) { e[f[0]] = x[1][j]; });
+      state.body.log.push(e);
+    });
+    var sv = [["Vitamin D", "1000 IU", "Morning"], ["Magnesium", "200 mg", "Bedtime"], ["Omega-3", "1 capsule", "With meals"]].map(function (x) { return { id: uid(), name: x[0], dose: x[1], notes: "", added: ymd(addDays(t, -20)), time: x[2] }; });
+    var md = { id: uid(), name: "Allergy tablet", dose: "10 mg", notes: "Hay fever season", added: ymd(addDays(t, -20)), times: ["am"], refill: ymd(addDays(t, 5)) };
+    state.supps.items = sv; state.meds.items = [md];
+    for (i = 0; i < 20; i++) {
+      var hk = ymd(addDays(t, -i));
+      sv.forEach(function (x, j) { if ((i + j) % 5 !== 4 && !(i === 0 && j > 0)) { (state.supps.log[hk] = state.supps.log[hk] || {})[x.id] = true; } });
+      if (i % 6 !== 5) (state.meds.log[hk] = state.meds.log[hk] || {})[md.id + "-am"] = true;
+    }
     var f = state.finance.months[mk] = { income: [], expenses: [] };
     f.income.push({ id: uid(), date: mk + "-01", text: "Salary", amount: 3200 });
     [["Groceries", "Groceries", 84], ["Coffee with Jo", "Dining", 12], ["Train pass", "Transport", 56], ["Yoga class", "Health", 18], ["Book", "Fun", 15], ["Dinner out", "Dining", 62]].forEach(function (x, j) {
@@ -1066,7 +1111,7 @@
     var right =
       card("How are you feeling?", moodPicker("days." + k + ".mood") + '<div class="spacer"></div><label class="lbl">Hydration</label>' + waterPicker("days." + k + ".water"), { cls: "tint-pink", dot: "p" }) +
       card("Habits today", habitChecks(k), { dot: "l", right: '<a class="btn sm ghost" href="#/habits">Tracker</a>' }) +
-      dumpCard() + goalsCard() + projectsCard() +
+      healthCard() + dumpCard() + goalsCard() + projectsCard() +
       card("Coming up", upcoming(), { dot: "k" }) +
       card(MONTHS[t.getMonth()] + " intention", bindArea("months." + mk + ".intention", "One sentence to steer the month…", 'style="min-height:64px"') + '<div class="spacer"></div><p class="quote">“' + esc(quote) + "”</p>", { cls: "tint-butter", dot: "b" });
     var y = t.getFullYear(), doy = daysBetween(new Date(y, 0, 1), t) + 1, ylen = daysInMonth(y, 1) === 29 ? 366 : 365, ypct = Math.round(doy / ylen * 100);
@@ -1283,7 +1328,7 @@
   }
 
   function viewFitness() {
-    var tb = tabs("fitness", [["fitness", "Workouts"], ["body", "Body & hydration"]]);
+    var tb = tabs("fitness", [["fitness", "Workouts"], ["body", "Body"], ["measure", "Measure"], ["supps", "Vitamins"], ["meds", "Meds"]]);
     var body = "";
     if (tb.cur === "fitness") {
       var wk = mondayOf(today()), wkMin = 0, wkCount = 0;
@@ -1297,6 +1342,10 @@
         '<div class="c8">' + card("Workout log", table, { dot: "s" }) + "</div>" +
         '<div class="c4 stack">' + card("This week", '<div class="stats"><div class="stat"><span class="v">' + wkCount + '</span><span class="k">Sessions</span></div><div class="stat"><span class="v">' + wkMin + '</span><span class="k">Minutes</span></div></div><div class="spacer"></div><label class="lbl">Weekly target (min)</label>' + bindNum("fitnessTarget", 'placeholder="150" data-rerender') + '<div class="spacer"></div>' + progress((wkMin / (num(state.fitnessTarget) || 150)) * 100, "sage"), { dot: "k" }) +
         card("Milestones", listEd("milestones", { placeholder: "e.g. First 5k, 10 push-ups…", empty: "Set a milestone to chase." }), { cls: "tint-butter", dot: "b" }) + "</div></div>";
+    } else if (tb.cur === "measure") {
+      body = measureTab();
+    } else if (tb.cur === "supps" || tb.cur === "meds") {
+      body = healthTab(tb.cur);
     } else {
       var ws = state.weights.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
       var pts = ws.filter(function (w) { return w.date && num(w.value); }).map(function (w) { var d = parseD(w.date); return { label: d.getDate() + " " + MON3[d.getMonth()], y: num(w.value) }; });
@@ -1307,10 +1356,268 @@
       }).join("") + "</ul>" : "";
       body = '<div class="grid"><div class="c8">' + card("Weight curve", lineChart(pts, { label: "Weight over time" }), { dot: "p", right: '<div style="width:110px">' + bindSelect("weightUnit", ["kg", "lb", "st"], 'data-rerender aria-label="Unit"') + "</div>" }) + "</div>" +
         '<div class="c4">' + card("Add a weigh-in", '<div class="row wrap" data-form="weight"><input type="date" name="date" value="' + todayKey() + '" aria-label="Date"><input type="number" name="value" step="0.1" placeholder="Weight" aria-label="Weight"><button class="btn pink" data-act="weight-add">' + ic("plus") + " Add</button></div>" + wtable, { cls: "tint-pink", dot: "p" }) + "</div>" +
+        '<div class="c12">' + card("Progress photos", progressCard(), { dot: "s" }) + "</div>" +
         '<div class="c8">' + card("Hydration · last 14 days", barChart(bars, state.waterGoal), { dot: "k" }) + "</div>" +
         '<div class="c4">' + card("Today's water", waterPicker("days." + todayKey() + ".water") + '<div class="spacer"></div><label class="lbl">Daily goal (glasses)</label>' + bindNum("waterGoal", "data-rerender"), { dot: "k" }) + "</div></div>";
     }
     return head("Life · Wellness", 'Fit<span class="em">ness</span>') + tb.html + body;
+  }
+
+
+  /* ------------------------------------------------------------ views: fitness extras
+     Body measurements, progress photos, vitamins & supplements, medication. */
+
+  var BODY_FIELDS = [["neck", "Neck"], ["chest", "Chest / bust"], ["arm", "Upper arm"], ["waist", "Waist"], ["hips", "Hips"], ["thigh", "Thigh"], ["calf", "Calf"]];
+  var PROG_LABELS = ["Before", "Progress", "After"];
+  var SUPP_TIMES = ["Morning", "Midday", "Evening", "Bedtime", "With meals", "Any time"];
+  var SUPP_IDEAS = ["Vitamin D", "Vitamin C", "Multivitamin", "Magnesium", "Omega-3", "Iron", "B12", "Zinc", "Calcium", "Probiotic", "Collagen", "Creatine"];
+  var MED_SLOTS = [["am", "AM"], ["pm", "PM"]];
+
+  function hasV(v) { return v !== "" && v != null && isFinite(parseFloat(v)); }
+  function fmtN(n) { return String(Math.round(num(n) * 10) / 10); }
+  function bodyUnit(k) { return k === "weight" ? (state.weightUnit || "kg") : state.body.unit; }
+  function signed(n) { n = Math.round(n * 10) / 10; return (n > 0 ? "+" : n < 0 ? "−" : "") + Math.abs(n); }
+  function byDate(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }
+  function weighIns() { return state.weights.filter(function (w) { return w.date && hasV(w.value); }).sort(byDate); }
+
+  /* first / latest reading of one measurement (weight comes from the weigh-ins on the Body tab) */
+  function bodySeries(k) {
+    var src = k === "weight" ? weighIns() : state.body.log.slice().sort(byDate).filter(function (e) { return e.date && hasV(e[k]); });
+    return src.map(function (e) { return num(k === "weight" ? e.value : e[k]); });
+  }
+  function bodyStart(k) { var s = state.body.start[k]; if (hasV(s)) return num(s); var ser = bodySeries(k); return ser.length ? ser[0] : null; }
+  function bodyNow(k) { var ser = bodySeries(k); return ser.length ? ser[ser.length - 1] : null; }
+  function bodyGoal(k) { var g = state.body.goal[k]; return hasV(g) ? num(g) : null; }
+  function bodyBmi() {
+    var h = num(state.body.height), w = bodyNow("weight");
+    if (!h || !w) return null;
+    var cm = state.body.unit === "in" ? h * 2.54 : h, u = state.weightUnit || "kg", kg = u === "lb" ? w * 0.45359237 : u === "st" ? w * 6.35029318 : w;
+    var m = cm / 100;
+    return m > 0.5 && kg > 5 ? kg / (m * m) : null;
+  }
+
+  /* a plain stylised figure with a tape line at each measuring spot */
+  function smoothPath(pts) {
+    var n = pts.length, d = "M" + pts[0][0].toFixed(1) + "," + pts[0][1].toFixed(1);
+    for (var i = 0; i < n; i++) {
+      var p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+      d += "C" + (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1) + "," + (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1) + " " + (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1) + "," + (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1) + " " + p2[0].toFixed(1) + "," + p2[1].toFixed(1);
+    }
+    return d + "Z";
+  }
+  function bodyFigure() {
+    var cx = 170;
+    var side = [[-11, 56], [-12, 74], [-44, 86], [-46, 104], [-38, 136], [-27, 172], [-41, 208], [-43, 238], [-36, 292], [-28, 336], [-30, 372], [-24, 408], [-26, 424], [-8, 424], [-8, 408], [-10, 372], [-10, 336], [-6, 290], [-3, 250]];
+    var body = smoothPath(side.map(function (p) { return [cx + p[0], p[1]]; }).concat([[cx, 238]], side.slice().reverse().map(function (p) { return [cx - p[0], p[1]]; })));
+    var arm = [[-48, 96], [-62, 150], [-68, 206], [-58, 208], [-50, 160], [-42, 110]];
+    function armShape(sign) { return smoothPath(arm.map(function (p) { return [cx + sign * p[0], p[1]]; })); }
+    var marks = [
+      { k: "neck", y: 70, w: 14, side: "L" }, { k: "chest", y: 130, w: 42, side: "L" }, { k: "waist", y: 172, w: 30, side: "L" }, { k: "hips", y: 212, w: 46, side: "L" },
+      { k: "arm", y: 152, w: 0, side: "R", ax: cx + 62 }, { k: "thigh", y: 264, w: 38, side: "R" }, { k: "calf", y: 372, w: 32, side: "R" }
+    ];
+    var label = function (k) { return BODY_FIELDS.filter(function (f) { return f[0] === k; })[0][1]; };
+    var out = '<svg class="body-fig" viewBox="0 0 340 440" role="img" aria-label="Body outline with your latest measurements" xmlns="http://www.w3.org/2000/svg">' +
+      '<circle class="bf-skin" cx="' + cx + '" cy="34" r="21"/><path class="bf-skin" d="' + armShape(1) + '"/><path class="bf-skin" d="' + armShape(-1) + '"/><path class="bf-skin" d="' + body + '"/>';
+    marks.forEach(function (m) {
+      var v = hasV(state.body.log.length ? bodyNow(m.k) : null) ? bodyNow(m.k) : bodyStart(m.k);
+      var left = m.side === "L", x1 = m.ax ? m.ax - 8 : cx - m.w, x2 = m.ax ? m.ax + 8 : cx + m.w, tx = left ? 8 : 332, ex = left ? x1 : x2;
+      out += '<line class="bf-tape" x1="' + x1 + '" y1="' + m.y + '" x2="' + x2 + '" y2="' + m.y + '"/>' +
+        '<line class="bf-lead" x1="' + (left ? tx + 78 : tx - 78) + '" y1="' + m.y + '" x2="' + ex + '" y2="' + m.y + '"/>' +
+        '<text class="bf-name" x="' + tx + '" y="' + (m.y - 4) + '" text-anchor="' + (left ? "start" : "end") + '">' + esc(label(m.k)) + '</text>' +
+        '<text class="bf-val" x="' + tx + '" y="' + (m.y + 14) + '" text-anchor="' + (left ? "start" : "end") + '">' + (v == null ? "—" : esc(fmtN(v) + " " + state.body.unit)) + "</text>";
+    });
+    return out + "</svg>";
+  }
+
+  function measureTab() {
+    var b = state.body, u = b.unit;
+    var unitChips = '<div class="chips">' + [["cm", "cm"], ["in", "inches"]].map(function (x) {
+      return '<button class="chip ' + (x[0] === u ? "on" : "") + '" data-act="body-unit" data-val="' + x[0] + '" aria-pressed="' + (x[0] === u) + '">' + x[1] + "</button>";
+    }).join("") + "</div>";
+    var setup = '<div class="bm-set"><span class="bm-h"></span><b class="bm-h">Start</b><b class="bm-h">Goal</b>' + BODY_FIELDS.concat([["weight", "Weight"]]).map(function (f) {
+      return '<label class="bm-l" for="bm-s-' + f[0] + '">' + f[1] + ' <small>' + esc(bodyUnit(f[0])) + "</small></label>" +
+        bindNum("body.start." + f[0], 'id="bm-s-' + f[0] + '" step="0.1" aria-label="Start ' + f[1] + '"') + bindNum("body.goal." + f[0], 'step="0.1" aria-label="Goal ' + f[1] + '"');
+    }).join("") + "</div>" +
+      '<p class="small muted" style="margin:10px 0 0">Leave Start empty and your first check-in becomes the starting point. Weight comes from your weigh-ins on the Body tab.</p>';
+    var rows = BODY_FIELDS.concat([["weight", "Weight"]]).map(function (f) {
+      var k = f[0], s = bodyStart(k), n = bodyNow(k), g = bodyGoal(k);
+      if (s == null && n == null && g == null) return "";
+      var pc = s != null && n != null && g != null && s !== g ? clamp(Math.round((s - n) / (s - g) * 100), 0, 100) : null;
+      return '<div class="bm-row"><div class="row"><b class="grow">' + f[1] + '</b><span class="bm-now">' + (n == null ? "—" : esc(fmtN(n) + " " + bodyUnit(k))) + "</span>" +
+        (s != null && n != null && s !== n ? '<span class="badge">' + signed(n - s) + "</span>" : "") + "</div>" +
+        '<div class="small muted">' + (s != null ? "Start " + fmtN(s) : "No start yet") + (g != null ? " · Goal " + fmtN(g) : "") + "</div>" + (pc != null ? progress(pc) : "") + "</div>";
+    }).join("");
+    var bmi = bodyBmi();
+    var prog = (rows || '<div class="empty">Add a check-in below and your progress will show up here.</div>') +
+      (bmi ? '<p class="small muted" style="margin:12px 0 0">BMI about <b>' + fmtN(bmi) + "</b> from your height and latest weigh-in. It is a rough guide only — it can't tell muscle from fat.</p>" : "");
+    var log = b.log.slice().sort(function (x, y) { return x.date < y.date ? 1 : x.date > y.date ? -1 : 0; });
+    var entries = log.slice(0, 60).map(function (e) {
+      var path = "body.log";
+      return '<div class="bm-entry"><div class="row"><b class="grow">Check-in</b>' + itemInput(path, e, "date", 'style="max-width:170px" aria-label="Date"', "date") +
+        '<button class="del" data-act="list-del" data-path="' + path + '" data-id="' + e.id + '" aria-label="Delete check-in">' + ic("x") + "</button></div>" +
+        '<div class="bm-fields">' + BODY_FIELDS.map(function (f) {
+          return '<label class="bm-f"><span>' + f[1] + "</span>" + itemInput(path, e, f[0], 'step="0.1" aria-label="' + f[1] + '"', "number") + "</label>";
+        }).join("") + "</div>" +
+        '<input type="text" class="txt bm-note" placeholder="Note (optional)" maxlength="300" aria-label="Note" value="' + esc(e.note) + '" data-item="' + path + "|" + e.id + '|note"></div>';
+    }).join("");
+    var logCard = '<div class="row wrap" style="margin-bottom:12px"><button class="btn pink" data-act="body-add">' + ic("plus") + " New check-in</button>" +
+      '<span class="small muted grow">Measure the same spots each time — most people check in every 1–4 weeks.</span></div>' +
+      (entries ? '<div class="bm-entries">' + entries + "</div>" : '<div class="empty">No check-ins yet. Tap “New check-in” and fill in what you measured.</div>');
+    return '<div class="grid"><div class="c5">' + card("Your measurements", bodyFigure() + '<p class="small muted" style="margin:6px 0 0;text-align:center">Latest readings (' + esc(u) + ")</p>", { cls: "tint-pink", dot: "p", right: unitChips }) + "</div>" +
+      '<div class="c7 stack">' + card("Start &amp; goal", setup + '<div class="spacer"></div><label class="lbl" for="bm-h">Height (' + esc(u) + ", optional)</label>" + bindNum("body.height", 'id="bm-h" step="0.1" style="max-width:140px" data-rerender'), { dot: "b" }) +
+      card("Progress so far", prog, { dot: "s" }) + "</div>" +
+      '<div class="c12">' + card("Check-in log", logCard, { dot: "l" }) + "</div>" +
+      '<div class="c12">' + card("Notes", bindArea("body.notes", "How you feel, what's working, how clothes fit…", 'style="min-height:84px"'), { cls: "tint-butter", dot: "b" }) + "</div></div>";
+  }
+
+  /* ---- progress photos ---- */
+  function progList() { return state.progress.shots.slice().sort(byDate); }
+  function progCaption(s) { return (s.label || "Progress") + (s.date ? " · " + dateText(s.date) : "") + (hasV(s.weight) ? " · " + fmtN(s.weight) + " " + (state.weightUnit || "kg") : ""); }
+  function progressCard() {
+    var list = progList(), path = "progress.shots", wu = state.weightUnit || "kg";
+    var items = list.map(function (s, i) {
+      var u = imgs.url(s.imgId);
+      return '<figure class="al-item ps-item"><button class="al-img" data-act="prog-view" data-i="' + i + '" aria-label="Open photo ' + (i + 1) + '">' + (u ? '<img alt="" src="' + u + '">' : ic("image")) + "</button>" +
+        '<div class="ps-meta">' + itemSelect(path, s, "label", PROG_LABELS, 'aria-label="Type of photo"') + itemInput(path, s, "date", 'aria-label="Date"', "date") +
+        '<div class="ps-w">' + itemInput(path, s, "weight", 'step="0.1" placeholder="Weight" aria-label="Weight at this photo"', "number") + "<span>" + esc(wu) + "</span></div>" +
+        '<input type="text" class="txt" aria-label="Note" placeholder="Note…" maxlength="200" value="' + esc(s.note) + '" data-item="' + path + "|" + s.id + '|note">' +
+        '<button class="btn sm ghost" data-act="prog-del" data-id="' + s.id + '" aria-label="Remove photo">' + ic("x") + " Remove</button></div></figure>";
+    }).join("");
+    var cmp = "";
+    if (list.length >= 2) {
+      var ids = list.map(function (s) { return s.id; });
+      if (ids.indexOf(state.ui.cmpA) < 0) state.ui.cmpA = ids[0];
+      if (ids.indexOf(state.ui.cmpB) < 0) state.ui.cmpB = ids[ids.length - 1];
+      var opts = list.map(function (s) { return [s.id, progCaption(s)]; });
+      var A = list[ids.indexOf(state.ui.cmpA)], B = list[ids.indexOf(state.ui.cmpB)];
+      var side = function (s, which) {
+        var u = imgs.url(s.imgId);
+        return '<div class="cmp-side"><label class="lbl" for="cmp-' + which + '">' + (which === "A" ? "Left" : "Right") + "</label>" + bindSelect("ui.cmp" + which, opts, 'id="cmp-' + which + '" data-rerender') +
+          '<button class="cmp-img" data-act="prog-view" data-i="' + list.indexOf(s) + '" aria-label="Open this photo">' + (u ? '<img alt="" src="' + u + '">' : ic("image")) + "</button><b>" + esc(s.label || "Progress") + '</b><span class="small muted">' + esc(s.date ? dateText(s.date) : "No date") + (hasV(s.weight) ? " · " + fmtN(s.weight) + " " + esc(wu) : "") + "</span></div>";
+      };
+      var diff = "";
+      if (A !== B) {
+        var bits = [];
+        if (A.date && B.date) { var dd = Math.round((parseD(B.date) - parseD(A.date)) / 864e5); if (dd) bits.push(Math.abs(dd) >= 14 ? Math.round(Math.abs(dd) / 7) + " weeks apart" : Math.abs(dd) + (Math.abs(dd) === 1 ? " day apart" : " days apart")); }
+        if (hasV(A.weight) && hasV(B.weight) && num(A.weight) !== num(B.weight)) bits.push(signed(num(B.weight) - num(A.weight)) + " " + wu);
+        if (bits.length) diff = '<p class="cmp-diff">' + esc(bits.join(" · ")) + "</p>";
+      }
+      cmp = '<div class="cmp">' + side(A, "A") + side(B, "B") + "</div>" + diff;
+    }
+    var grid = '<div class="album ps-grid"><label class="v-add al-add">' + ic("plus") + "<span>Add photos</span>" + '<input type="file" accept="image/*" multiple hidden data-bulk="progress|x"></label>' + items + "</div>";
+    return '<p class="small muted" style="margin:0 0 12px">Before, during and after — add as many as you like. Photos stay on this device (and in your backup).</p>' +
+      (cmp ? '<h4 class="sub-h">Compare</h4>' + cmp + '<h4 class="sub-h">All photos</h4>' : "") + grid +
+      (list.length ? "" : '<p class="empty" style="margin-top:14px">No progress photos yet. Add your “before” photo whenever you like — you can add more as you go.</p>');
+  }
+  function addProgress(files) {
+    if (!files || !files.length) return;
+    var list = Array.prototype.slice.call(files, 0, 40).filter(function (f) { return /^image\//.test(f.type); });
+    if (!list.length) { toast("Those files aren't pictures."); return; }
+    var first = !state.progress.shots.length;
+    Promise.all(list.map(function (f) {
+      return new Promise(function (res) { shrinkToBlob(f, 1400, function (blob) { var id = "img_" + uid(); imgs.put(id, blob).then(function () { res(id); }); }); });
+    })).then(function (ids) {
+      var tk = todayKey(), w = state.weights.filter(function (x) { return x.date === tk && hasV(x.value); })[0];
+      ids.forEach(function (i, n) { state.progress.shots.push({ id: uid(), date: tk, label: first && n === 0 ? "Before" : "Progress", weight: w ? w.value : "", note: "", imgId: i }); });
+      save(); render();
+      toast(ids.length + (ids.length === 1 ? " photo added" : " photos added"));
+    });
+  }
+
+  /* ---- vitamins & supplements, medication: a tick for each dose each day ---- */
+  function healthRows(kind) {
+    var items = state[kind].items, rows = [];
+    if (kind === "supps") {
+      items.slice().sort(function (a, b) { return SUPP_TIMES.indexOf(a.time) - SUPP_TIMES.indexOf(b.time); }).forEach(function (it) { rows.push({ key: it.id, item: it, slot: "" }); });
+    } else {
+      items.forEach(function (it) { MED_SLOTS.forEach(function (sl) { if ((it.times || []).indexOf(sl[0]) >= 0) rows.push({ key: it.id + "-" + sl[0], item: it, slot: sl[1] }); }); });
+      rows.sort(function (a, b) { return (a.slot === b.slot ? 0 : a.slot === "AM" ? -1 : 1); });
+    }
+    return rows;
+  }
+  function hTicked(kind, key, dk) { var l = state[kind].log[dk]; return !!(l && l[key]); }
+  function hCount(kind, rows, from, to) {   /* doses due and ticked from..to (dates), not counting days before an item was added */
+    var due = 0, ok = 0, tk = todayKey();
+    for (var d = from; d <= to; d = addDays(d, 1)) {
+      var dk = ymd(d);
+      if (dk > tk) break;
+      rows.forEach(function (r) { if (!r.item.added || dk >= r.item.added) { due++; if (hTicked(kind, r.key, dk)) ok++; } });
+    }
+    return { due: due, ok: ok };
+  }
+  function hStreak(kind, rows) {
+    if (!rows.length) return 0;
+    var full = function (dt) {
+      var dk = ymd(dt), due = rows.filter(function (r) { return !r.item.added || dk >= r.item.added; });
+      return due.length > 0 && due.every(function (r) { return hTicked(kind, r.key, dk); });
+    };
+    var d = today(), n = 0;
+    if (!full(d)) d = addDays(d, -1);
+    while (n < 1000 && full(d)) { n++; d = addDays(d, -1); }
+    return n;
+  }
+  function healthTab(kind) {
+    var isMed = kind === "meds", S = state[kind], rows = healthRows(kind), tk = todayKey();
+    var wkStart = addDays(mondayOf(today()), state.ui.hwOff * 7), days = [0, 1, 2, 3, 4, 5, 6].map(function (i) { return addDays(wkStart, i); });
+    var wkEnd = days[6];
+    var nav = '<div class="row wrap hw-nav"><button class="icon-btn sm" data-act="health-wk" data-val="-1" aria-label="Previous week">' + ic("left") + '</button><b class="grow" style="text-align:center">' +
+      (state.ui.hwOff === 0 ? "This week" : "Week of " + wkStart.getDate() + " " + MON3[wkStart.getMonth()]) + '</b><button class="icon-btn sm" data-act="health-wk" data-val="1" aria-label="Next week"' + (state.ui.hwOff >= 0 ? " disabled" : "") + ">" + ic("arrow") + "</button>" +
+      (state.ui.hwOff !== 0 ? '<button class="btn sm ghost" data-act="health-wk" data-val="0">This week</button>' : "") + "</div>";
+    var grid = "";
+    if (rows.length) {
+      var hrow = '<tr><th class="hg-name"><span class="sr">' + (isMed ? "Medication" : "Vitamin or supplement") + "</span></th>" + days.map(function (d, i) {
+        return '<th class="hg-day' + (ymd(d) === tk ? " today" : "") + '"><span>' + DOW1[i] + "</span><small>" + d.getDate() + "</small></th>";
+      }).join("") + "</tr>";
+      var body = rows.map(function (r) {
+        var c = hCount(kind, [r], wkStart, wkEnd);
+        return '<tr><th class="hg-name" scope="row"><b>' + esc(r.item.name || "Unnamed") + "</b><small>" + esc([r.item.dose, isMed ? r.slot : r.item.time].filter(Boolean).join(" · ")) + (c.due ? " · " + c.ok + "/" + c.due : "") + "</small></th>" + days.map(function (d) {
+          var dk = ymd(d), on = hTicked(kind, r.key, dk), fut = dk > tk;
+          return '<td class="hg-cell"><button class="hdot' + (on ? " on" : "") + '" data-act="health-tick" data-kind="' + kind + '" data-key="' + r.key + '" data-date="' + dk + '" aria-pressed="' + on + '" aria-label="' + esc((r.item.name || "Item") + (r.slot ? " " + r.slot : "") + ", " + DOW[i2(d)] + " " + d.getDate() + (on ? ", taken" : "")) + '"' + (fut ? " disabled" : "") + ">" + (on ? ic("check") : "") + "</button></td>";
+        }).join("") + "</tr>";
+      }).join("");
+      grid = '<table class="hgrid">' + hrow + body + "</table>";
+    } else grid = '<div class="empty">' + (isMed ? "No medication added yet. Add one below." : "No vitamins or supplements added yet. Add one below, or tap a suggestion.") + "</div>";
+    var all = hCount(kind, rows, wkStart, wkEnd), mo = hCount(kind, rows, addDays(today(), -29), today()), st = hStreak(kind, rows);
+    var summary = rows.length ? '<ul class="insights"><li class="k-info"><span class="i-dot"></span><span>' + (state.ui.hwOff === 0 ? "This week" : "That week") + ": <b>" + all.ok + " of " + all.due + "</b> " + (isMed ? "doses" : "ticks") + (all.due ? " (" + Math.round(all.ok / all.due * 100) + "%)" : "") + ".</span></li>" +
+      (mo.due >= 7 ? '<li class="k-info"><span class="i-dot"></span><span>Last 30 days: <b>' + Math.round(mo.ok / mo.due * 100) + "%</b> ticked.</span></li>" : "") +
+      (st >= 2 ? '<li class="k-good"><span class="i-dot"></span><span><b>' + st + "</b> days in a row with everything ticked.</span></li>" : "") + "</ul>" : "";
+    var path = kind + ".items";
+    var list = S.items.map(function (it) {
+      var extra;
+      if (isMed) {
+        var dl = it.refill ? daysBetween(today(), parseD(it.refill)) : null;
+        extra = '<div class="hl-times">' + MED_SLOTS.map(function (sl) { var on = (it.times || []).indexOf(sl[0]) >= 0; return '<button class="chip ' + (on ? "on" : "") + '" data-act="med-slot" data-id="' + it.id + '" data-val="' + sl[0] + '" aria-pressed="' + on + '">' + sl[1] + "</button>"; }).join("") + "</div>" +
+          '<label class="hl-refill"><span>Refill by</span>' + itemInput(path, it, "refill", 'aria-label="Refill date"', "date") + "</label>" +
+          (dl != null && dl <= 7 ? '<span class="badge warn">' + (dl < 0 ? "Refill date passed" : dl === 0 ? "Refill today" : "Refill in " + dl + (dl === 1 ? " day" : " days")) + "</span>" : "");
+      } else extra = itemSelect(path, it, "time", SUPP_TIMES, 'aria-label="When"');
+      return '<li class="hl-item"><div class="hl-top"><input type="text" class="txt" maxlength="60" placeholder="' + (isMed ? "Medication name" : "Vitamin or supplement") + '" aria-label="Name" value="' + esc(it.name) + '" data-item="' + path + "|" + it.id + '|name">' +
+        '<input type="text" class="txt hl-dose" maxlength="60" placeholder="Dose" aria-label="Dose" value="' + esc(it.dose) + '" data-item="' + path + "|" + it.id + '|dose">' +
+        '<button class="del" data-act="list-del" data-path="' + path + '" data-id="' + it.id + '" aria-label="Delete">' + ic("x") + "</button></div>" +
+        '<div class="hl-extra">' + extra + "</div>" +
+        '<input type="text" class="txt" maxlength="160" placeholder="' + (isMed ? "Notes (e.g. with food, prescribed by…)" : "Notes (e.g. brand, with food)") + '" aria-label="Notes" value="' + esc(it.notes) + '" data-item="' + path + "|" + it.id + '|notes"></li>';
+    }).join("");
+    var addForm = '<div class="row wrap" data-form="' + kind + '-add"><input type="text" name="name" class="grow" style="min-width:150px" maxlength="60" placeholder="' + (isMed ? "Medication name" : "Vitamin or supplement") + '" aria-label="Name"><input type="text" name="dose" style="max-width:130px" maxlength="60" placeholder="Dose" aria-label="Dose">' +
+      (isMed ? "" : '<select name="time" style="max-width:140px" aria-label="When">' + SUPP_TIMES.map(function (t) { return "<option>" + t + "</option>"; }).join("") + "</select>") +
+      '<button class="btn pink" data-act="' + kind + '-add">' + ic("plus") + " Add</button></div>" +
+      (isMed ? "" : '<div class="chips ideas">' + SUPP_IDEAS.map(function (n) { return '<button class="chip" data-act="supps-idea" data-val="' + esc(n) + '">' + esc(n) + "</button>"; }).join("") + "</div>");
+    var note = isMed
+      ? '<p class="small muted" style="margin:0 0 12px">A personal log to help you remember — not medical advice. This planner can’t send reminders while it’s closed, so keep using your phone’s alarms for doses.</p>'
+      : '<p class="small muted" style="margin:0 0 12px">Tick each one as you take it. Ticking a past day is fine if you forgot.</p>';
+    return note + '<div class="grid"><div class="c12">' + card(isMed ? "Medication tracker" : "Vitamins &amp; supplements", nav + grid + (summary ? '<div class="spacer"></div>' + summary : ""), { cls: isMed ? "tint-butter" : "tint-pink", dot: isMed ? "b" : "p" }) + "</div>" +
+      '<div class="c7">' + card(isMed ? "Your medication" : "Your list", (list ? '<ul class="hl">' + list + "</ul>" : "") + '<div class="spacer"></div>' + addForm, { dot: "s" }) + "</div></div>";
+  }
+  function i2(d) { return (d.getDay() + 6) % 7; }   /* Monday = 0 */
+
+  /* today's doses, shown on the Today page */
+  function healthCard() {
+    var parts = ["supps", "meds"].map(function (kind) { return healthRows(kind).map(function (r) { return { kind: kind, r: r }; }); }), all = parts[0].concat(parts[1]), tk = todayKey();
+    if (!all.length) return "";
+    var done = all.filter(function (x) { return hTicked(x.kind, x.r.key, tk); }).length;
+    return card("Vitamins &amp; meds", '<ul class="hl-today">' + all.slice(0, 8).map(function (x) {
+      var on = hTicked(x.kind, x.r.key, tk);
+      return '<li><button class="hdot' + (on ? " on" : "") + '" data-act="health-tick" data-kind="' + x.kind + '" data-key="' + x.r.key + '" data-date="' + tk + '" aria-pressed="' + on + '" aria-label="' + esc((x.r.item.name || "Item") + (x.r.slot ? " " + x.r.slot : "")) + '">' + (on ? ic("check") : "") + "</button><span class=\"grow\">" + esc(x.r.item.name || "Unnamed") + '<small class="muted"> ' + esc([x.r.item.dose, x.kind === "meds" ? x.r.slot : x.r.item.time].filter(Boolean).join(" · ")) + "</small></span></li>";
+    }).join("") + "</ul>" + (all.length > 8 ? '<p class="small muted" style="margin:6px 0 0">+' + (all.length - 8) + " more</p>" : "") +
+      '<p class="small" style="margin:8px 0 0">' + done + " of " + all.length + ' ticked today · <a href="#/fitness" data-act="tab-go" data-key="fitness" data-val="' + (parts[1].length && !parts[0].length ? "meds" : "supps") + '">Open</a></p>', { dot: "k" });
   }
 
   /* ------------------------------------------------------------ views: meals */
@@ -2025,7 +2332,11 @@
   var lightbox = null;
   function closeLightbox() { if (lightbox) { lightbox.remove(); lightbox = null; } }
   function openLightbox(tripId, i) {
-    var trip = state.travel.trips[tripId], list = trip && trip.album || [];
+    var trip = state.travel.trips[tripId];
+    showLightbox(trip && trip.album || [], i);
+  }
+  /* list: [{ imgId, caption }] */
+  function showLightbox(list, i) {
     if (!list.length) return;
     i = (i + list.length) % list.length;
     var a = list[i], u = imgs.url(a.imgId);
@@ -2037,7 +2348,7 @@
       '<img alt="" src="' + u + '">' + (a.caption ? '<p class="lb-cap">' + esc(a.caption) + "</p>" : "");
     lightbox.addEventListener("click", function (e) {
       var b = e.target.closest("[data-lb]"), k = b && b.getAttribute("data-lb");
-      if (k === "prev") openLightbox(tripId, i - 1); else if (k === "next") openLightbox(tripId, i + 1); else if (e.target === lightbox || k === "close") closeLightbox();
+      if (k === "prev") showLightbox(list, i - 1); else if (k === "next") showLightbox(list, i + 1); else if (e.target === lightbox || k === "close") closeLightbox();
     });
     document.body.appendChild(lightbox);
     lightbox.querySelector(".lb-x").focus();
@@ -2582,6 +2893,7 @@
     img.src = url;
   }
   function photoUsed(id) {
+    if (state.progress && state.progress.shots.some(function (x) { return x.imgId === id; })) return true;
     if (state.recipes.some(function (r) { return r.imgId === id; }) || state.recipeSections.some(function (x) { return x.imgId === id; })) return true;
     return Object.keys(state.travel.trips).some(function (k) {
       var t = state.travel.trips[k];
@@ -2838,7 +3150,7 @@
     }
     if (el.dataset.bulk) {
       var bk = el.dataset.bulk.split("|");
-      addPhotos(bk[0], bk[1], el.files);
+      if (bk[0] === "progress") addProgress(el.files); else addPhotos(bk[0], bk[1], el.files);
       el.value = "";
       return;
     }
@@ -2962,6 +3274,53 @@
         if (!w.date) { toast("Pick a date."); return; }
         state.workouts.push({ id: uid(), date: w.date, type: w.type, minutes: num(w.minutes), notes: w.notes });
         save(); render(); toast("Workout logged 💪"); return;
+      }
+      case "body-add": {
+        var be = { id: uid(), date: todayKey(), note: "" };
+        BODY_FIELDS.forEach(function (f) { be[f[0]] = ""; });
+        state.body.log.push(be); save(); render(); return;
+      }
+      case "body-unit": {
+        var bu = d.val === "in" ? "in" : "cm", bb = state.body;
+        if (bb.unit === bu) return;
+        var bf = bu === "in" ? 1 / 2.54 : 2.54, cv = function (v) { return hasV(v) ? Math.round(num(v) * bf * 10) / 10 : ""; };
+        BODY_FIELDS.forEach(function (f) { bb.start[f[0]] = cv(bb.start[f[0]]); bb.goal[f[0]] = cv(bb.goal[f[0]]); bb.log.forEach(function (e) { e[f[0]] = cv(e[f[0]]); }); });
+        bb.height = cv(bb.height); bb.unit = bu;
+        save(); render(); toast("Measurements converted to " + (bu === "in" ? "inches" : "cm")); return;
+      }
+      case "prog-view": showLightbox(progList().map(function (x) { return { imgId: x.imgId, caption: progCaption(x) + (x.note ? " — " + x.note : "") }; }), parseInt(d.i, 10) || 0); return;
+      case "prog-del": {
+        var pj = state.progress.shots.findIndex(function (x) { return x.id === d.id; });
+        if (pj < 0) return;
+        if (!confirm("Remove this progress photo?")) return;
+        var pg = state.progress.shots.splice(pj, 1)[0];
+        if (pg.imgId && !photoUsed(pg.imgId)) imgs.remove(pg.imgId);
+        save(); render(); return;
+      }
+      case "health-tick": {
+        if (d.kind !== "supps" && d.kind !== "meds") return;
+        var hl = state[d.kind].log, hd = hl[d.date] || (hl[d.date] = {});
+        if (hd[d.key]) delete hd[d.key]; else hd[d.key] = true;
+        if (!Object.keys(hd).length) delete hl[d.date];
+        save(); render(); return;
+      }
+      case "health-wk": state.ui.hwOff = d.val === "0" ? 0 : Math.max(-520, Math.min(0, state.ui.hwOff + (parseInt(d.val, 10) || 0))); save(); render(); return;
+      case "supps-add": case "meds-add": {
+        var hk = d.act === "meds-add" ? "meds" : "supps", hv = formVals(el);
+        if (!hv.name || !hv.name.trim()) { toast("Type a name first."); return; }
+        var hi = { id: uid(), name: hv.name.trim().slice(0, 60), dose: (hv.dose || "").trim().slice(0, 60), notes: "", added: todayKey() };
+        if (hk === "meds") { hi.times = ["am"]; hi.refill = ""; } else hi.time = SUPP_TIMES.indexOf(hv.time) >= 0 ? hv.time : "Morning";
+        state[hk].items.push(hi); save(); render(); return;
+      }
+      case "supps-idea":
+        state.supps.items.push({ id: uid(), name: String(d.val).slice(0, 60), dose: "", notes: "", added: todayKey(), time: "Morning" });
+        save(); render(); toast(d.val + " added"); return;
+      case "med-slot": {
+        var mi = state.meds.items.filter(function (x) { return x.id === d.id; })[0];
+        if (!mi) return;
+        var mt = (mi.times || []).slice(), mx = mt.indexOf(d.val);
+        if (mx >= 0) { if (mt.length === 1) { toast("Pick at least one time."); return; } mt.splice(mx, 1); } else mt.push(d.val);
+        mi.times = mt; save(); render(); return;
       }
       case "weight-add": {
         var wv = formVals(el);
@@ -3502,6 +3861,52 @@
       sessions: (Array.isArray(fo.sessions) ? fo.sessions : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)) && DKEY.test(String(x.date)); }).slice(0, 5000).map(function (x) { return { id: String(x.id), date: x.date, mins: cn(x.mins, 1, 600), label: str(x.label, 80) }; }),
       run: null, round: cn(fo.round, 0, 10), label: str(fo.label, 80)
     };
+
+    /* Weigh-ins and workouts: ids end up in page markup. */
+    data.weights = (Array.isArray(data.weights) ? data.weights : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 5000).map(function (x) {
+      return { id: String(x.id), date: DKEY.test(String(x.date)) ? x.date : "", value: Math.max(0, Math.min(2000, Number(x.value) || 0)) };
+    });
+    data.workouts = (Array.isArray(data.workouts) ? data.workouts : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 5000).map(function (x) {
+      return { id: String(x.id), date: DKEY.test(String(x.date)) ? x.date : "", type: str(x.type, 30), minutes: cn(x.minutes, 0, 1440), notes: str(x.notes, 300) };
+    });
+    /* Body measurements, progress photos, vitamins and medication: rebuilt from known fields only. */
+    var mv = function (v) { return v === "" || v == null || !isFinite(parseFloat(v)) ? "" : Math.max(0, Math.min(2000, Math.round(parseFloat(v) * 100) / 100)); };
+    var bi = data.body && typeof data.body === "object" && !Array.isArray(data.body) ? data.body : {}, bkeys = ["neck", "chest", "arm", "waist", "hips", "thigh", "calf"];
+    var bo = { unit: bi.unit === "in" ? "in" : "cm", height: mv(bi.height), start: {}, goal: {}, notes: str(bi.notes, 4000), log: [] };
+    bkeys.concat(["weight"]).forEach(function (k) { bo.start[k] = mv(bi.start && bi.start[k]); bo.goal[k] = mv(bi.goal && bi.goal[k]); });
+    bo.log = (Array.isArray(bi.log) ? bi.log : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 1000).map(function (x) {
+      var e = { id: String(x.id), date: DKEY.test(String(x.date)) ? x.date : "", note: str(x.note, 300) };
+      bkeys.forEach(function (k) { e[k] = mv(x[k]); });
+      return e;
+    });
+    data.body = bo;
+    var pi = data.progress && typeof data.progress === "object" && !Array.isArray(data.progress) ? data.progress : {};
+    data.progress = { shots: (Array.isArray(pi.shots) ? pi.shots : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 500).map(function (x) {
+      return { id: String(x.id), date: DKEY.test(String(x.date)) ? x.date : "", label: ["Before", "Progress", "After"].indexOf(x.label) >= 0 ? x.label : "Progress", weight: mv(x.weight), note: str(x.note, 200), imgId: SAFE_ID.test(String(x.imgId)) ? String(x.imgId) : "" };
+    }) };
+    ["supps", "meds"].forEach(function (k) {
+      var hi = data[k] && typeof data[k] === "object" && !Array.isArray(data[k]) ? data[k] : {}, med = k === "meds", keys = {};
+      var items = (Array.isArray(hi.items) ? hi.items : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 200).map(function (x) {
+        var o = { id: String(x.id), name: str(x.name, 60), dose: str(x.dose, 60), notes: str(x.notes, 160), added: DKEY.test(String(x.added)) ? x.added : "" };
+        if (med) {
+          o.times = ["am", "pm"].filter(function (t) { return Array.isArray(x.times) && x.times.indexOf(t) >= 0; });
+          if (!o.times.length) o.times = ["am"];
+          o.refill = DKEY.test(String(x.refill)) ? x.refill : "";
+          o.times.forEach(function (t) { keys[o.id + "-" + t] = true; });
+        } else {
+          o.time = ["Morning", "Midday", "Evening", "Bedtime", "With meals", "Any time"].indexOf(x.time) >= 0 ? x.time : "Morning";
+          keys[o.id] = true;
+        }
+        return o;
+      });
+      var log = {}, lg = hi.log && typeof hi.log === "object" && !Array.isArray(hi.log) ? hi.log : {};
+      Object.keys(lg).slice(0, 4000).forEach(function (dk) {
+        if (!DKEY.test(dk) || !lg[dk] || typeof lg[dk] !== "object") return;
+        var day = {}; Object.keys(lg[dk]).slice(0, 400).forEach(function (rk) { if (keys[rk] && lg[dk][rk] === true) day[rk] = true; });
+        if (Object.keys(day).length) log[dk] = day;
+      });
+      data[k] = { items: items, log: log };
+    });
 
     /* Trips: ids end up in page markup, so keep only safe ones; photo ids must look like ours. */
     var tr = data.travel && typeof data.travel === "object" ? data.travel : null;
