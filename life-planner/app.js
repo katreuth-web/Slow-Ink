@@ -1045,6 +1045,7 @@
     [["Paris in the rain", "Paris", -150, -145, 5], ["Lake District cabin", "Cumbria", -75, -72, 4]].forEach(function (x) {
       var pid = uid();
       state.travel.trips[pid] = { id: pid, text: x[0], dest: x[1], start: ymd(addDays(t, x[2])), end: ymd(addDays(t, x[3])), budget: 900, itinerary: [], packing: [], outfits: [], expenses: [], album: [], rating: x[4] };
+      if (x[0] === "Paris in the rain") state.travel.trips[pid].log = { ticket: { name: "Alex Morgan", date: ymd(addDays(t, -150)), time: "07:25", flight: "BA 304", from: "London", to: "Paris", seat: "12C", gate: "A9", boarding: "06:50" }, facts: { country: "France", language: "French", timeDiff: "+1 hour", currency: "Euro (€)", rate: "€1 = about £0.85", travelers: "2" }, transport: [{ id: uid(), date: ymd(addDays(t, -150)), from: "London St Pancras", to: "Paris Gare du Nord" }, { id: uid(), date: ymd(addDays(t, -145)), from: "Paris", to: "London" }], stay: [{ id: uid(), date: ymd(addDays(t, -150)), text: "Hotel near Le Marais", checkin: "15:00", checkout: "11:00" }], meals: [{ id: uid(), date: ymd(addDays(t, -149)), text: "Little crêperie on rue Vieille" }, { id: uid(), date: ymd(addDays(t, -148)), text: "Bistro by the river" }], activities: [{ id: uid(), date: ymd(addDays(t, -149)), text: "Musée d'Orsay" }, { id: uid(), date: ymd(addDays(t, -147)), text: "Walk along the Seine" }], review: "Rainy but magical. Book the museum in advance next time and pack a better umbrella." };
     });
     state.ui.trip = tid;
     var g1 = newGoal("Run a 5k"); g1.area = "Health"; g1.why = "I want more energy and a goal that gets me outdoors."; g1.plan = "Three short runs a week, adding a little each week. Rest day after each run.";
@@ -2437,6 +2438,55 @@
     return card("My trips", '<div class="tcards">' + items + '<button class="tcard tc-add" data-act="trip-add" data-go="1">' + ic("plus") + "<span>Plan a trip</span></button></div>", { dot: "p" });
   }
 
+
+  /* ---- trip log: boarding pass, country facts, transport, stay, meals, activities, review ---- */
+  var LOG_TABLES = {
+    transport: { title: "Transportation", add: "Add a journey", cols: [["date", "Date", "date"], ["from", "Departure", "text"], ["to", "Arrival", "text"]] },
+    stay: { title: "Accommodation", add: "Add a stay", cols: [["date", "Date", "date"], ["text", "Where", "text"], ["checkin", "Check-in", "text"], ["checkout", "Check-out", "text"]] },
+    meals: { title: "Meals & restaurants", add: "Add a meal", cols: [["date", "Date", "date"], ["text", "Restaurant", "text"]] },
+    activities: { title: "Activities", add: "Add an activity", cols: [["date", "Date", "date"], ["text", "What", "text"]] }
+  };
+  function tripLog(t) {
+    if (!t.log || typeof t.log !== "object" || Array.isArray(t.log)) t.log = {};
+    var l = t.log;
+    ["ticket", "facts"].forEach(function (k) { if (!l[k] || typeof l[k] !== "object" || Array.isArray(l[k])) l[k] = {}; });
+    Object.keys(LOG_TABLES).forEach(function (k) { if (!Array.isArray(l[k])) l[k] = []; });
+    if (typeof l.review !== "string") l.review = "";
+    return l;
+  }
+  function logTable(p, key) {
+    var T = LOG_TABLES[key], path = p + ".log." + key, list = listAt(path);
+    var rows = list.map(function (it) {
+      return '<div class="lg-row lg-' + T.cols.length + '">' + T.cols.map(function (c) {
+        return itemInput(path, it, c[0], 'placeholder="' + c[1] + '" aria-label="' + c[1] + '" maxlength="120"', c[2]);
+      }).join("") + '<button class="del" data-act="list-del" data-path="' + path + '" data-id="' + it.id + '" aria-label="Delete row">' + ic("x") + "</button></div>";
+    }).join("");
+    return '<section class="lg-sec"><h4 class="sub-h">' + T.title + "</h4>" + (rows ? '<div class="lg-rows">' + rows + "</div>" : "") +
+      '<button class="btn sm" data-act="log-add" data-id="' + p.split(".").pop() + '" data-key="' + key + '">' + ic("plus") + " " + T.add + "</button></section>";
+  }
+  function tripLogView(p, t) {
+    tripLog(t);
+    var tk = p + ".log.ticket", f = p + ".log.facts", fld = function (label, field, type, ph, cls) {
+      return '<label class="tk-f ' + (cls || "") + '"><span>' + label + "</span>" + '<input type="' + (type || "text") + '" data-bind="' + tk + "." + field + '" maxlength="60" placeholder="' + (ph || "") + '" value="' + esc(getP(tk + "." + field) || "") + '"></label>';
+    };
+    var ticket = '<div class="ticket"><div class="tk-main"><div class="tk-top"><b>Boarding pass</b><span>' + ic("plane") + "</span></div>" +
+      fld("Name", "name", "text", "Who's flying", "wide") +
+      '<div class="tk-row3">' + fld("Date", "date", "date") + fld("Time", "time", "text", "09:40") + fld("Flight no.", "flight", "text", "AB 123") + "</div>" +
+      '<div class="tk-route">' + fld("From", "from", "text", "Home") + '<span class="tk-plane" aria-hidden="true">' + ic("plane") + "</span>" + fld("To", "to", "text", "Away") + "</div>" +
+      '<div class="tk-row3">' + fld("Seat", "seat", "text", "14A") + fld("Gate", "gate", "text", "B7") + fld("Boarding", "boarding", "text", "08:55") + "</div></div>" +
+      '<div class="tk-stub" aria-hidden="true"></div></div>';
+    var facts = [["Country", "country"], ["Language", "language"], ["Time difference", "timeDiff"], ["Currency", "currency"], ["Exchange rate", "rate"], ["Travellers", "travelers"]].map(function (x) {
+      return '<label class="fact"><span>' + x[0] + '</span><input type="text" data-bind="' + f + "." + x[1] + '" maxlength="80" aria-label="' + x[0] + '" value="' + esc(getP(f + "." + x[1]) || "") + '"></label>';
+    }).join("");
+    var r = clamp(parseInt(t.rating, 10) || 0, 0, 5);
+    var hearts = [1, 2, 3, 4, 5].map(function (n) { return '<button class="tc-heart' + (n <= r ? " on" : "") + '" data-act="trip-rate" data-id="' + t.id + '" data-val="' + n + '" aria-label="Rate ' + n + ' of 5" aria-pressed="' + (n === r) + '">' + ic("heart") + "</button>"; }).join("");
+    return '<div class="lg-top">' + ticket + '<div class="lg-facts"><h4 class="sub-h">Good to know</h4>' + facts + "</div></div>" +
+      '<div class="lg-grid">' + logTable(p, "transport") + logTable(p, "stay") + logTable(p, "meals") + logTable(p, "activities") + "</div>" +
+      '<p class="small muted" style="margin:14px 0 0">Your day-by-day plan is on the Itinerary tab and your spending is on the Budget tab.</p>' +
+      '<section class="lg-sec"><div class="row wrap" style="align-items:center"><h4 class="sub-h grow" style="margin:18px 0 6px">Review</h4><span class="tc-hearts" role="group" aria-label="Trip rating">' + hearts + "</span></div>" +
+      bindArea(p + ".log.review", "What you loved, what you'd do differently, tips for next time…", 'style="min-height:110px" maxlength="6000"') + "</section>";
+  }
+
   function viewTravel() {
     var trips = Object.keys(state.travel.trips).map(function (id) { return state.travel.trips[id]; }).sort(function (a, b) { return (a.start || "9") < (b.start || "9") ? -1 : 1; });
     var cur = state.ui.trip && state.travel.trips[state.ui.trip] ? state.travel.trips[state.ui.trip] : trips[0];
@@ -2452,7 +2502,7 @@
       var p = "travel.trips." + cur.id;
       var nights = cur.start && cur.end ? daysBetween(parseD(cur.start), parseD(cur.end)) : null;
       var until = cur.start ? daysBetween(today(), parseD(cur.start)) : null;
-      var tt = tabs("trip", [["itinerary", "Itinerary"], ["packing", "Packing"], ["outfits", "Outfits"], ["budget", "Budget"], ["album", "Album"]]);
+      var tt = tabs("trip", [["itinerary", "Itinerary"], ["packing", "Packing"], ["outfits", "Outfits"], ["budget", "Budget"], ["album", "Album"], ["log", "Log"]]);
       var inner = "";
       var dayMeta = function (path) { return function (it) { return '<input type="date" data-item="' + path + "|" + it.id + '|day" value="' + esc(it.day || "") + '" style="max-width:150px;padding:5px 8px;font-size:12px" aria-label="Day">'; }; };
       if (tt.cur === "itinerary") inner = listEd(p + ".itinerary", { noCheck: false, meta: dayMeta(p + ".itinerary"), placeholder: "Add a plan, booking or reservation…", empty: "Flights, stays, tables booked, sights to see…" });
@@ -2461,6 +2511,7 @@
         inner = '<div class="row" style="margin-bottom:12px"><span class="grow">' + progress(pk.length ? (got / pk.length) * 100 : 0) + '</span><span class="badge">' + got + "/" + pk.length + ' packed</span><button class="btn sm" data-act="pack-essentials" data-id="' + cur.id + '">Add essentials</button></div>' + listEd(p + ".packing", { placeholder: "Add something to pack…" });
       } else if (tt.cur === "outfits") inner = outfitCards(p, cur, dayMeta(p + ".outfits"));
       else if (tt.cur === "album") inner = albumGrid(cur);
+      else if (tt.cur === "log") inner = tripLogView(p, cur);
       else {
         var ex = listAt(p + ".expenses"), total = sum(ex, function (x) { return x.amount; }), budget = num(cur.budget);
         inner = '<div class="row" style="margin-bottom:12px"><span class="grow">' + progress(budget ? (total / budget) * 100 : 0) + '</span><span class="badge ' + (budget && total > budget ? "pink" : "") + '">' + money(total) + " of " + money(budget) + "</span></div>" +
@@ -3564,6 +3615,12 @@
         state.ui.trip = id; if (d.go) scrollToMain = true; save(); render(); return;
       }
       case "trip-open": state.ui.trip = d.id; if (d.go) scrollToMain = true; save(); render(); return;
+      case "log-add": {
+        var lt = state.travel.trips[d.id], LT = LOG_TABLES[d.key];
+        if (!lt || !LT) return;
+        var lrow = { id: uid() }; LT.cols.forEach(function (c) { lrow[c[0]] = ""; });
+        tripLog(lt)[d.key].push(lrow); save(); render(); return;
+      }
       case "trip-rate": {
         var rt = state.travel.trips[d.id], rn = clamp(parseInt(d.val, 10) || 0, 0, 5);
         if (!rt) return;
@@ -4075,6 +4132,20 @@
         t.id = k;
         t.rating = Math.max(0, Math.min(5, parseInt(t.rating, 10) || 0));
         t.itinerary = cleanList(t.itinerary); t.packing = cleanList(t.packing); t.expenses = cleanList(t.expenses);
+        var lg = t.log && typeof t.log === "object" && !Array.isArray(t.log) ? t.log : {}, lt = lg.ticket && typeof lg.ticket === "object" ? lg.ticket : {}, lf = lg.facts && typeof lg.facts === "object" ? lg.facts : {};
+        var newLog = { ticket: {}, facts: {}, review: str(lg.review, 6000) };
+        ["name", "time", "flight", "from", "to", "seat", "gate", "boarding"].forEach(function (k) { newLog.ticket[k] = str(lt[k], 60); });
+        newLog.ticket.date = DKEY.test(String(lt.date)) ? lt.date : "";
+        ["country", "language", "timeDiff", "currency", "rate", "travelers"].forEach(function (k) { newLog.facts[k] = str(lf[k], 80); });
+        var LCOLS = { transport: ["date", "from", "to"], stay: ["date", "text", "checkin", "checkout"], meals: ["date", "text"], activities: ["date", "text"] };
+        Object.keys(LCOLS).forEach(function (k) {
+          newLog[k] = (Array.isArray(lg[k]) ? lg[k] : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 300).map(function (x) {
+            var o = { id: String(x.id) };
+            LCOLS[k].forEach(function (c) { o[c] = c === "date" ? (DKEY.test(String(x[c])) ? x[c] : "") : str(x[c], 120); });
+            return o;
+          });
+        });
+        t.log = newLog;
         t.outfits = cleanList(t.outfits, true); t.album = cleanList(t.album, true);
         t.album.forEach(function (a) { a.caption = str(a.caption, 120); });
         safeTrips[k] = t;
