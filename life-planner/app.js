@@ -196,6 +196,8 @@
         { id: uid(), text: "No phone after 10pm", color: "lilac" }
       ],
       habitLog: {},
+      goals: {},
+      goalsFromSmart: true,
       workouts: [],
       milestones: [],
       weights: [],
@@ -240,6 +242,7 @@
         var saved = JSON.parse(raw);
         if (saved) delete saved.sync; /* drop settings left over from the removed board sync */
         var merged = merge(defaults(), saved);
+        if (saved && saved.goalsFromSmart === undefined) merged.goalsFromSmart = false;   /* saved before Goals existed: bring SMART goals across once */
         if (saved && !saved.look && saved.theme === "dark") merged.look.mode = "dark";   /* planners from before colour themes */
         return merged;
       }
@@ -276,7 +279,85 @@
   /* Recipe sections ("Breakfast", "Drinks", ...) are the covers on the Recipe cards page. Older planners only had a
      category word on each recipe, so give every recipe a section. */
   function normSec(n) { return String(n || "").trim().toLowerCase().replace(/s$/, ""); }
+  /* ---- Goals (Productivity). Older planners kept SMART goals under Mind & Ikigai; they become goals once. ---- */
+  var GOAL_AREAS = ["Personal", "Health", "Career", "Money", "Relationships", "Learning", "Home", "Creative", "Other"];
+  var GOAL_STATUS = [["active", "Active"], ["hold", "On hold"], ["done", "Done"]];
+  function newGoal(title) {
+    var id = uid();
+    return { id: id, title: title || "", area: "Personal", why: "", plan: "", start: ymd(today()), due: "", status: "active", manual: 0, steps: [], checks: [],
+      worked: "", blocked: "", change: "", smart: { s: "", m: "", a: "", r: "", t: "" }, created: Date.now() };
+  }
+  function ensureGoals() {
+    if (!state.goals || typeof state.goals !== "object" || Array.isArray(state.goals)) state.goals = {};
+    if (!state.goalsFromSmart) {
+      var old = state.mind && Array.isArray(state.mind.smart) ? state.mind.smart : [];
+      old.forEach(function (g) {
+        if (!g || typeof g !== "object") return;
+        var n = newGoal(str(g.text, 120));
+        n.smart = { s: str(g.s, 2000), m: str(g.m, 2000), a: str(g.a, 2000), r: str(g.r, 2000), t: str(g.t, 2000) };
+        n.why = n.smart.r;
+        n.due = /^\d{4}-\d{2}-\d{2}$/.test(String(g.due)) ? g.due : "";
+        n.manual = clamp(num(g.progress), 0, 100);
+        state.goals[n.id] = n;
+      });
+      state.goalsFromSmart = true;
+    }
+  }
+  function goalPct(g) {
+    var st = g.steps || [];
+    return st.length ? Math.round(100 * st.filter(function (x) { return x.done; }).length / st.length) : clamp(num(g.manual), 0, 100);
+  }
+  function addMonthsKeep(d, n) { var t = new Date(d.getFullYear(), d.getMonth() + n, 1); t.setDate(Math.min(d.getDate(), daysInMonth(t.getFullYear(), t.getMonth()))); return t; }
+  function goalList() {
+    return Object.keys(state.goals).map(function (id) { return state.goals[id]; }).sort(function (a, b) {
+      var da = a.status === "done" ? 1 : 0, db = b.status === "done" ? 1 : 0;
+      if (da !== db) return da - db;
+      return (a.due || "9") < (b.due || "9") ? -1 : (a.due || "9") > (b.due || "9") ? 1 : (a.created || 0) - (b.created || 0);
+    });
+  }
+  /* Plain-language review of a goal plan, worked out from the dates, steps and check-ins on the page. */
+  function goalInsights(g) {
+    var out = [], t = today(), tk = ymd(t), pct = goalPct(g), steps = g.steps || [], open = steps.filter(function (x) { return !x.done; });
+    function add(k, text) { out.push({ k: k, t: text }); }
+    if (g.status === "done" || pct >= 100) return [{ k: "good", t: "This goal is complete. Take a moment to celebrate, then note below what worked so you can use it again." }];
+    if (!steps.length) add("warn", "There are no action steps yet. Break this goal into small steps, ideally each doable within a week. A goal without steps tends to stay a wish.");
+    else {
+      if (steps.length < 3) add("info", "Only " + steps.length + (steps.length === 1 ? " step" : " steps") + " so far. If any step would take more than a week, split it so progress shows up sooner.");
+      var overdue = open.filter(function (x) { return x.due && x.due < tk; }).length;
+      if (overdue) add("warn", overdue + (overdue === 1 ? " step is" : " steps are") + " overdue. Re-date them honestly, or shrink or drop the ones that no longer fit.");
+      var undated = open.filter(function (x) { return !x.due; }).length;
+      if (undated && g.due) add("info", undated + " open " + (undated === 1 ? "step has" : "steps have") + " no date. Giving each step a date makes slips visible early.");
+      if (open.length) add("info", "Next step: " + (open[0].text || "(unnamed step)") + ".");
+    }
+    var due = g.due ? parseD(g.due) : null;
+    if (!due) add("info", "Add a target date so your pace can be compared with the calendar.");
+    else {
+      var start = g.start ? parseD(g.start) : new Date(new Date(g.created || Date.now()).getFullYear(), new Date(g.created || Date.now()).getMonth(), new Date(g.created || Date.now()).getDate());
+      var total = daysBetween(start, due), el = daysBetween(start, t), left = daysBetween(t, due);
+      if (left < 0) add("warn", "The target date passed " + (-left) + (left === -1 ? " day" : " days") + " ago. Decide whether to extend the date, shrink the goal, or close it.");
+      else if (total > 0) {
+        var exp = clamp(Math.round(100 * el / total), 0, 100), diff = pct - exp;
+        if (diff <= -25) add("warn", "Well behind pace: " + pct + "% done with about " + exp + "% of the time used. Options: reduce the scope, move the date, or free up regular time each week.");
+        else if (diff <= -10) add("warn", "A little behind pace: " + pct + "% done with about " + exp + "% of the time used. A few extra steps this week would catch you up.");
+        else add("good", "On pace: " + pct + "% done with about " + exp + "% of the time used.");
+        if (open.length && left > 0) { var rate = open.length / Math.max(left / 7, 1); add("info", "To finish by the target date, aim for " + (rate >= 1 ? "about " + (Math.round(rate * 10) / 10) + " steps a week" : "one step about every " + Math.round(1 / rate * 10) / 10 + " weeks") + " (" + open.length + " left, " + left + " days to go)."); }
+      }
+    }
+    var chk = (g.checks || []).slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+    if (!chk.length) add("info", "No check-ins yet. A quick check-in every week or two shows whether the plan is working.");
+    else {
+      var ago = daysBetween(parseD(chk[chk.length - 1].date), t);
+      if (ago > 14) add("warn", "The last check-in was " + ago + " days ago. A short check-in will show whether anything needs to change.");
+      if (chk.length >= 3) {
+        var l3 = chk.slice(-3).map(function (c) { return c.pct; });
+        if (l3[0] === l3[1] && l3[1] === l3[2]) add("warn", "Progress hasn't moved across your last three check-ins. What is in the way, and what is the smallest change that would unstick it?");
+      }
+    }
+    return out;
+  }
+
   function ensureRecipes() {
+    ensureGoals();
     if (!Array.isArray(state.recipes)) state.recipes = [];
     if (!Array.isArray(state.recipeSections) || !state.recipeSections.length) {
       state.recipeSections = [["Breakfast", "pink"], ["Lunch", "butter"], ["Dinner", "sage"], ["Snacks", "sky"], ["Desserts", "lilac"], ["Drinks", "pink"]].map(function (x) { return { id: uid(), name: x[0], color: x[1], imgId: "" }; });
@@ -574,7 +655,7 @@
   var NAV = [
     { group: "Plan", items: [["home", "Today", "home"], ["year", "Year", "year"], ["month", "Month", "month"], ["week", "Week", "week"], ["day", "Day", "sun"]] },
     { group: "Life", items: [["fitness", "Fitness", "dumbbell"], ["meals", "Meals & Recipes", "bowl"], ["finance", "Finance", "wallet"], ["mind", "Mind & Ikigai", "lotus"], ["travel", "Travel", "plane"], ["home-care", "Home & Chores", "house"]] },
-    { group: "Productivity", items: [["habits", "Habits", "check"], ["mood", "Mood Log", "smile"], ["vision", "Vision Board", "image"], ["mindmap", "Mind Map", "branch"]] },
+    { group: "Productivity", items: [["habits", "Habits", "check"], ["mood", "Mood Log", "smile"], ["goals", "Goals", "target"], ["vision", "Vision Board", "image"], ["mindmap", "Mind Map", "branch"]] },
     { group: "Journal", items: [["notebook", "Notebook", "book"]] },
     { group: "System", items: [["settings", "Settings", "sliders"]] }
   ];
@@ -749,6 +830,13 @@
     var tid = uid();
     state.travel.trips[tid] = { id: tid, text: "Lisbon long weekend", dest: "Lisbon", start: ymd(addDays(t, 21)), end: ymd(addDays(t, 25)), budget: 1200, itinerary: [], packing: [task("Passport", 1), task("Walking shoes", 0), task("Sunscreen", 0)], outfits: [], expenses: [] };
     state.ui.trip = tid;
+    var g1 = newGoal("Run a 5k"); g1.area = "Health"; g1.why = "I want more energy and a goal that gets me outdoors."; g1.plan = "Three short runs a week, adding a little each week. Rest day after each run.";
+    g1.start = ymd(addDays(t, -30)); g1.due = ymd(addDays(t, 60));
+    g1.steps = [["Buy running shoes", 1, -28], ["Walk/run 20 minutes, three times", 1, -14], ["Run 2 km without stopping", 1, -3], ["Run 3 km without stopping", 0, 10], ["Run 5 km", 0, 55]].map(function (x) { return { id: uid(), text: x[0], done: !!x[1], due: ymd(addDays(t, x[2])) }; });
+    g1.checks = [[-21, 20, "First week done."], [-10, 40, "Knee a bit sore, took a rest day."], [-2, 60, "Feeling stronger."]].map(function (x) { return { id: uid(), date: ymd(addDays(t, x[0])), pct: x[1], note: x[2] }; });
+    var g2 = newGoal("Save for the Lisbon trip"); g2.area = "Money"; g2.why = "A proper break to look forward to."; g2.due = ymd(addDays(t, 20)); g2.start = ymd(addDays(t, -70));
+    g2.steps = [["Open a savings pot", 1, -65], ["Set up a monthly transfer", 1, -60], ["Cut one subscription", 0, 5]].map(function (x) { return { id: uid(), text: x[0], done: !!x[1], due: ymd(addDays(t, x[2])) }; });
+    state.goals[g1.id] = g1; state.goals[g2.id] = g2; state.ui.goal = g1.id;
     var dinner = state.recipeSections.filter(function (x) { return x.name === "Dinner"; })[0] || state.recipeSections[0];
     state.recipes.unshift({ id: uid(), text: "Sheet-pan salmon and greens", cat: dinner.name, sec: dinner.id, imgId: "", time: "25 min", serves: "2", ingredients: "Salmon fillets\nBroccoli\nLemon\nOlive oil\nGarlic", method: "Roast everything on one tray at 200°C for 15 minutes." });
     state.meals = {};
@@ -773,6 +861,15 @@
     return '<a class="kpi" href="' + href + '"><span class="kpi-num">' + num + '</span><span class="kpi-label">' + esc(label) + "</span>" + (frac == null ? "" : progress(frac * 100)) + "</a>";
   }
 
+  function goalsCard() {
+    var act = goalList().filter(function (g) { return g.status === "active"; }).slice(0, 3);
+    if (!act.length) return "";
+    return card("Goals", act.map(function (g) {
+      var pc = goalPct(g);
+      return '<a class="goal-mini" href="#/goals" data-act="goal-go" data-id="' + g.id + '"><span class="row"><b class="grow">' + esc(g.title || "Untitled goal") + '</b><span class="badge">' + pc + "%</span></span>" + progress(pc) + "</a>";
+    }).join("") + '<p class="small" style="margin:8px 0 0"><a href="#/goals">All goals</a></p>', { dot: "s" });
+  }
+
   function viewHome() {
     var t = today(), k = ymd(t);
     ensureDay(k);
@@ -786,6 +883,7 @@
     var right =
       card("How are you feeling?", moodPicker("days." + k + ".mood") + '<div class="spacer"></div><label class="lbl">Hydration</label>' + waterPicker("days." + k + ".water"), { cls: "tint-pink", dot: "p" }) +
       card("Habits today", habitChecks(k), { dot: "l", right: '<a class="btn sm ghost" href="#/habits">Tracker</a>' }) +
+      goalsCard() +
       card("Coming up", upcoming(), { dot: "k" }) +
       card(MONTHS[t.getMonth()] + " intention", bindArea("months." + mk + ".intention", "One sentence to steer the month…", 'style="min-height:64px"') + '<div class="spacer"></div><p class="quote">“' + esc(quote) + "”</p>", { cls: "tint-butter", dot: "b" });
     var y = t.getFullYear(), doy = daysBetween(new Date(y, 0, 1), t) + 1, ylen = daysInMonth(y, 1) === 29 ? 366 : 365, ypct = Math.round(doy / ylen * 100);
@@ -1190,7 +1288,8 @@
 
   function viewMind() {
     if (state.ui.tabs.mind === "mood") state.ui.tabs.mind = "ikigai";
-    var tb = tabs("mind", [["ikigai", "Ikigai"], ["wheel", "Level 10 Life"], ["smart", "SMART goals"], ["matrix", "Eisenhower matrix"]]);
+    if (state.ui.tabs.mind === "smart") state.ui.tabs.mind = "ikigai";
+    var tb = tabs("mind", [["ikigai", "Ikigai"], ["wheel", "Level 10 Life"], ["matrix", "Eisenhower matrix"]]);
     var body = "";
     if (tb.cur === "ikigai") {
       var focus = state.ui.ikigai || "love";
@@ -1213,15 +1312,6 @@
       var avg = sum(vals) / vals.length;
       body = '<div class="grid"><div class="c6">' + card("Your wheel", radar(vals, WHEEL) + '<div class="stats" style="margin-top:12px"><div class="stat"><span class="v">' + avg.toFixed(1) + '</span><span class="k">Average</span></div><div class="stat"><span class="v text">' + esc(WHEEL[vals.indexOf(Math.min.apply(null, vals))]) + '</span><span class="k">Needs love</span></div></div>', { dot: "p" }) + "</div>" +
         '<div class="c6">' + card("Rate each area 1–10", '<div class="stack">' + sliders + "</div>", { dot: "b" }) + "</div></div>";
-    } else if (tb.cur === "smart") {
-      var goals = state.mind.smart.map(function (g) {
-        var p = "mind.smart";
-        return card(itemInput(p, g, "text", 'class="txt" placeholder="Goal title" style="font-family:var(--serif);font-size:1.35rem;font-weight:600;background:transparent;box-shadow:none;padding:0" aria-label="Goal title"'),
-          '<div class="smart">' + [["s", "S", "Specific — what exactly?"], ["m", "M", "Measurable — how will I know?"], ["a", "A", "Achievable — what makes it doable?"], ["r", "R", "Relevant — why does it matter?"], ["t", "T", "Time-bound — by when?"]].map(function (f) {
-            return '<div><label class="lbl smart-l"><span style="font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--pink-deep)">' + f[1] + "</span> " + f[2].split(" — ")[0] + '</label><textarea data-item="' + p + "|" + g.id + "|" + f[0] + '" placeholder="' + esc(f[2].split(" — ")[1]) + '">' + esc(g[f[0]]) + "</textarea></div>";
-          }).join("") + '</div><div class="row" style="margin-top:14px"><label class="lbl" style="margin:0">Deadline</label>' + itemInput(p, g, "due", 'style="max-width:170px"', "date") + '<label class="lbl" style="margin:0 0 0 10px">Progress</label><input type="range" min="0" max="100" step="5" class="grow" value="' + (num(g.progress) || 0) + '" data-item="' + p + "|" + g.id + '|progress" data-type="num" aria-label="Progress"><span class="badge pink">' + (num(g.progress) || 0) + '%</span><button class="del" data-act="list-del" data-path="' + p + '" data-id="' + g.id + '" aria-label="Delete goal">' + ic("trash") + "</button></div>", { cls: "" });
-      }).join('<div class="spacer"></div>');
-      body = (goals || card("", '<div class="empty">A SMART goal is Specific, Measurable, Achievable, Relevant and Time-bound. Start one below.</div>')) + '<div class="spacer"></div><button class="btn pink" data-act="smart-add">' + ic("plus") + " New SMART goal</button>";
     } else {
       var q = [["q1", "Do first", "Urgent · Important"], ["q2", "Schedule", "Not urgent · Important"], ["q3", "Delegate", "Urgent · Not important"], ["q4", "Let go", "Not urgent · Not important"]];
       body = '<div class="matrix">' + q.map(function (x) { return '<div class="quad ' + x[0] + '"><h4>' + x[1] + '</h4><div class="tiny">' + x[2] + "</div>" + listEd("mind.matrix." + x[0], { placeholder: "Add…" }) + "</div>"; }).join("") + "</div>";
@@ -1286,6 +1376,64 @@
       '<button class="icon-btn" data-act="board-del" data-id="' + cur.id + '" aria-label="Delete this ' + K.noun + '" title="Delete this ' + K.noun + '">' + ic("trash") + "</button></div>" +
       '<div class="sheet-page board-sheet ' + b.cls + '" data-page="' + cur.id + '">' + b.inner + "</div>" +
       '<p class="small muted">' + esc(K.sub) + "</p></div>";
+  }
+
+
+  /* ------------------------------------------------------------ views: goals */
+
+  function viewGoals() {
+    var list = goalList(), cur = state.ui.goal && state.goals[state.ui.goal] ? state.goals[state.ui.goal] : list[0];
+    var active = list.filter(function (g) { return g.status === "active"; });
+    var avg = active.length ? Math.round(sum(active, goalPct) / active.length) : 0;
+    var stepsAll = sum(list, function (g) { return (g.steps || []).length; }), stepsDone = sum(list, function (g) { return (g.steps || []).filter(function (x) { return x.done; }).length; });
+    var head_ = head("Productivity", 'Goal <span class="em">tracker</span>', '<button class="btn pink" data-act="goal-add">' + ic("plus") + " New goal</button>");
+    if (!cur) {
+      return head_ + card("", '<div class="empty" style="padding:30px 10px;text-align:center">Name a goal, make a plan, break it into steps, and watch it move. Start with one that feels meaningful and doable.</div><div style="text-align:center"><button class="btn pink" data-act="goal-add">' + ic("plus") + " Create your first goal</button></div>");
+    }
+    var stats = '<div class="stats"><div class="stat"><span class="v">' + active.length + '</span><span class="k">Active goals</span></div><div class="stat"><span class="v">' + avg + '%</span><span class="k">Average progress</span></div><div class="stat"><span class="v">' + stepsDone + "/" + stepsAll + '</span><span class="k">Steps done</span></div></div>';
+    var pills = list.map(function (g) {
+      var pc = goalPct(g), left = g.due ? daysBetween(today(), parseD(g.due)) : null;
+      return '<button class="trip-pill goal-pill' + (g.id === cur.id ? " on" : "") + (g.status === "done" ? " is-done" : "") + '" data-act="goal-open" data-id="' + g.id + '"><b>' + esc(g.title || "Untitled goal") + '</b><span class="small muted">' + esc(g.status === "done" ? "Done" : g.status === "hold" ? "On hold" : left == null ? g.area : left < 0 ? "Past due" : left === 0 ? "Due today" : left + " days left") + " · " + pc + "%</span>" + progress(pc) + "</button>";
+    }).join("");
+    var p = "goals." + cur.id, pc = goalPct(cur), left = cur.due ? daysBetween(today(), parseD(cur.due)) : null;
+    var span = cur.start && cur.due ? daysBetween(parseD(cur.start), parseD(cur.due)) : null;
+    var chips = [["1m", "1 month"], ["3m", "3 months"], ["6m", "6 months"], ["12m", "1 year"]].map(function (c) { return '<button class="chip" data-act="goal-span" data-id="' + cur.id + '" data-val="' + c[0] + '">' + c[1] + "</button>"; }).join("");
+    var header = card("", '<div class="row wrap" style="align-items:flex-end"><div class="grow" style="min-width:220px"><label class="lbl">Goal</label>' + bindInput(p + ".title", 'placeholder="What do you want to achieve?" maxlength="120" style="height:46px;font-family:var(--serif);font-size:1.2rem;font-weight:600"') + '</div>' +
+      '<div style="flex:0 1 150px"><label class="lbl">Area</label>' + bindSelect(p + ".area", GOAL_AREAS, 'aria-label="Area"') + '</div><div style="flex:0 1 130px"><label class="lbl">Status</label>' + bindSelect(p + ".status", GOAL_STATUS, 'data-rerender aria-label="Status"') + "</div></div>" +
+      '<div class="row wrap" style="margin-top:12px;align-items:flex-end"><div style="flex:1 1 150px"><label class="lbl">Start</label><input type="date" data-bind="' + p + '.start" data-rerender value="' + esc(cur.start || "") + '"></div><div style="flex:1 1 150px"><label class="lbl">Target date</label><input type="date" data-bind="' + p + '.due" data-rerender value="' + esc(cur.due || "") + '"></div>' +
+      '<div class="goal-chips"><label class="lbl">Or choose a timeframe</label><div class="chips">' + chips + "</div></div></div>" +
+      '<div class="row wrap" style="margin-top:14px"><span class="grow" style="flex:1 1 220px;min-width:200px">' + progress(pc) + '</span><span class="badge pink">' + pc + '%</span>' +
+      (span != null && span > 0 ? '<span class="badge">' + (span >= 60 ? Math.round(span / 30.4) + " months" : span + " days") + "</span>" : "") +
+      (left != null && cur.status !== "done" ? '<span class="badge ' + (left < 0 ? "pink" : "") + '">' + (left < 0 ? "Past due" : left === 0 ? "Due today" : left + " days left") + "</span>" : "") +
+      '<button class="del" data-act="goal-del" data-id="' + cur.id + '" aria-label="Delete goal" title="Delete goal">' + ic("trash") + "</button></div>", { cls: "tint-pink" });
+    var tt = tabs("goal", [["plan", "Plan"], ["steps", "Action steps"], ["progress", "Progress"], ["review", "Review"]]);
+    var inner = "";
+    if (tt.cur === "plan") {
+      var smart = [["s", "S", "Specific", "What exactly will you do?"], ["m", "M", "Measurable", "How will you know it worked?"], ["a", "A", "Achievable", "What makes it doable?"], ["r", "R", "Relevant", "Why does it matter to you?"], ["t", "T", "Time-bound", "By when?"]];
+      inner = '<div class="grid"><div class="c6 stack">' + card("Why this matters", bindArea(p + ".why", "What will change when you reach it? Why now?", 'style="min-height:120px"'), { dot: "p" }) +
+        card("My plan", bindArea(p + ".plan", "How will you get there? Routines, resources, who can help, what could get in the way…", 'style="min-height:190px"'), { dot: "s" }) + "</div>" +
+        '<div class="c6">' + card("SMART check (optional)", '<p class="small muted" style="margin-top:0">A quick way to test the goal. Fill in what helps.</p><div class="stack">' + smart.map(function (f) {
+          return '<div><label class="lbl smart-l"><span style="font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--pink-deep)">' + f[1] + "</span> " + f[2] + "</label>" + bindArea(p + ".smart." + f[0], f[3], 'style="min-height:56px"') + "</div>";
+        }).join("") + "</div>", { dot: "b" }) + "</div></div>";
+    } else if (tt.cur === "steps") {
+      var stepPath = p + ".steps";
+      inner = card("Action steps", '<p class="small muted" style="margin-top:0">Small, concrete steps you can finish in a week or less. Tick them off as you go; progress follows automatically.</p>' +
+        listEd(stepPath, { placeholder: "Add a step, e.g. Book the first appointment…", empty: "No steps yet. What is the very first thing to do?", meta: function (it) { return '<input type="date" data-item="' + stepPath + "|" + it.id + '|due" value="' + esc(it.due || "") + '" style="max-width:150px;padding:5px 8px;font-size:12px" aria-label="Step date">'; } }), { dot: "s", cls: "goal-steps" });
+    } else if (tt.cur === "progress") {
+      var chk = listAt(p + ".checks"), sorted = chk.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; });
+      var pts = sorted.map(function (c) { var d = parseD(c.date); return { label: d.getDate() + " " + MON3[d.getMonth()], y: c.pct }; });
+      var manual = (cur.steps || []).length ? "" : '<div class="spacer"></div><label class="lbl">No steps yet, so set progress by hand</label><div class="row"><input type="range" class="grow" min="0" max="100" step="5" data-bind="' + p + '.manual" data-type="num" data-rerender value="' + (num(cur.manual) || 0) + '" aria-label="Progress"><span class="badge pink">' + (num(cur.manual) || 0) + "%</span></div>";
+      inner = '<div class="grid"><div class="c7 stack">' + card("Progress over time", lineChart(pts, { label: "Goal progress", empty: "Save at least two check-ins to see your progress curve." }), { dot: "p" }) +
+        card("Check-ins", (sorted.length ? '<ul class="list">' + sorted.slice().reverse().slice(0, 12).map(function (c) { return "<li><span class=\"badge\">" + c.pct + '%</span><span class="meta">' + esc(shortDay(parseD(c.date))) + '</span><span class="grow small">' + esc(c.note || "") + '</span><button class="del" data-act="list-del" data-path="' + p + '.checks" data-id="' + c.id + '" aria-label="Delete check-in">' + ic("x") + "</button></li>"; }).join("") + "</ul>" : '<div class="empty">No check-ins yet.</div>'), { dot: "b" }) + "</div>" +
+        '<div class="c5 stack">' + card("Check in", '<p class="small muted" style="margin-top:0">Right now this goal is at <b>' + pc + '%</b>. Add a note about how it is going.</p><textarea id="goal-note" placeholder="What moved? What got in the way?" style="min-height:90px"></textarea><div class="spacer"></div><button class="btn pink" data-act="goal-check" data-id="' + cur.id + '">' + ic("check") + " Save check-in</button>" + manual, { cls: "tint-pink", dot: "p" }) + "</div></div>";
+    } else {
+      var ins = goalInsights(cur), warn = ins.filter(function (x) { return x.k === "warn"; }).length;
+      var verdict = cur.status === "done" || pc >= 100 ? "Complete" : warn ? "Needs a look" : "Looking good";
+      inner = '<div class="grid"><div class="c7">' + card("How is the plan working?", '<p class="review-verdict ' + (warn && pc < 100 ? "warn" : "good") + '">' + verdict + "</p>" +
+        '<ul class="insights">' + ins.map(function (x) { return '<li class="k-' + x.k + '"><span class="i-dot" aria-hidden="true"></span><span>' + esc(x.t) + "</span></li>"; }).join("") + "</ul>", { dot: "k" }) + "</div>" +
+        '<div class="c5 stack">' + card("Reflect and adjust", '<label class="lbl">What is working?</label>' + bindArea(p + ".worked", "", 'style="min-height:70px"') + '<label class="lbl">What is getting in the way?</label>' + bindArea(p + ".blocked", "", 'style="min-height:70px"') + '<label class="lbl">What will I change?</label>' + bindArea(p + ".change", "A smaller step, a new date, a different routine…", 'style="min-height:70px"'), { cls: "tint-butter", dot: "b" }) + "</div></div>";
+    }
+    return head_ + card("", stats) + '<div class="spacer"></div><div class="trip-list board-list goal-list">' + pills + "</div>" + header + '<div class="spacer"></div>' + tt.html + inner;
   }
 
   /* ------------------------------------------------------------ views: travel */
@@ -2011,6 +2159,7 @@
         case "habits": html = viewHabits(); break;
         case "fitness": html = viewFitness(); break;
         case "mood": html = viewMood(); break;
+        case "goals": html = viewGoals(); break;
         case "vision":
         case "mindmap":
           html = viewBoards(r.name);
@@ -2354,7 +2503,6 @@
         save(); render(); toast("Logged payment · next due " + shortDay(nd)); return;
       }
       case "ikigai": state.ui.ikigai = d.val; render(); var ta = view.querySelector('[data-focus-ikigai="' + d.val + '"]'); if (ta) ta.focus(); return;
-      case "smart-add": state.mind.smart.push({ id: uid(), text: "", s: "", m: "", a: "", r: "", t: "", due: "", progress: 0 }); save(); render(); return;
       case "trip-add": {
         var id = uid();
         state.travel.trips[id] = { id: id, text: "New trip", dest: "", start: "", end: "", budget: "", itinerary: [], packing: [], outfits: [], expenses: [] };
@@ -2476,6 +2624,30 @@
         mp2.nodes = mp2.nodes.filter(function (n) { return kill.indexOf(n.id) < 0; });
         state.ui.mmSel = null; save(); render(); return;
       }
+      case "goal-add": {
+        var ng = newGoal(""); state.goals[ng.id] = ng; state.ui.goal = ng.id; state.ui.tabs.goal = "plan"; save(); go("#/goals"); render();
+        setTimeout(function () { var t = view.querySelector('[data-bind$=".title"]'); if (t) t.focus(); }, 40);
+        return;
+      }
+      case "goal-go": state.ui.goal = d.id; save(); go("#/goals"); return;
+      case "goal-open": state.ui.goal = d.id; save(); render(); return;
+      case "goal-del": {
+        if (!state.goals[d.id] || !confirm("Delete this goal and its steps?")) return;
+        delete state.goals[d.id]; state.ui.goal = ""; save(); render(); return;
+      }
+      case "goal-span": {
+        var gs = state.goals[d.id]; if (!gs) return;
+        if (!gs.start) gs.start = todayKey();
+        gs.due = ymd(addMonthsKeep(parseD(gs.start), parseInt(d.val, 10)));
+        save(); render(); return;
+      }
+      case "goal-check": {
+        var gc = state.goals[d.id]; if (!gc) return;
+        var note = view.querySelector("#goal-note");
+        gc.checks = gc.checks || [];
+        gc.checks.push({ id: uid(), date: todayKey(), pct: goalPct(gc), note: note ? note.value.trim().slice(0, 500) : "" });
+        save(); render(); toast("Check-in saved"); return;
+      }
       case "board-new": {
         if (!BOARD_KINDS[d.kind]) return;
         newBoard(d.kind); save(); render(); return;
@@ -2568,6 +2740,23 @@
       var pg = data.notebook[k];
       if (pg && Array.isArray(pg.tiles)) pg.tiles.forEach(function (t) { if (t && typeof t === "object") t.color = safeColor(t.color); });
     });
+    /* Goals: rebuilt from known fields only. */
+    var DKEY = /^\d{4}-\d{2}-\d{2}$/, gin = data.goals && typeof data.goals === "object" && !Array.isArray(data.goals) ? data.goals : {}, gout = {};
+    Object.keys(gin).slice(0, 300).forEach(function (k) {
+      var g = gin[k];
+      if (!SAFE_ID.test(k) || !g || typeof g !== "object") return;
+      var sm = g.smart && typeof g.smart === "object" ? g.smart : {};
+      gout[k] = {
+        id: k, title: str(g.title, 120), area: str(g.area, 40) || "Personal", why: str(g.why, 6000), plan: str(g.plan, 12000),
+        start: DKEY.test(String(g.start)) ? g.start : "", due: DKEY.test(String(g.due)) ? g.due : "",
+        status: ["active", "hold", "done"].indexOf(g.status) >= 0 ? g.status : "active", manual: Math.max(0, Math.min(100, Number(g.manual) || 0)),
+        steps: (Array.isArray(g.steps) ? g.steps : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 200).map(function (x) { return { id: String(x.id), text: str(x.text, 240), done: x.done === true, due: DKEY.test(String(x.due)) ? x.due : "" }; }),
+        checks: (Array.isArray(g.checks) ? g.checks : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)) && DKEY.test(String(x.date)); }).slice(0, 500).map(function (x) { return { id: String(x.id), date: x.date, pct: Math.max(0, Math.min(100, Number(x.pct) || 0)), note: str(x.note, 500) }; }),
+        worked: str(g.worked, 6000), blocked: str(g.blocked, 6000), change: str(g.change, 6000),
+        smart: { s: str(sm.s, 2000), m: str(sm.m, 2000), a: str(sm.a, 2000), r: str(sm.r, 2000), t: str(sm.t, 2000) }, created: Number(g.created) || Date.now()
+      };
+    });
+    data.goals = gout;
     /* Trips: ids end up in page markup, so keep only safe ones; photo ids must look like ours. */
     var tr = data.travel && typeof data.travel === "object" ? data.travel : null;
     if (tr && tr.trips && typeof tr.trips === "object") {
@@ -2610,6 +2799,7 @@
         imgs.clear();
         imgs.importAll(pics).then(function () {
           state = merge(defaults(), data);
+          if (data.goalsFromSmart === undefined) state.goalsFromSmart = false;
           ensureRecipes();
           saveNow(); render(); toast("Planner imported ✨");
         });
