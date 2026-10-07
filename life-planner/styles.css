@@ -947,3 +947,10 @@ body.markup-on .book { margin-bottom: 90px; }
 .insights .k-info .i-dot { background: var(--sky-deep); }
 @media (max-width: 600px) { .goal-pill { min-width: 0; flex: 1 1 100%; max-width: none; } }
 @media (max-width: 600px) { .goal-steps .list li { flex-wrap: wrap; row-gap: 6px; } .goal-steps .list li .txt { flex: 1 1 60%; min-width: 0; } .goal-steps .list li input[type="date"], .goal-steps .list li .datefield { flex: 1 1 140px; max-width: none !important; width: auto; min-width: 0; } }
+
+/* ---------- Productivity: projects ---------- */
+.phase-head { align-items: center; gap: 8px; margin-bottom: 10px; }
+.phase-n { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--pink-soft); color: var(--pink-deep); font-weight: 600; font-size: 13px; }
+.phase-head input.phase-title { font-family: var(--serif); font-size: 1.3rem; font-weight: 600; min-width: 0; flex: 1 1 140px; height: 44px; }
+.phase .progress { height: 7px; }
+@media (max-width: 600px) { .phase-head { flex-wrap: wrap; } .phase-title { flex: 1 1 calc(100% - 50px); } }

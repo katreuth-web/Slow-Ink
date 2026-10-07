@@ -77,6 +77,8 @@
     x: '<path d="M6 6l12 12M18 6L6 18"/>',
     left: '<path d="M15 18l-6-6 6-6"/>',
     right: '<path d="M9 18l6-6-6-6"/>',
+    up: '<path d="M6 14l6-6 6 6"/>',
+    down: '<path d="M6 10l6 6 6-6"/>',
     smile: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1 1.4 2.2 2 3.5 2s2.5-.6 3.5-2M9 9.5h.01M15 9.5h.01"/>',
     target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>',
     layers: '<path d="M12 4l8.5 4.5L12 13 3.5 8.5z"/><path d="M3.5 12.5L12 17l8.5-4.5M3.5 16.5L12 21l8.5-4.5"/>',
@@ -198,6 +200,7 @@
       habitLog: {},
       goals: {},
       goalsFromSmart: true,
+      projects: {},
       workouts: [],
       milestones: [],
       weights: [],
@@ -356,7 +359,75 @@
     return out;
   }
 
+  /* ---- Projects (Productivity) ---- */
+  var PROJECT_STATUS = [["plan", "Planning"], ["going", "In progress"], ["hold", "On hold"], ["done", "Done"]];
+  var PROJECT_FIELDS = [
+    ["outcome", "The outcome", "What will exist when this is finished?"],
+    ["why", "Why it matters", "What is this for? What will it change?"],
+    ["doneWhen", "Done looks like", "How will you know it is finished? Be specific."],
+    ["people", "People and roles", "Who is involved? Who decides, who helps, who needs updates?"],
+    ["resources", "Resources", "Time, money, tools, skills, things you need to get."],
+    ["risks", "Risks and what I'll do", "What could go wrong or slow this down? What is your plan?"],
+    ["scopeOut", "Out of scope", "What is NOT part of this project? (Helps stop it growing.)"]
+  ];
+  var PROJECT_STARTER = ["Plan", "Prepare", "Do the work", "Finish and review"];
+  function newProject(title) {
+    var id = uid();
+    var pr = { id: id, title: title || "", area: "Personal", status: "plan", start: ymd(today()), due: "", notes: "", phases: [], worked: "", stuck: "", decide: "", created: Date.now() };
+    PROJECT_FIELDS.forEach(function (f) { pr[f[0]] = ""; });
+    return pr;
+  }
+  function projectSteps(pr) { return [].concat.apply([], (pr.phases || []).map(function (ph) { return ph.steps || []; })); }
+  function projectPct(pr) {
+    var st = projectSteps(pr);
+    return st.length ? Math.round(100 * st.filter(function (x) { return x.done; }).length / st.length) : (pr.status === "done" ? 100 : 0);
+  }
+  function phasePct(ph) { var st = ph.steps || []; return st.length ? Math.round(100 * st.filter(function (x) { return x.done; }).length / st.length) : 0; }
+  function projectList() {
+    return Object.keys(state.projects).map(function (id) { return state.projects[id]; }).sort(function (a, b) {
+      var da = a.status === "done" ? 1 : 0, db = b.status === "done" ? 1 : 0;
+      if (da !== db) return da - db;
+      return (a.due || "9") < (b.due || "9") ? -1 : (a.due || "9") > (b.due || "9") ? 1 : (a.created || 0) - (b.created || 0);
+    });
+  }
+  function projectInsights(pr) {
+    var out = [], t = today(), tk = ymd(t), pct = projectPct(pr), phases = pr.phases || [], steps = projectSteps(pr), open = steps.filter(function (x) { return !x.done; });
+    function add(k, text) { out.push({ k: k, t: text }); }
+    if (pr.status === "done" || (steps.length && pct >= 100)) return [{ k: "good", t: "This project is complete. Note below what went well and what you would do differently next time." }];
+    if (!phases.length) add("warn", "There are no phases yet. Split the project into 3 to 5 phases (for example Plan, Prepare, Do, Finish) and give each a few steps. The Phases tab can add a starter outline.");
+    else {
+      var empty = phases.filter(function (ph) { return !(ph.steps || []).length; });
+      if (empty.length) add("warn", empty.length === 1 ? "The phase \"" + (empty[0].title || "Untitled") + "\" has no steps yet." : empty.length + " phases have no steps yet (" + empty.slice(0, 3).map(function (ph) { return "\"" + (ph.title || "Untitled") + "\""; }).join(", ") + (empty.length > 3 ? ", …" : "") + ").");
+      var big = phases.filter(function (ph) { return (ph.steps || []).length > 12; });
+      if (big.length) add("info", "\"" + (big[0].title || "Untitled") + "\" has more than 12 steps. Consider splitting it into two phases so it is easier to see progress.");
+      var cur = phases.filter(function (ph) { return (ph.steps || []).some(function (x) { return !x.done; }); })[0];
+      if (cur) { var nx = cur.steps.filter(function (x) { return !x.done; })[0]; add("info", "You are in the phase \"" + (cur.title || "Untitled") + "\". Next step: " + (nx.text || "(unnamed step)") + "."); }
+    }
+    var overdue = open.filter(function (x) { return x.due && x.due < tk; }).length;
+    if (overdue) add("warn", overdue + (overdue === 1 ? " step is" : " steps are") + " overdue. Re-date them honestly, or shrink or drop the ones that no longer fit.");
+    var undated = open.filter(function (x) { return !x.due; }).length;
+    if (undated && pr.due) add("info", undated + " open " + (undated === 1 ? "step has" : "steps have") + " no date. Dating steps shows slips early.");
+    var due = pr.due ? parseD(pr.due) : null;
+    if (!due) add("info", "Add a due date so the pace can be checked against the calendar.");
+    else {
+      var cr = new Date(pr.created || Date.now()), start = pr.start ? parseD(pr.start) : new Date(cr.getFullYear(), cr.getMonth(), cr.getDate());
+      var total = daysBetween(start, due), el = daysBetween(start, t), left = daysBetween(t, due);
+      if (left < 0) add("warn", "The due date passed " + (-left) + (left === -1 ? " day" : " days") + " ago. Decide whether to move the date, cut scope, or close the project.");
+      else if (total > 0 && steps.length) {
+        var exp = clamp(Math.round(100 * el / total), 0, 100), diff = pct - exp;
+        if (diff <= -25) add("warn", "Well behind: " + pct + "% of the steps are done with about " + exp + "% of the time used. Options: cut scope, move the date, or set aside more time each week.");
+        else if (diff <= -10) add("warn", "A little behind: " + pct + "% done with about " + exp + "% of the time used.");
+        else add("good", "On pace: " + pct + "% done with about " + exp + "% of the time used.");
+      }
+    }
+    if (pr.status === "going" && steps.length && !steps.some(function (x) { return x.done; }) && pr.start && daysBetween(parseD(pr.start), t) > 14) add("warn", "Marked In progress, but no step has been ticked off after more than two weeks. What is the smallest step that would get things moving?");
+    if (!String(pr.doneWhen || "").trim()) add("info", "Write what \"done\" looks like in the Framework tab. It is the easiest way to stop a project drifting.");
+    if (!String(pr.risks || "").trim()) add("info", "Note the two or three things most likely to go wrong, and what you would do about each.");
+    return out;
+  }
+
   function ensureRecipes() {
+    if (!state.projects || typeof state.projects !== "object" || Array.isArray(state.projects)) state.projects = {};
     ensureGoals();
     if (!Array.isArray(state.recipes)) state.recipes = [];
     if (!Array.isArray(state.recipeSections) || !state.recipeSections.length) {
@@ -655,7 +726,7 @@
   var NAV = [
     { group: "Plan", items: [["home", "Today", "home"], ["year", "Year", "year"], ["month", "Month", "month"], ["week", "Week", "week"], ["day", "Day", "sun"]] },
     { group: "Life", items: [["fitness", "Fitness", "dumbbell"], ["meals", "Meals & Recipes", "bowl"], ["finance", "Finance", "wallet"], ["mind", "Mind & Ikigai", "lotus"], ["travel", "Travel", "plane"], ["home-care", "Home & Chores", "house"]] },
-    { group: "Productivity", items: [["habits", "Habits", "check"], ["mood", "Mood Log", "smile"], ["goals", "Goals", "target"], ["vision", "Vision Board", "image"], ["mindmap", "Mind Map", "branch"]] },
+    { group: "Productivity", items: [["habits", "Habits", "check"], ["mood", "Mood Log", "smile"], ["goals", "Goals", "target"], ["projects", "Projects", "layers"], ["vision", "Vision Board", "image"], ["mindmap", "Mind Map", "branch"]] },
     { group: "Journal", items: [["notebook", "Notebook", "book"]] },
     { group: "System", items: [["settings", "Settings", "sliders"]] }
   ];
@@ -837,6 +908,13 @@
     var g2 = newGoal("Save for the Lisbon trip"); g2.area = "Money"; g2.why = "A proper break to look forward to."; g2.due = ymd(addDays(t, 20)); g2.start = ymd(addDays(t, -70));
     g2.steps = [["Open a savings pot", 1, -65], ["Set up a monthly transfer", 1, -60], ["Cut one subscription", 0, 5]].map(function (x) { return { id: uid(), text: x[0], done: !!x[1], due: ymd(addDays(t, x[2])) }; });
     state.goals[g1.id] = g1; state.goals[g2.id] = g2; state.ui.goal = g1.id;
+    var pj = newProject("Redo the spare room"); pj.area = "Home"; pj.status = "going"; pj.start = ymd(addDays(t, -14)); pj.due = ymd(addDays(t, 35));
+    pj.outcome = "A calm spare room that works as a guest room and a desk."; pj.why = "Right now it is a dumping ground and I avoid it."; pj.doneWhen = "Walls painted, desk set up, bed made up for guests.";
+    pj.people = "Me, plus a friend to help with the heavy lifting."; pj.resources = "Paint, a small desk, a lamp. About 300 for everything."; pj.risks = "Paint takes longer than planned: book two free weekends.";
+    pj.phases = [["Plan", [["Measure the room", 1, -12], ["Pick the paint colour", 1, -9], ["Set a budget", 1, -9]]], ["Clear out", [["Sort the boxes", 1, -3], ["Donate what I do not need", 0, 4]]], ["Paint", [["Fill and sand the walls", 0, 10], ["Two coats of paint", 0, 17]]], ["Set up", [["Build the desk", 0, 28], ["Make up the guest bed", 0, 32]]]].map(function (x) {
+      return { id: uid(), title: x[0], steps: x[1].map(function (y) { return { id: uid(), text: y[0], done: !!y[1], due: ymd(addDays(t, y[2])) }; }) };
+    });
+    state.projects[pj.id] = pj; state.ui.project = pj.id;
     var dinner = state.recipeSections.filter(function (x) { return x.name === "Dinner"; })[0] || state.recipeSections[0];
     state.recipes.unshift({ id: uid(), text: "Sheet-pan salmon and greens", cat: dinner.name, sec: dinner.id, imgId: "", time: "25 min", serves: "2", ingredients: "Salmon fillets\nBroccoli\nLemon\nOlive oil\nGarlic", method: "Roast everything on one tray at 200°C for 15 minutes." });
     state.meals = {};
@@ -861,6 +939,14 @@
     return '<a class="kpi" href="' + href + '"><span class="kpi-num">' + num + '</span><span class="kpi-label">' + esc(label) + "</span>" + (frac == null ? "" : progress(frac * 100)) + "</a>";
   }
 
+  function projectsCard() {
+    var act = projectList().filter(function (x) { return x.status === "going" || x.status === "plan"; }).slice(0, 3);
+    if (!act.length) return "";
+    return card("Projects", act.map(function (x) {
+      var pc = projectPct(x);
+      return '<a class="goal-mini" href="#/projects" data-act="proj-go" data-id="' + x.id + '"><span class="row"><b class="grow">' + esc(x.title || "Untitled project") + '</b><span class="badge">' + pc + "%</span></span>" + progress(pc) + "</a>";
+    }).join("") + '<p class="small" style="margin:8px 0 0"><a href="#/projects">All projects</a></p>', { dot: "l" });
+  }
   function goalsCard() {
     var act = goalList().filter(function (g) { return g.status === "active"; }).slice(0, 3);
     if (!act.length) return "";
@@ -883,7 +969,7 @@
     var right =
       card("How are you feeling?", moodPicker("days." + k + ".mood") + '<div class="spacer"></div><label class="lbl">Hydration</label>' + waterPicker("days." + k + ".water"), { cls: "tint-pink", dot: "p" }) +
       card("Habits today", habitChecks(k), { dot: "l", right: '<a class="btn sm ghost" href="#/habits">Tracker</a>' }) +
-      goalsCard() +
+      goalsCard() + projectsCard() +
       card("Coming up", upcoming(), { dot: "k" }) +
       card(MONTHS[t.getMonth()] + " intention", bindArea("months." + mk + ".intention", "One sentence to steer the month…", 'style="min-height:64px"') + '<div class="spacer"></div><p class="quote">“' + esc(quote) + "”</p>", { cls: "tint-butter", dot: "b" });
     var y = t.getFullYear(), doy = daysBetween(new Date(y, 0, 1), t) + 1, ylen = daysInMonth(y, 1) === 29 ? 366 : 365, ypct = Math.round(doy / ylen * 100);
@@ -1432,6 +1518,55 @@
       inner = '<div class="grid"><div class="c7">' + card("How is the plan working?", '<p class="review-verdict ' + (warn && pc < 100 ? "warn" : "good") + '">' + verdict + "</p>" +
         '<ul class="insights">' + ins.map(function (x) { return '<li class="k-' + x.k + '"><span class="i-dot" aria-hidden="true"></span><span>' + esc(x.t) + "</span></li>"; }).join("") + "</ul>", { dot: "k" }) + "</div>" +
         '<div class="c5 stack">' + card("Reflect and adjust", '<label class="lbl">What is working?</label>' + bindArea(p + ".worked", "", 'style="min-height:70px"') + '<label class="lbl">What is getting in the way?</label>' + bindArea(p + ".blocked", "", 'style="min-height:70px"') + '<label class="lbl">What will I change?</label>' + bindArea(p + ".change", "A smaller step, a new date, a different routine…", 'style="min-height:70px"'), { cls: "tint-butter", dot: "b" }) + "</div></div>";
+    }
+    return head_ + card("", stats) + '<div class="spacer"></div><div class="trip-list board-list goal-list">' + pills + "</div>" + header + '<div class="spacer"></div>' + tt.html + inner;
+  }
+
+
+  /* ------------------------------------------------------------ views: projects */
+
+  function viewProjects() {
+    var list = projectList(), cur = state.ui.project && state.projects[state.ui.project] ? state.projects[state.ui.project] : list[0];
+    var head_ = head("Productivity", 'Project <span class="em">planner</span>', '<button class="btn pink" data-act="proj-add">' + ic("plus") + " New project</button>");
+    if (!cur) {
+      return head_ + card("", '<div class="empty" style="padding:30px 10px;text-align:center">Name a project, map it out, and break it into phases and steps. Anything with more than one step can be a project.</div><div style="text-align:center"><button class="btn pink" data-act="proj-add">' + ic("plus") + " Create your first project</button></div>");
+    }
+    var live = list.filter(function (x) { return x.status === "going" || x.status === "plan"; });
+    var steps = [].concat.apply([], list.map(projectSteps)), done = steps.filter(function (x) { return x.done; }).length;
+    var stats = '<div class="stats"><div class="stat"><span class="v">' + live.length + '</span><span class="k">Active projects</span></div><div class="stat"><span class="v">' + done + "/" + steps.length + '</span><span class="k">Steps done</span></div><div class="stat"><span class="v">' + list.filter(function (x) { return x.status === "done"; }).length + '</span><span class="k">Finished</span></div></div>';
+    var pills = list.map(function (x) {
+      var pc = projectPct(x), left = x.due ? daysBetween(today(), parseD(x.due)) : null, stl = PROJECT_STATUS.filter(function (z) { return z[0] === x.status; })[0];
+      return '<button class="trip-pill goal-pill' + (x.id === cur.id ? " on" : "") + (x.status === "done" ? " is-done" : "") + '" data-act="proj-open" data-id="' + x.id + '"><b>' + esc(x.title || "Untitled project") + '</b><span class="small muted">' + esc(stl ? stl[1] : "") + (left == null || x.status === "done" ? "" : left < 0 ? " · Past due" : " · " + left + " days left") + " · " + pc + "%</span>" + progress(pc) + "</button>";
+    }).join("");
+    var p = "projects." + cur.id, pc = projectPct(cur), left = cur.due ? daysBetween(today(), parseD(cur.due)) : null;
+    var header = card("", '<div class="row wrap" style="align-items:flex-end"><div class="grow" style="min-width:220px"><label class="lbl">Project</label>' + bindInput(p + ".title", 'placeholder="What are you working on?" maxlength="120" style="height:46px;font-family:var(--serif);font-size:1.2rem;font-weight:600"') + '</div>' +
+      '<div style="flex:0 1 150px"><label class="lbl">Area</label>' + bindSelect(p + ".area", GOAL_AREAS.concat(["Work"]), 'aria-label="Area"') + '</div><div style="flex:0 1 150px"><label class="lbl">Status</label>' + bindSelect(p + ".status", PROJECT_STATUS, 'data-rerender aria-label="Status"') + "</div></div>" +
+      '<div class="row wrap" style="margin-top:12px"><div style="flex:1 1 150px"><label class="lbl">Start</label><input type="date" data-bind="' + p + '.start" data-rerender value="' + esc(cur.start || "") + '"></div><div style="flex:1 1 150px"><label class="lbl">Due</label><input type="date" data-bind="' + p + '.due" data-rerender value="' + esc(cur.due || "") + '"></div></div>' +
+      '<div class="row wrap" style="margin-top:14px"><span class="grow" style="flex:1 1 220px;min-width:200px">' + progress(pc) + '</span><span class="badge pink">' + pc + '%</span>' +
+      (left != null && cur.status !== "done" ? '<span class="badge ' + (left < 0 ? "pink" : "") + '">' + (left < 0 ? "Past due" : left === 0 ? "Due today" : left + " days left") + "</span>" : "") +
+      '<button class="del" data-act="proj-del" data-id="' + cur.id + '" aria-label="Delete project" title="Delete project">' + ic("trash") + "</button></div>", { cls: "tint-butter" });
+    var tt = tabs("project", [["framework", "Framework"], ["phases", "Phases & steps"], ["review", "Review"]]);
+    var inner = "";
+    if (tt.cur === "framework") {
+      inner = '<p class="small muted" style="margin:0 0 12px">A one-page map of the project. Fill in what helps; skip what doesn\'t.</p><div class="grid">' + PROJECT_FIELDS.map(function (f) {
+        return '<div class="c6">' + card(f[1], bindArea(p + "." + f[0], f[2], 'style="min-height:96px"'), { dot: "p" }) + "</div>";
+      }).join("") + '<div class="c12">' + card("Notes", bindArea(p + ".notes", "Links, decisions, ideas, anything to remember…", 'style="min-height:110px"'), { dot: "b" }) + "</div></div>";
+    } else if (tt.cur === "phases") {
+      var phases = cur.phases || [];
+      var cards = phases.map(function (ph, i) {
+        var sp = p + ".phases." + i + ".steps", ppc = phasePct(ph);
+        return card("", '<div class="row wrap phase-head"><span class="phase-n">' + (i + 1) + '</span><input type="text" class="grow phase-title" data-bind="' + p + ".phases." + i + '.title" value="' + esc(ph.title) + '" placeholder="Phase name" aria-label="Phase name" maxlength="80">' +
+          '<span class="badge">' + ppc + '%</span><button class="icon-btn sm" data-act="proj-phase-move" data-id="' + cur.id + '" data-i="' + i + '" data-val="-1" aria-label="Move phase up"' + (i === 0 ? " disabled" : "") + ">" + ic("up") + '</button><button class="icon-btn sm" data-act="proj-phase-move" data-id="' + cur.id + '" data-i="' + i + '" data-val="1" aria-label="Move phase down"' + (i === phases.length - 1 ? " disabled" : "") + ">" + ic("down") + '</button><button class="del" data-act="proj-phase-del" data-id="' + cur.id + '" data-i="' + i + '" aria-label="Delete phase">' + ic("trash") + "</button></div>" +
+          progress(ppc) + '<div class="spacer"></div>' + listEd(sp, { placeholder: "Add a step…", empty: "No steps in this phase yet.", meta: function (it) { return '<input type="date" data-item="' + sp + "|" + it.id + '|due" value="' + esc(it.due || "") + '" style="max-width:150px;padding:5px 8px;font-size:12px" aria-label="Step date">'; } }), { cls: "goal-steps phase" });
+      }).join('<div class="spacer"></div>');
+      inner = (phases.length ? cards : card("", '<div class="empty">No phases yet. A phase is a stage of the project, like Plan, Prepare, Do, Finish.</div><div style="margin-top:12px"><button class="btn" data-act="proj-template" data-id="' + cur.id + '">' + ic("spark") + " Use a starter outline</button></div>")) +
+        '<div class="spacer"></div>' + card("Add a phase", '<div class="adder"><input type="text" id="phase-new" placeholder="e.g. Research, Design, Launch…" maxlength="80" aria-label="New phase name"><button class="icon-btn sm" data-act="proj-phase-add" data-id="' + cur.id + '" aria-label="Add phase">' + ic("plus") + "</button></div>", { dot: "s" });
+    } else {
+      var ins = projectInsights(cur), warn = ins.filter(function (x) { return x.k === "warn"; }).length;
+      var verdict = cur.status === "done" || (projectSteps(cur).length && pc >= 100) ? "Complete" : warn ? "Needs a look" : "Looking good";
+      inner = '<div class="grid"><div class="c7">' + card("How is the project going?", '<p class="review-verdict ' + (warn && verdict !== "Complete" ? "warn" : "good") + '">' + verdict + "</p>" +
+        '<ul class="insights">' + ins.map(function (x) { return '<li class="k-' + x.k + '"><span class="i-dot" aria-hidden="true"></span><span>' + esc(x.t) + "</span></li>"; }).join("") + "</ul>", { dot: "k" }) + "</div>" +
+        '<div class="c5">' + card("Reflect and adjust", '<label class="lbl">What is going well?</label>' + bindArea(p + ".worked", "", 'style="min-height:70px"') + '<label class="lbl">What is stuck?</label>' + bindArea(p + ".stuck", "", 'style="min-height:70px"') + '<label class="lbl">What needs deciding?</label>' + bindArea(p + ".decide", "", 'style="min-height:70px"'), { cls: "tint-butter", dot: "b" }) + "</div></div>";
     }
     return head_ + card("", stats) + '<div class="spacer"></div><div class="trip-list board-list goal-list">' + pills + "</div>" + header + '<div class="spacer"></div>' + tt.html + inner;
   }
@@ -2160,6 +2295,7 @@
         case "fitness": html = viewFitness(); break;
         case "mood": html = viewMood(); break;
         case "goals": html = viewGoals(); break;
+        case "projects": html = viewProjects(); break;
         case "vision":
         case "mindmap":
           html = viewBoards(r.name);
@@ -2629,6 +2765,44 @@
         setTimeout(function () { var t = view.querySelector('[data-bind$=".title"]'); if (t) t.focus(); }, 40);
         return;
       }
+      case "proj-add": {
+        var np2 = newProject(""); state.projects[np2.id] = np2; state.ui.project = np2.id; state.ui.tabs.project = "framework"; save(); go("#/projects"); render();
+        setTimeout(function () { var t = view.querySelector('[data-bind$=".title"]'); if (t) t.focus(); }, 40);
+        return;
+      }
+      case "proj-open": state.ui.project = d.id; save(); render(); return;
+      case "proj-go": state.ui.project = d.id; save(); go("#/projects"); return;
+      case "proj-del": {
+        if (!state.projects[d.id] || !confirm("Delete this project, its phases and steps?")) return;
+        delete state.projects[d.id]; state.ui.project = ""; save(); render(); return;
+      }
+      case "proj-template": {
+        var pt = state.projects[d.id]; if (!pt) return;
+        pt.phases = (pt.phases || []).concat(PROJECT_STARTER.map(function (n) { return { id: uid(), title: n, steps: [] }; }));
+        state.ui.tabs.project = "phases"; save(); render(); return;
+      }
+      case "proj-phase-add": {
+        var pa = state.projects[d.id], inp = view.querySelector("#phase-new");
+        if (!pa) return;
+        var nm = inp ? inp.value.trim() : "";
+        if (!nm) { if (inp) inp.focus(); return; }
+        pa.phases = pa.phases || []; pa.phases.push({ id: uid(), title: nm.slice(0, 80), steps: [] });
+        save(); render(); var again = view.querySelector("#phase-new"); if (again) again.focus({ preventScroll: true }); return;
+      }
+      case "proj-phase-del": {
+        var pd = state.projects[d.id], di = parseInt(d.i, 10);
+        if (!pd || !pd.phases[di]) return;
+        var gone = pd.phases.splice(di, 1)[0];
+        save(); render();
+        toastUndo("Phase removed", function () { pd.phases.splice(di, 0, gone); save(); render(); });
+        return;
+      }
+      case "proj-phase-move": {
+        var pm = state.projects[d.id], mi = parseInt(d.i, 10), mj = mi + parseInt(d.val, 10);
+        if (!pm || !pm.phases[mi] || !pm.phases[mj]) return;
+        var tmp = pm.phases[mi]; pm.phases[mi] = pm.phases[mj]; pm.phases[mj] = tmp;
+        save(); render(); return;
+      }
       case "goal-go": state.ui.goal = d.id; save(); go("#/goals"); return;
       case "goal-open": state.ui.goal = d.id; save(); render(); return;
       case "goal-del": {
@@ -2757,6 +2931,20 @@
       };
     });
     data.goals = gout;
+    var pin = data.projects && typeof data.projects === "object" && !Array.isArray(data.projects) ? data.projects : {}, pout = {};
+    Object.keys(pin).slice(0, 300).forEach(function (k) {
+      var q = pin[k];
+      if (!SAFE_ID.test(k) || !q || typeof q !== "object") return;
+      var o = { id: k, title: str(q.title, 120), area: str(q.area, 40) || "Personal", status: ["plan", "going", "hold", "done"].indexOf(q.status) >= 0 ? q.status : "plan",
+        start: DKEY.test(String(q.start)) ? q.start : "", due: DKEY.test(String(q.due)) ? q.due : "", notes: str(q.notes, 12000),
+        worked: str(q.worked, 6000), stuck: str(q.stuck, 6000), decide: str(q.decide, 6000), created: Number(q.created) || Date.now() };
+      ["outcome", "why", "doneWhen", "people", "resources", "risks", "scopeOut"].forEach(function (f) { o[f] = str(q[f], 6000); });
+      o.phases = (Array.isArray(q.phases) ? q.phases : []).filter(function (ph) { return ph && typeof ph === "object" && SAFE_ID.test(String(ph.id)); }).slice(0, 60).map(function (ph) {
+        return { id: String(ph.id), title: str(ph.title, 80), steps: (Array.isArray(ph.steps) ? ph.steps : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 200).map(function (x) { return { id: String(x.id), text: str(x.text, 240), done: x.done === true, due: DKEY.test(String(x.due)) ? x.due : "" }; }) };
+      });
+      pout[k] = o;
+    });
+    data.projects = pout;
     /* Trips: ids end up in page markup, so keep only safe ones; photo ids must look like ours. */
     var tr = data.travel && typeof data.travel === "object" ? data.travel : null;
     if (tr && tr.trips && typeof tr.trips === "object") {
