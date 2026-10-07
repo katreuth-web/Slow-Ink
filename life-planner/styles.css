@@ -1197,3 +1197,29 @@ body.markup-on .book { margin-bottom: 90px; }
   .tk-stub { width: 20px; margin: 14px 6px; }
   .fact { grid-template-columns: 96px minmax(0, 1fr); }
 }
+
+/* ---------- Finance: shopping lists & wishlists ---------- */
+.wish-cats { margin-top: 2px; }
+.wgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; align-items: start; }
+.wcard { display: flex; flex-direction: column; gap: 8px; min-width: 0; padding: 10px; border-radius: 18px; background: var(--surface); box-shadow: var(--raise-sm); }
+.wcard.done { opacity: 0.75; }
+.wcard input, .wcard select { width: 100%; min-width: 0; }
+.wc-photo { position: relative; aspect-ratio: 1; border-radius: 12px; overflow: hidden; background: rgba(128, 128, 128, 0.1); box-shadow: var(--press-sm); display: grid; place-items: center; }
+.wc-photo img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.wc-photo.broken img { display: none; }
+.wc-ph { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 2.4rem; line-height: 1; color: var(--muted); }
+.wc-ph small { font-size: 11px; display: none; }
+.wc-photo.broken .wc-ph small { display: block; }
+.wc-tools { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.wc-name { font-family: var(--serif); font-size: 1.1rem; font-weight: 600; }
+.wc-row { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 6px; }
+.wc-open { align-self: flex-start; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
+.wc-more { font-size: 12px; color: var(--muted); }
+.wc-more summary { cursor: pointer; padding: 2px 0; }
+.wc-more input { margin-top: 6px; }
+.wc-foot { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.wc-foot .del { margin-left: auto; }
+.wcard.done .wc-name { text-decoration: line-through; }
+@media (max-width: 520px) { .wgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } .wcard { padding: 8px; } .wc-row { grid-template-columns: 1fr; } }
+.wcard input.check { width: 20px; min-width: 20px; }
+.wc-foot .of-pack { white-space: nowrap; }
