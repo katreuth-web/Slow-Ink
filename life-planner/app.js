@@ -219,7 +219,7 @@
       meals: {},
       recipes: seedRecipes(),
       grocery: [],
-      finance: { months: {}, pots: [], debts: [], subs: [] },
+      finance: { months: {}, pots: [], debts: [], subs: [], wish: [], wishBudget: { shop: "", wish: "" } },
       mind: {
         ikigai: { love: "", good: "", world: "", paid: "", center: "" },
         wheel: {},
@@ -546,10 +546,27 @@
     state.ui.pinDraft = null;
   }
 
+  function ensureWish() {
+    var f = state.finance;
+    if (!f || typeof f !== "object" || Array.isArray(f)) f = state.finance = { months: {}, pots: [], debts: [], subs: [] };
+    if (!Array.isArray(f.wish)) f.wish = [];
+    if (!f.wishBudget || typeof f.wishBudget !== "object" || Array.isArray(f.wishBudget)) f.wishBudget = { shop: "", wish: "" };
+    f.wish.forEach(function (x) {
+      x.want = Math.max(0, Math.min(5, parseInt(x.want, 10) || 0));
+      if (x.list !== "wish") x.list = "shop";
+      if (wishCatNames().indexOf(x.cat) < 0) x.cat = "Other";
+      ["text", "link", "imgUrl", "note", "imgId"].forEach(function (k) { if (typeof x[k] !== "string") x[k] = ""; });
+    });
+    if (!state.ui) state.ui = { tabs: {}, nbMode: "type" };
+    if (["shop", "wish", "bought"].indexOf(state.ui.wishMode) < 0) state.ui.wishMode = "shop";
+    if (typeof state.ui.wishCat !== "string" || (state.ui.wishCat && wishCatNames().indexOf(state.ui.wishCat) < 0)) state.ui.wishCat = "";
+  }
+
   function ensureRecipes() {
     ensureRoutines();
     ensureHealth();
     ensureTravelMap();
+    ensureWish();
     if (!state.projects || typeof state.projects !== "object" || Array.isArray(state.projects)) state.projects = {};
     ensureGoals();
     if (!Array.isArray(state.recipes)) state.recipes = [];
@@ -1036,6 +1053,9 @@
       f.expenses.push({ id: uid(), date: mk + "-" + pad(Math.max(1, t.getDate() - j)), text: x[0], cat: x[1], amount: x[2] });
     });
     state.finance.subs.push({ id: uid(), text: "Music streaming", amount: 11, cycle: "monthly", due: ymd(addDays(t, 5)) }, { id: uid(), text: "Cloud storage", amount: 3, cycle: "monthly", due: ymd(addDays(t, 11)) });
+    state.finance.wish = [["shop", "Skincare", "Gentle cleanser", 14, 4], ["shop", "Cleaning supplies", "Laundry detergent pods", 9, 2], ["shop", "Toiletries", "Toothpaste and floss", 6, 1], ["wish", "Clothing", "Linen shirt dress", 68, 5], ["wish", "Accessories", "Leather crossbody bag", 120, 4], ["wish", "Makeup", "Cream blush in rose", 22, 3], ["wish", "Home goods", "Ceramic planter", 28, 3], ["shop", "Skincare", "Daily SPF 50", 18, 3]].map(function (x, i) {
+      return { id: uid(), list: x[0], cat: x[1], text: x[2], price: x[3], link: i === 3 ? "https://example.com/linen-shirt-dress" : "", imgUrl: "", imgId: "", note: "", want: x[4], done: i === 2 };
+    });
     state.finance.pots.push({ id: uid(), text: "Holiday fund", target: 1500, saved: 620 }, { id: uid(), text: "Rainy day", target: 3000, saved: 1100 });
     var tid = uid();
     state.travel.bucket = [["Kyoto in spring", 0.856, 0.354, 0], ["Northern lights", 0.452, 0.180, 0], ["Patagonia", 0.323, 0.887, 0], ["Santorini", 0.566, 0.345, 1], ["New York", 0.310, 0.318, 1], ["Cape Town", 0.549, 0.783, 0], ["Bali"]].map(function (x) {
@@ -1742,9 +1762,71 @@
   }
   function subMonthly(s) { return s.cycle === "yearly" ? num(s.amount) / 12 : s.cycle === "weekly" ? (num(s.amount) * 52) / 12 : num(s.amount); }
 
+
+  /* ---- shopping lists & wishlists: picture cards with a link to the shop ---- */
+  var WISH_CATS = [["Clothing", "👗"], ["Accessories", "👜"], ["Makeup", "💄"], ["Skincare", "🧴"], ["Hair", "💇"], ["Toiletries", "🧼"], ["Home goods", "🏠"], ["Cleaning supplies", "🧽"], ["Tech", "🔌"], ["Gifts", "🎁"], ["Other", "🛍️"]];
+  function wishCatNames() { return WISH_CATS.map(function (c) { return c[0]; }); }
+  function wishEmoji(cat) { var c = WISH_CATS.filter(function (x) { return x[0] === cat; })[0]; return c ? c[1] : "🛍️"; }
+  /* only ordinary web addresses are ever used as links or pictures */
+  function safeUrl(v) {
+    v = String(v == null ? "" : v).trim();
+    if (!v) return "";
+    if (!/^[a-z][a-z0-9+.-]*:/i.test(v)) v = "https://" + v;
+    return /^https?:\/\/[^\s"'<>\\]+$/i.test(v) && v.length <= 500 ? v : "";
+  }
+  function urlHost(u) { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return ""; } }
+  function wishCard(it) {
+    var path = "finance.wish", up = imgs.url(it.imgId), pu = safeUrl(it.imgUrl), link = safeUrl(it.link), host = link ? urlHost(link) : "";
+    var photo;
+    if (up) photo = '<div class="wc-photo"><img class="wimg" alt="" src="' + up + '"></div>';
+    else if (pu) photo = '<div class="wc-photo"><img class="wimg" alt="" loading="lazy" referrerpolicy="no-referrer" src="' + esc(pu) + '"><span class="wc-ph">' + wishEmoji(it.cat) + "<small>Picture unavailable</small></span></div>";
+    else photo = '<div class="wc-photo"><span class="wc-ph">' + wishEmoji(it.cat) + "</span></div>";
+    var picBtns = '<label class="icon-btn sm" title="' + (up ? "Change photo" : "Upload a photo") + '" aria-label="' + (up ? "Change photo" : "Upload a photo") + '">' + ic("image") + '<input type="file" accept="image/*" hidden data-photo="' + path + "|" + it.id + '"></label>' +
+      (up ? '<button class="icon-btn sm" data-act="photo-remove" data-path="' + path + '" data-id="' + it.id + '" aria-label="Remove photo">' + ic("x") + "</button>" : "");
+    var hearts = [1, 2, 3, 4, 5].map(function (n) { return '<button class="tc-heart' + (n <= it.want ? " on" : "") + '" data-act="wish-want" data-id="' + it.id + '" data-val="' + n + '" aria-label="How much you want it: ' + n + ' of 5" aria-pressed="' + (n === it.want) + '">' + ic("heart") + "</button>"; }).join("");
+    return '<article class="wcard' + (it.done ? " done" : "") + '">' + photo + '<div class="wc-tools">' + picBtns + '<span class="tc-hearts" role="group" aria-label="How much you want it">' + hearts + "</span></div>" +
+      '<input type="text" class="wc-name" maxlength="120" placeholder="What is it?" aria-label="Item name" value="' + esc(it.text) + '" data-item="' + path + "|" + it.id + '|text">' +
+      '<div class="wc-row">' + itemInput(path, it, "price", 'placeholder="Price" aria-label="Price" data-rerender step="0.01" min="0"', "number") + itemSelect(path, it, "cat", wishCatNames(), 'aria-label="Category" data-rerender') + "</div>" +
+      '<input type="text" class="wc-link" maxlength="500" inputmode="url" placeholder="Link to the item (https://…)" aria-label="Link" value="' + esc(it.link) + '" data-item="' + path + "|" + it.id + '|link" data-rerender>' +
+      (link ? '<a class="btn sm wc-open" href="' + esc(link) + '" target="_blank" rel="noopener noreferrer">' + ic("arrow") + " Open" + (host ? " · " + esc(host) : "") + "</a>" : "") +
+      '<details class="wc-more"' + (it.imgUrl && !up ? " open" : "") + "><summary>Picture from a web address</summary><input type=\"text\" maxlength=\"500\" inputmode=\"url\" placeholder=\"Paste an image address (https://…)\" aria-label=\"Image address\" value=\"" + esc(it.imgUrl) + '" data-item="' + path + "|" + it.id + '|imgUrl" data-rerender></details>' +
+      '<input type="text" class="wc-note" maxlength="300" placeholder="Notes (size, colour, shade…)" aria-label="Notes" value="' + esc(it.note) + '" data-item="' + path + "|" + it.id + '|note">' +
+      '<div class="wc-foot"><label class="of-pack"><input type="checkbox" class="check" data-item="' + path + "|" + it.id + '|done" data-rerender ' + (it.done ? "checked" : "") + "> Bought</label>" +
+      (it.done ? "" : '<button class="btn sm ghost" data-act="wish-move" data-id="' + it.id + '">' + (it.list === "wish" ? "Move to shopping list" : "Move to wishlist") + "</button>") +
+      '<button class="del" data-act="list-del" data-path="' + path + '" data-id="' + it.id + '" aria-label="Delete item">' + ic("x") + "</button></div></article>";
+  }
+  function wishTab() {
+    var mode = state.ui.wishMode, cat = state.ui.wishCat, all = state.finance.wish;
+    var inMode = all.filter(function (x) { return mode === "bought" ? x.done : !x.done && x.list === mode; });
+    var shown = inMode.filter(function (x) { return !cat || x.cat === cat; }).sort(function (a, b) { return (b.want - a.want); });
+    var cnt = function (m) { return all.filter(function (x) { return m === "bought" ? x.done : !x.done && x.list === m; }).length; };
+    var modes = '<div class="chips">' + [["shop", "Shopping list"], ["wish", "Wishlist"], ["bought", "Bought"]].map(function (m) {
+      return '<button class="chip ' + (mode === m[0] ? "on" : "") + '" data-act="wish-mode" data-val="' + m[0] + '" aria-pressed="' + (mode === m[0]) + '">' + m[1] + " (" + cnt(m[0]) + ")</button>";
+    }).join("") + "</div>";
+    var cats = '<div class="chips wish-cats"><button class="chip ' + (!cat ? "on" : "") + '" data-act="wish-cat" data-val="" aria-pressed="' + !cat + '">All (' + inMode.length + ")</button>" + WISH_CATS.map(function (c) {
+      var n = inMode.filter(function (x) { return x.cat === c[0]; }).length;
+      return n || cat === c[0] ? '<button class="chip ' + (cat === c[0] ? "on" : "") + '" data-act="wish-cat" data-val="' + esc(c[0]) + '" aria-pressed="' + (cat === c[0]) + '">' + c[1] + " " + esc(c[0]) + " (" + n + ")</button>" : "";
+    }).join("") + "</div>";
+    var addForm = mode === "bought" ? "" : '<div class="row wrap wish-add" data-form="wish-add"><input type="text" name="text" class="grow" style="min-width:150px" maxlength="120" placeholder="Add an item…" aria-label="Item name"><input type="number" name="price" step="0.01" min="0" placeholder="Price" style="max-width:110px" aria-label="Price"><select name="cat" style="max-width:170px" aria-label="Category">' +
+      WISH_CATS.map(function (c) { return "<option" + (cat === c[0] ? " selected" : "") + ">" + esc(c[0]) + "</option>"; }).join("") + '</select><input type="text" name="link" class="grow" style="min-width:150px" maxlength="500" inputmode="url" placeholder="Link (optional)" aria-label="Link"><button class="btn pink" data-act="wish-add">' + ic("plus") + " Add</button></div>";
+    var total = sum(inMode, function (x) { return x.price; }), totalShown = sum(shown, function (x) { return x.price; });
+    var bud = mode === "bought" ? null : getP("finance.wishBudget." + mode);
+    var left = hasV(bud) ? num(bud) - total : null;
+    var stats = '<div class="stats"><div class="stat"><span class="v">' + money(mode === "bought" ? total : total) + '</span><span class="k">' + (mode === "bought" ? "Spent on bought items" : "Still to buy") + '</span></div><div class="stat"><span class="v">' + inMode.length + '</span><span class="k">' + (inMode.length === 1 ? "Item" : "Items") + "</span></div></div>" +
+      (cat && shown.length !== inMode.length ? '<p class="small muted" style="margin:10px 0 0">' + esc(cat) + ": " + money(totalShown) + "</p>" : "") +
+      (mode === "bought" ? "" : '<div class="spacer"></div><label class="lbl" for="wish-bud">Budget for this list (optional)</label>' + bindNum("finance.wishBudget." + mode, 'id="wish-bud" data-rerender step="1" min="0" style="max-width:160px"') +
+        (left != null ? '<p class="small" style="margin:8px 0 0">' + (left >= 0 ? "You are <b>" + money(left) + "</b> under budget." : "You are <b>" + money(-left) + "</b> over budget.") + "</p>" : ""));
+    var empty = mode === "bought" ? "Nothing bought yet. Tick “Bought” on a card and it moves here." : mode === "wish" ? "Nothing on your wishlist yet. Add the things you are dreaming of." : "Your shopping list is empty. Add what you need soon.";
+    var grid = shown.length ? '<div class="wgrid">' + shown.map(wishCard).join("") + "</div>" : '<div class="empty">' + (inMode.length ? "Nothing in this category." : empty) + "</div>";
+    return '<div class="grid"><div class="c12">' + card("Shopping & wishlists", modes + '<div class="spacer"></div>' + cats, { dot: "p" }) + "</div>" +
+      (addForm ? '<div class="c8">' + card("Add an item", addForm + '<p class="small muted" style="margin:10px 0 0">Add a photo, or paste a picture address, on the card once it is added. The link opens the shop in a new tab.</p>', { cls: "tint-pink", dot: "p" }) + "</div>" : "") +
+      '<div class="' + (addForm ? "c4" : "c12") + '">' + card(mode === "bought" ? "Bought" : "Totals", stats, { dot: "b" }) + "</div>" +
+      '<div class="c12">' + grid + "</div></div>";
+  }
+
   function viewFinance() {
     var mk = state.ui.finMonth || monthKey(today()), md = parseD(mk + "-01"), f = finMonth(mk);
-    var tb = tabs("finance", [["overview", "Overview"], ["budget", "Income & spending"], ["savings", "Savings & debt"], ["subs", "Subscriptions"]]);
+    var tb = tabs("finance", [["overview", "Overview"], ["budget", "Income & spending"], ["savings", "Savings & debt"], ["subs", "Subscriptions"], ["wish", "Shopping"]]);
     var income = sum(f.income, function (x) { return x.amount; }), spent = sum(f.expenses, function (x) { return x.amount; });
     var subs = sum(state.finance.subs, subMonthly);
     var saved = sum(state.finance.pots, function (p) { return p.saved; });
@@ -1782,6 +1864,8 @@
       }).join("");
       body = card("Savings pots", '<div class="pots">' + pots + '<button class="pot v-add" style="min-height:150px" data-act="pot-add">' + ic("plus") + "<span>New savings pot</span></button></div>", { dot: "b", right: '<span class="badge">' + money(saved) + " saved</span>" }) +
         '<div class="spacer"></div>' + card("Debt paydown", (debts ? '<div class="scroll-x"><table class="table"><tr><th>Debt</th><th>Started at</th><th>Balance now</th><th>Rate</th><th>Progress</th><th></th></tr>' + debts + "</table></div>" : '<div class="empty">Debt-free, or not tracking any yet.</div>') + '<div class="spacer"></div><button class="btn sm" data-act="debt-add">' + ic("plus") + " Add debt</button>", { dot: "s", right: '<span class="badge sage">' + money(sum(state.finance.debts, function (d) { return d.balance; })) + " remaining</span>" });
+    } else if (tb.cur === "wish") {
+      body = wishTab();
     } else {
       var rows = state.finance.subs.map(function (s) {
         var n = s.due ? daysBetween(today(), parseD(s.due)) : null;
@@ -1791,7 +1875,7 @@
       body = card("Recurring subscriptions", (rows ? '<div class="scroll-x"><table class="table"><tr><th>Service</th><th>Amount</th><th>Cycle</th><th>Next due</th><th></th><th></th><th></th></tr>' + rows + "</table></div>" : '<div class="empty">Add Netflix, gym, cloud storage… and never miss a renewal.</div>') +
         '<div class="spacer"></div><button class="btn sm" data-act="sub-add">' + ic("plus") + " Add subscription</button>", { dot: "k", right: '<span class="badge">' + money(subs) + " / month · " + money(subs * 12) + " / year</span>" });
     }
-    return head("Life · Money", 'Finance <span class="em">&amp; subscriptions</span>', monthNav) + tb.html + body;
+    return head("Life · Money", 'Finance <span class="em">&amp; subscriptions</span>', tb.cur === "wish" ? "" : monthNav) + tb.html + body;
   }
 
   /* ------------------------------------------------------------ views: mind */
@@ -2381,6 +2465,11 @@
     lightbox.querySelector(".lb-x").focus();
   }
   document.addEventListener("keydown", function (e) { if (lightbox && e.key === "Escape") closeLightbox(); });
+  /* a pasted picture address that no longer loads falls back to the placeholder */
+  document.addEventListener("error", function (e) {
+    var t = e.target;
+    if (t && t.tagName === "IMG" && t.classList.contains("wimg")) { var w = t.closest(".wc-photo"); if (w) w.classList.add("broken"); }
+  }, true);
 
 
   /* ---- the world map: tap to drop a pin; pins are bucket-list entries that have a position ---- */
@@ -3026,6 +3115,7 @@
     img.src = url;
   }
   function photoUsed(id) {
+    if (state.finance && state.finance.wish && state.finance.wish.some(function (x) { return x.imgId === id; })) return true;
     if (state.progress && state.progress.shots.some(function (x) { return x.imgId === id; })) return true;
     if (state.recipes.some(function (r) { return r.imgId === id; }) || state.recipeSections.some(function (x) { return x.imgId === id; })) return true;
     return Object.keys(state.travel.trips).some(function (k) {
@@ -3463,6 +3553,25 @@
         state.ui.pinSel = ""; save(); render(); toast("Removed from the map (still on your list)"); return;
       }
       case "map-zoom": state.ui.mapZoom = clamp(state.ui.mapZoom + (parseInt(d.val, 10) || 0), 1, 4); save(); render(); return;
+      case "wish-mode": state.ui.wishMode = ["shop", "wish", "bought"].indexOf(d.val) >= 0 ? d.val : "shop"; state.ui.wishCat = ""; save(); render(); return;
+      case "wish-cat": state.ui.wishCat = wishCatNames().indexOf(d.val) >= 0 ? d.val : ""; save(); render(); return;
+      case "wish-add": {
+        var wv = formVals(el), wn = (wv.text || "").trim();
+        if (!wn) { toast("Type what the item is first."); return; }
+        var wl = state.ui.wishMode === "wish" ? "wish" : "shop";
+        state.finance.wish.push({ id: uid(), list: wl, cat: wishCatNames().indexOf(wv.cat) >= 0 ? wv.cat : "Other", text: wn.slice(0, 120), price: wv.price === "" ? "" : Math.max(0, num(wv.price)), link: (wv.link || "").trim().slice(0, 500), imgId: "", imgUrl: "", note: "", want: 0, done: false });
+        save(); render(); toast("Added to your " + (wl === "wish" ? "wishlist" : "shopping list")); return;
+      }
+      case "wish-want": {
+        var wi = state.finance.wish.filter(function (x) { return x.id === d.id; })[0], wr = clamp(parseInt(d.val, 10) || 0, 0, 5);
+        if (wi) { wi.want = wi.want === wr ? 0 : wr; save(); render(); }
+        return;
+      }
+      case "wish-move": {
+        var wm = state.finance.wish.filter(function (x) { return x.id === d.id; })[0];
+        if (wm) { wm.list = wm.list === "wish" ? "shop" : "wish"; save(); render(); toast("Moved to your " + (wm.list === "wish" ? "wishlist" : "shopping list")); }
+        return;
+      }
       case "body-add": {
         var be = { id: uid(), date: todayKey(), note: "" };
         BODY_FIELDS.forEach(function (f) { be[f[0]] = ""; });
@@ -4115,6 +4224,17 @@
       if (typeof x.x === "number" && typeof x.y === "number" && isFinite(x.x) && isFinite(x.y)) { o.x = Math.max(0, Math.min(1, x.x)); o.y = Math.max(0, Math.min(1, x.y)); }
       return o;
     });
+    /* Shopping lists & wishlists. */
+    var fin = data.finance && typeof data.finance === "object" && !Array.isArray(data.finance) ? data.finance : null;
+    if (fin) {
+      var WCATS = ["Clothing", "Accessories", "Makeup", "Skincare", "Hair", "Toiletries", "Home goods", "Cleaning supplies", "Tech", "Gifts", "Other"];
+      fin.wish = (Array.isArray(fin.wish) ? fin.wish : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 2000).map(function (x) {
+        var pr = parseFloat(x.price);
+        return { id: String(x.id), list: x.list === "wish" ? "wish" : "shop", cat: WCATS.indexOf(x.cat) >= 0 ? x.cat : "Other", text: str(x.text, 120), price: isFinite(pr) ? Math.max(0, Math.min(1e9, pr)) : "", link: str(x.link, 500), imgUrl: str(x.imgUrl, 500), imgId: SAFE_ID.test(String(x.imgId)) ? String(x.imgId) : "", note: str(x.note, 300), want: cn(Math.round(Number(x.want)), 0, 5), done: x.done === true };
+      });
+      var wb = fin.wishBudget && typeof fin.wishBudget === "object" ? fin.wishBudget : {}, wbn = function (v) { var n = parseFloat(v); return isFinite(n) ? Math.max(0, Math.min(1e9, n)) : ""; };
+      fin.wishBudget = { shop: wbn(wb.shop), wish: wbn(wb.wish) };
+    }
     /* Trips: ids end up in page markup, so keep only safe ones; photo ids must look like ours. */
     var tr = data.travel && typeof data.travel === "object" ? data.travel : null;
     if (tr && tr.trips && typeof tr.trips === "object") {
