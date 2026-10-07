@@ -77,6 +77,11 @@
     x: '<path d="M6 6l12 12M18 6L6 18"/>',
     left: '<path d="M15 18l-6-6 6-6"/>',
     right: '<path d="M9 18l6-6-6-6"/>',
+    smile: '<circle cx="12" cy="12" r="8.5"/><path d="M8.5 14c1 1.4 2.2 2 3.5 2s2.5-.6 3.5-2M9 9.5h.01M15 9.5h.01"/>',
+    target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/>',
+    layers: '<path d="M12 4l8.5 4.5L12 13 3.5 8.5z"/><path d="M3.5 12.5L12 17l8.5-4.5M3.5 16.5L12 21l8.5-4.5"/>',
+    clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    bulb: '<path d="M9 18h6M10 21h4M12 3.5a5.5 5.5 0 0 0-3.2 10c.7.5 1.2 1.3 1.2 2.2V16h4v-.3c0-.9.5-1.7 1.2-2.2A5.5 5.5 0 0 0 12 3.5z"/>',
     spark: '<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 16.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/>',
     moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
     pen: '<path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/>',
@@ -129,8 +134,14 @@
   var CHORE_FREQ = [["daily", "Daily"], ["weekly", "Weekly"], ["monthly", "Monthly"], ["seasonal", "Seasonal"]];
   var PAPERS = [
     ["blank", "Blank"], ["lined", "Lined"], ["grid", "Square grid"], ["dot", "Dot grid"], ["cornell", "Cornell notes"],
-    ["two", "Two-column"], ["three", "Three-column"], ["mindmap", "Mind map"], ["vision", "Vision board"]
+    ["two", "Two-column"], ["three", "Three-column"]
   ];
+  /* Vision boards and mind maps now have their own pages under Productivity (they are still stored with the notebook pages). */
+  var BOARD_KINDS = {
+    vision: { title: 'Vision <span class="em">board</span>', noun: "board", sub: "Pictures and words for the life you are building." },
+    mindmap: { title: 'Mind <span class="em">map</span>', noun: "map", sub: "Branch out from one idea. Drag to arrange, double-click to add." }
+  };
+  function isBoard(p) { return !!p && (p.paper === "vision" || p.paper === "mindmap"); }
   var QUOTES = [
     "Slow is smooth, and smooth is fast.",
     "You do not rise to the level of your goals; you fall to the level of your systems.",
@@ -527,6 +538,7 @@
     });
     Object.keys(state.notebook).forEach(function (id) {
       var p = state.notebook[id];
+      if (isBoard(p)) return;
       var c = ymd(new Date(p.created || 0));
       if (c >= a && c <= b) s.journal++;
     });
@@ -561,7 +573,8 @@
 
   var NAV = [
     { group: "Plan", items: [["home", "Today", "home"], ["year", "Year", "year"], ["month", "Month", "month"], ["week", "Week", "week"], ["day", "Day", "sun"]] },
-    { group: "Life", items: [["habits", "Habits & Fitness", "dumbbell"], ["meals", "Meals & Recipes", "bowl"], ["finance", "Finance", "wallet"], ["mind", "Mind & Ikigai", "lotus"], ["travel", "Travel", "plane"], ["home-care", "Home & Chores", "house"]] },
+    { group: "Life", items: [["fitness", "Fitness", "dumbbell"], ["meals", "Meals & Recipes", "bowl"], ["finance", "Finance", "wallet"], ["mind", "Mind & Ikigai", "lotus"], ["travel", "Travel", "plane"], ["home-care", "Home & Chores", "house"]] },
+    { group: "Productivity", items: [["habits", "Habits", "check"], ["mood", "Mood Log", "smile"], ["vision", "Vision Board", "image"], ["mindmap", "Mind Map", "branch"]] },
     { group: "Journal", items: [["notebook", "Notebook", "book"]] },
     { group: "System", items: [["settings", "Settings", "sliders"]] }
   ];
@@ -678,7 +691,7 @@
     ["Tick off a habit", function () { return "#/habits"; }, function () { return Object.keys(state.habitLog).some(function (k) { return Object.keys(state.habitLog[k] || {}).some(function (h) { return state.habitLog[k][h]; }); }); }],
     ["Set this month's intention", function () { return "#/month/" + monthKey(today()); }, function () { return Object.keys(state.months).some(function (k) { return state.months[k] && state.months[k].intention; }); }],
     ["Add a recipe of your own", function () { return "#/meals"; }, function () { return state.recipes.length > 3; }],
-    ["Write a notebook page", function () { return "#/notebook"; }, function () { return Object.keys(state.notebook).length > 0; }],
+    ["Write a notebook page", function () { return "#/notebook"; }, function () { return Object.keys(state.notebook).some(function (id) { return !isBoard(state.notebook[id]); }); }],
     ["Make it yours with colours and fonts", function () { return "#/settings"; }, function () { var l = look(); return !!state.name || l.theme !== "blush" || l.font !== "classic" || l.mode !== "light"; }],
     ["Back up your planner", null, function () { return !!state.ui.backedUp; }]
   ];
@@ -765,7 +778,7 @@
     ensureDay(k);
     var mk = monthKey(t);
     var quote = QUOTES[(t.getDate() + t.getMonth()) % QUOTES.length];
-    var hubs = NAV[1].items.concat(NAV[2].items);
+    var hubs = [].concat.apply([], NAV.filter(function (g) { return g.group === "Life" || g.group === "Productivity" || g.group === "Journal"; }).map(function (g) { return g.items; }));
     var left =
       card("Today's intentions", listEd("days." + k + ".tasks", { prio: true, placeholder: "Add a task for today…", empty: "Nothing planned yet — what would make today feel good?" }), { dot: "p", right: '<a class="btn sm ghost" href="' + hrefDay(t) + '">Open spread ' + ic("arrow") + "</a>" }) +
       card("This week", weekStrip(t), { dot: "b", right: '<a class="btn sm ghost" href="' + hrefWeek(t) + '">Week ' + isoWeek(t) + " " + ic("arrow") + "</a>" }) +
@@ -781,7 +794,7 @@
     var kpis = '<div class="kpis">' +
       kpi(tk.tasks ? tk.done + "<small>/" + tk.tasks + "</small>" : "0", "tasks done today", hrefDay(t), tk.tasks ? tk.done / tk.tasks : 0) +
       kpi(state.habits.length ? hDone + "<small>/" + state.habits.length + "</small>" : "0", "habits today", "#/habits", state.habits.length ? hDone / state.habits.length : 0) +
-      kpi(wk.minutes + "<small> min</small>", "moved this week", "#/habits") +
+      kpi(wk.minutes + "<small> min</small>", "moved this week", "#/fitness") +
       kpi(money(mo.spent), "spent in " + MONTHS[t.getMonth()], "#/finance") + "</div>";
     var banner = state.sample ? '<div class="sample-banner" role="status"><span>You’re looking at a <b>sample planner</b>. Everything here is made up.</span><button class="btn sm pink" data-act="start-fresh">Start fresh</button></div>' : "";
     return banner + '<div class="home-top">' + head(greeting(), prettyDay(t).replace(/, (.*)$/, ', <span class="em">$1</span>'), '<a class="btn pink" href="' + hrefDay(t) + '/review">' + ic("spark") + ' Reflect on today</a><a class="btn" href="' + hrefMonth(t) + '">' + ic("month") + " Month</a>") +
@@ -903,7 +916,8 @@
     var links =
       '<div class="tile-links">' +
       '<button class="tile-link" data-act="journal-day" data-val="' + k + '">' + ic("book") + "<span>" + (nbPage ? "Open journal page" : "Start journal page") + "</span></button>" +
-      '<a class="tile-link" href="#/habits">' + ic("dumbbell") + "<span>Habits & Fitness</span></a>" +
+      '<a class="tile-link" href="#/habits">' + ic("check") + "<span>Habits</span></a>" +
+      '<a class="tile-link" href="#/fitness">' + ic("dumbbell") + "<span>Fitness</span></a>" +
       '<a class="tile-link" href="#/meals">' + ic("bowl") + "<span>Meals</span></a>" +
       '<a class="tile-link" href="#/finance">' + ic("wallet") + "<span>Finance</span></a>" +
       '<a class="tile-link" href="#/mind">' + ic("lotus") + "<span>Mind</span></a>" +
@@ -966,9 +980,7 @@
   }
 
   function viewHabits() {
-    var tb = tabs("habits", [["habits", "Habit tracker"], ["fitness", "Workouts"], ["body", "Body & hydration"]]);
     var body = "";
-    if (tb.cur === "habits") {
       var mk = state.ui.habitMonth || monthKey(today()), md = parseD(mk + "-01"), y = md.getFullYear(), m = md.getMonth(), dim = daysInMonth(y, m), tk = todayKey();
       var th = '<tr><th class="name"></th>';
       for (var d = 1; d <= dim; d++) th += "<th>" + d + "<br>" + DOW1[dowIdx(new Date(y, m, d))] + "</th>";
@@ -986,7 +998,13 @@
       body = card(MONTHS[m] + " " + y, '<div class="scroll-x"><table class="habit-table">' + th + rows + "</table></div>" +
         '<div class="adder" style="max-width:420px"><input type="text" placeholder="Add a new habit…" data-add="habits"><button class="icon-btn sm" data-act="list-add" data-path="habits" aria-label="Add habit">' + ic("plus") + "</button></div>",
         { dot: "p", right: '<div class="nav-arrows"><button class="icon-btn sm" data-act="habit-month" data-val="-1" aria-label="Previous month">' + ic("left") + '</button><button class="icon-btn sm" data-act="habit-month" data-val="1" aria-label="Next month">' + ic("right") + "</button></div>" });
-    } else if (tb.cur === "fitness") {
+    return head("Productivity", 'Habit <span class="em">tracker</span>') + body;
+  }
+
+  function viewFitness() {
+    var tb = tabs("fitness", [["fitness", "Workouts"], ["body", "Body & hydration"]]);
+    var body = "";
+    if (tb.cur === "fitness") {
       var wk = mondayOf(today()), wkMin = 0, wkCount = 0;
       state.workouts.forEach(function (w) { if (w.date >= ymd(wk)) { wkMin += num(w.minutes); wkCount++; } });
       var sorted = state.workouts.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
@@ -1011,7 +1029,7 @@
         '<div class="c8">' + card("Hydration · last 14 days", barChart(bars, state.waterGoal), { dot: "k" }) + "</div>" +
         '<div class="c4">' + card("Today's water", waterPicker("days." + todayKey() + ".water") + '<div class="spacer"></div><label class="lbl">Daily goal (glasses)</label>' + bindNum("waterGoal", "data-rerender"), { dot: "k" }) + "</div></div>";
     }
-    return head("Life · Wellness", 'Habits <span class="em">&amp; fitness</span>') + tb.html + body;
+    return head("Life · Wellness", 'Fit<span class="em">ness</span>') + tb.html + body;
   }
 
   /* ------------------------------------------------------------ views: meals */
@@ -1171,7 +1189,8 @@
   ];
 
   function viewMind() {
-    var tb = tabs("mind", [["ikigai", "Ikigai"], ["wheel", "Level 10 Life"], ["smart", "SMART goals"], ["matrix", "Eisenhower matrix"], ["mood", "Mood log"]]);
+    if (state.ui.tabs.mind === "mood") state.ui.tabs.mind = "ikigai";
+    var tb = tabs("mind", [["ikigai", "Ikigai"], ["wheel", "Level 10 Life"], ["smart", "SMART goals"], ["matrix", "Eisenhower matrix"]]);
     var body = "";
     if (tb.cur === "ikigai") {
       var focus = state.ui.ikigai || "love";
@@ -1203,10 +1222,14 @@
           }).join("") + '</div><div class="row" style="margin-top:14px"><label class="lbl" style="margin:0">Deadline</label>' + itemInput(p, g, "due", 'style="max-width:170px"', "date") + '<label class="lbl" style="margin:0 0 0 10px">Progress</label><input type="range" min="0" max="100" step="5" class="grow" value="' + (num(g.progress) || 0) + '" data-item="' + p + "|" + g.id + '|progress" data-type="num" aria-label="Progress"><span class="badge pink">' + (num(g.progress) || 0) + '%</span><button class="del" data-act="list-del" data-path="' + p + '" data-id="' + g.id + '" aria-label="Delete goal">' + ic("trash") + "</button></div>", { cls: "" });
       }).join('<div class="spacer"></div>');
       body = (goals || card("", '<div class="empty">A SMART goal is Specific, Measurable, Achievable, Relevant and Time-bound. Start one below.</div>')) + '<div class="spacer"></div><button class="btn pink" data-act="smart-add">' + ic("plus") + " New SMART goal</button>";
-    } else if (tb.cur === "matrix") {
+    } else {
       var q = [["q1", "Do first", "Urgent · Important"], ["q2", "Schedule", "Not urgent · Important"], ["q3", "Delegate", "Urgent · Not important"], ["q4", "Let go", "Not urgent · Not important"]];
       body = '<div class="matrix">' + q.map(function (x) { return '<div class="quad ' + x[0] + '"><h4>' + x[1] + '</h4><div class="tiny">' + x[2] + "</div>" + listEd("mind.matrix." + x[0], { placeholder: "Add…" }) + "</div>"; }).join("") + "</div>";
-    } else {
+    }
+    return head("Life · Mind", 'Mental <span class="em">wellbeing</span>') + tb.html + body;
+  }
+  function viewMood() {
+    var body = "";
       var mk = state.ui.moodMonth || monthKey(today()), md = parseD(mk + "-01"), y = md.getFullYear(), m = md.getMonth();
       var cells = DOW1.map(function (x) { return '<div class="blank tiny" style="display:grid;place-items:center">' + x + "</div>"; }).join("");
       for (var i = 0; i < dowIdx(md); i++) cells += '<div class="blank"></div>';
@@ -1219,10 +1242,51 @@
       var dist = MOODS.map(function (mm) { return '<div class="row"><span style="width:26px">' + mm.e + '</span><span class="grow">' + progress(((counts[mm.v] || 0) / Math.max(1, sum(Object.keys(counts).map(function (c) { return counts[c]; })))) * 100) + '</span><span class="small muted" style="width:26px;text-align:right">' + (counts[mm.v] || 0) + "</span></div>"; }).join('<div style="height:8px"></div>');
       body = '<div class="grid"><div class="c7">' + card(MONTHS[m] + " " + y, '<div class="mood-cal">' + cells + "</div>", { dot: "p", right: '<div class="nav-arrows"><button class="icon-btn sm" data-act="mood-month" data-val="-1" aria-label="Previous month">' + ic("left") + '</button><button class="icon-btn sm" data-act="mood-month" data-val="1" aria-label="Next month">' + ic("right") + "</button></div>" }) + "</div>" +
         '<div class="c5 stack">' + card("Today", moodPicker("days." + todayKey() + ".mood") + '<div class="spacer"></div>' + bindArea("days." + todayKey() + ".moodNote", "What's behind the feeling?", 'style="min-height:70px"'), { cls: "tint-pink", dot: "p" }) + card("This month's moods", dist, { dot: "b" }) + "</div></div>";
-    }
-    return head("Life · Mind", 'Mental <span class="em">wellbeing</span>') + tb.html + body;
+    return head("Productivity", 'Mood <span class="em">log</span>') + body;
   }
+
   function slug(s) { return s.toLowerCase().replace(/[^a-z0-9]+/g, "-"); }
+
+
+  /* ------------------------------------------------------------ views: vision boards and mind maps */
+
+  function boardsOf(kind) {
+    return Object.keys(state.notebook).map(function (id) { return state.notebook[id]; }).filter(function (p) { return p.paper === kind; })
+      .sort(function (a, b) { return (a.created || 0) - (b.created || 0); });
+  }
+  function curBoard(kind) {
+    var list = boardsOf(kind), id = state.ui["board_" + kind];
+    return list.filter(function (b) { return b.id === id; })[0] || list[0] || null;
+  }
+  function newBoard(kind) {
+    ensureNb();
+    var id = uid(), t = Date.now();
+    var pg = { id: id, paper: kind, section: state.nbSections[0].id, title: "", created: t, updated: t, text: "", ink: "", strokes: [], topic: "", cues: "", summary: "" };
+    if (kind === "mindmap") pg.nodes = [{ id: uid(), text: "Central idea", x: 50, y: 50, parent: null }];
+    else pg.tiles = [0, 1, 2, 3].map(function (i) { return { id: uid(), text: ["Feel", "Grow", "Explore", "Create"][i], color: COLORS[i], img: "" }; });
+    state.notebook[id] = pg;
+    state.ui["board_" + kind] = id;
+    return pg;
+  }
+  function viewBoards(kind) {
+    var K = BOARD_KINDS[kind], list = boardsOf(kind), cur = curBoard(kind);
+    var intro = head("Productivity", K.title);
+    if (!cur) {
+      return intro + card("", '<div class="empty" style="padding:30px 10px;text-align:center">' + esc(K.sub) + '</div><div style="text-align:center"><button class="btn pink" data-act="board-new" data-kind="' + kind + '">' + ic("plus") + " Create your first " + K.noun + "</button></div>");
+    }
+    var pills = list.map(function (b) {
+      return '<button class="trip-pill ' + (b.id === cur.id ? "on" : "") + '" data-act="board-open" data-kind="' + kind + '" data-id="' + b.id + '"><b>' + esc(b.title || "Untitled " + K.noun) + '</b><span class="small muted">' + shortDay(new Date(b.created || Date.now())) + "</span></button>";
+    }).join("");
+    var b = pageBody(cur, cur.id);
+    var tools = kind === "mindmap"
+      ? '<button class="btn sm pink" data-act="mm-add" data-id="' + cur.id + '">' + ic("branch") + ' Add branch</button><button class="btn sm" data-act="mm-del" data-id="' + cur.id + '">' + ic("trash") + " Remove selected</button>"
+      : '<button class="btn sm pink" data-act="vb-add" data-id="' + cur.id + '">' + ic("plus") + " Add tile</button>";
+    return intro + (list.length > 1 || true ? '<div class="trip-list board-list">' + pills + '<button class="btn sm" data-act="board-new" data-kind="' + kind + '">' + ic("plus") + " New " + K.noun + "</button></div>" : "") +
+      '<div class="board"><div class="board-bar"><input class="sheet-title" type="text" data-bind="notebook.' + cur.id + '.title" value="' + esc(cur.title) + '" placeholder="Name this ' + K.noun + '" aria-label="Name" maxlength="80">' + tools +
+      '<button class="icon-btn" data-act="board-del" data-id="' + cur.id + '" aria-label="Delete this ' + K.noun + '" title="Delete this ' + K.noun + '">' + ic("trash") + "</button></div>" +
+      '<div class="sheet-page board-sheet ' + b.cls + '" data-page="' + cur.id + '">' + b.inner + "</div>" +
+      '<p class="small muted">' + esc(K.sub) + "</p></div>";
+  }
 
   /* ------------------------------------------------------------ views: travel */
 
@@ -1366,7 +1430,7 @@
     for (var i = 0; i < ids.length; i++) if (state.notebook[ids[i]].date === k) return state.notebook[ids[i]];
     return null;
   }
-  function paperLabel(id) { var p = PAPERS.filter(function (x) { return x[0] === id; })[0]; return p ? p[1] : id; }
+  function paperLabel(id) { var p = PAPERS.filter(function (x) { return x[0] === id; })[0]; return p ? p[1] : id === "vision" ? "Vision board" : id === "mindmap" ? "Mind map" : id; }
 
   /* ---- the notebook: a bound book with section tabs, a contents page, and a Type / Markup sheet ---- */
 
@@ -1390,7 +1454,7 @@
   function nbSec(id) { return state.nbSections.filter(function (s) { return s.id === id; })[0]; }
   function nbPagesIn(sec) {
     return Object.keys(state.notebook).map(function (id) { return state.notebook[id]; })
-      .filter(function (p) { return p.section === sec; })
+      .filter(function (p) { return p.section === sec && !isBoard(p); })
       .sort(function (a, b) { return (b.created || 0) - (a.created || 0); });
   }
   /* Pages saved before sections existed: day-linked journal pages go to Journal, the rest to Notes. */
@@ -1407,6 +1471,7 @@
   function nbCurrent(id) {
     ensureNb();
     var page = (id && state.notebook[id]) || (state.nbCurrent && state.notebook[state.nbCurrent]) || null;
+    if (isBoard(page)) page = null;
     if (page) state.nbSection = page.section;
     else page = nbPagesIn(state.nbSection)[0] || null;
     state.nbCurrent = page ? page.id : "";
@@ -1944,6 +2009,13 @@
           break;
         }
         case "habits": html = viewHabits(); break;
+        case "fitness": html = viewFitness(); break;
+        case "mood": html = viewMood(); break;
+        case "vision":
+        case "mindmap":
+          html = viewBoards(r.name);
+          mount = function () { var cb = curBoard(r.name); if (cb && r.name === "mindmap") mountMindmap(cb.id); };
+          break;
         case "meals": html = viewMeals(); break;
         case "finance": html = viewFinance(); break;
         case "mind": html = viewMind(); break;
@@ -2403,6 +2475,20 @@
         while (grew) { grew = false; mp2.nodes.forEach(function (n) { if (n.parent && kill.indexOf(n.parent) >= 0 && kill.indexOf(n.id) < 0) { kill.push(n.id); grew = true; } }); }
         mp2.nodes = mp2.nodes.filter(function (n) { return kill.indexOf(n.id) < 0; });
         state.ui.mmSel = null; save(); render(); return;
+      }
+      case "board-new": {
+        if (!BOARD_KINDS[d.kind]) return;
+        newBoard(d.kind); save(); render(); return;
+      }
+      case "board-open": state.ui["board_" + d.kind] = d.id; save(); render(); return;
+      case "board-del": {
+        var bd = state.notebook[d.id];
+        if (!isBoard(bd)) return;
+        if (!confirm("Delete this " + BOARD_KINDS[bd.paper].noun + "? This can't be undone.")) return;
+        delete state.notebook[d.id];
+        if (state.nbCurrent === d.id) state.nbCurrent = "";
+        state.ui["board_" + bd.paper] = "";
+        save(); render(); return;
       }
       case "vb-add": { var vp = state.notebook[d.id]; vp.tiles = vp.tiles || []; vp.tiles.push({ id: uid(), text: "", color: COLORS[vp.tiles.length % COLORS.length], img: "" }); save(); render(); return; }
       case "vb-color": {

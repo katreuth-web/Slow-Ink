@@ -916,3 +916,13 @@ body.markup-on .book { margin-bottom: 90px; }
 .of-row > :first-child { max-width: none; min-width: 0; }
 @media (max-width: 480px) { .tabs.tabs-many { gap: 2px; padding: 4px; } .tabs.tabs-many .tab { padding: 8px 2px; font-size: 12px; } }
 @media (max-width: 520px) { .outfits { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- Productivity: vision boards and mind maps ---------- */
+.board-list { flex-direction: row; flex-wrap: wrap; align-items: stretch; margin-bottom: 16px; }
+.board-list .trip-pill { min-width: 150px; max-width: 260px; }
+.board-list > .btn { align-self: center; }
+.board-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.board-bar .sheet-title { flex: 1 1 220px; min-width: 0; font-family: var(--serif); font-size: 1.5rem; font-weight: 600; background: transparent; box-shadow: none; border: 0; border-bottom: 1px solid transparent; border-radius: 0; padding: 4px 2px; }
+.board-bar .sheet-title:focus, .board-bar .sheet-title:hover { outline: none; border-bottom-color: var(--rule-strong); }
+.board-sheet { min-height: 640px; }
+@media (max-width: 600px) { .board-sheet { min-height: 560px; } .board-list .trip-pill { min-width: 0; flex: 1 1 140px; } }
