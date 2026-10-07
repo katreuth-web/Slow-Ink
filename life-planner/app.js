@@ -100,6 +100,8 @@
     upload: '<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>',
     branch: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.3 11l7.4-4M8.3 13l7.4 4"/>',
     check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+    heart: '<path d="M12 20.5s-7.5-4.6-9-9.3C2 7.6 4.2 5 7 5c1.9 0 3.6 1 5 3 1.4-2 3.1-3 5-3 2.8 0 5 2.6 4 6.2-1.5 4.7-9 9.3-9 9.3z"/>',
+    pin: '<path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/>',
     arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>'
   };
   function ic(n) {
@@ -528,9 +530,26 @@
     state.ui.cmpB = typeof state.ui.cmpB === "string" ? state.ui.cmpB : "";
   }
 
+  /* Travel map: the bucket list holds the pins (x and y are 0-1 positions on the map). */
+  function ensureTravelMap() {
+    var t = state.travel;
+    if (!t || typeof t !== "object" || Array.isArray(t)) t = state.travel = { trips: {}, bucket: [] };
+    if (!t.trips || typeof t.trips !== "object") t.trips = {};
+    if (!Array.isArray(t.bucket)) t.bucket = [];
+    t.bucket.forEach(function (b) {
+      if (typeof b.x !== "number" || typeof b.y !== "number" || !isFinite(b.x) || !isFinite(b.y)) { delete b.x; delete b.y; }
+    });
+    if (!state.ui) state.ui = { tabs: {}, nbMode: "type" };
+    state.ui.mapZoom = Math.max(1, Math.min(4, parseInt(state.ui.mapZoom, 10) || 1));
+    state.ui.pinSel = typeof state.ui.pinSel === "string" ? state.ui.pinSel : "";
+    state.ui.pinPlace = "";
+    state.ui.pinDraft = null;
+  }
+
   function ensureRecipes() {
     ensureRoutines();
     ensureHealth();
+    ensureTravelMap();
     if (!state.projects || typeof state.projects !== "object" || Array.isArray(state.projects)) state.projects = {};
     ensureGoals();
     if (!Array.isArray(state.recipes)) state.recipes = [];
@@ -645,7 +664,7 @@
 
   function card(title, body, opts) {
     opts = opts || {};
-    return '<section class="card ' + (opts.cls || "") + '">' +
+    return '<section class="card ' + (opts.cls || "") + '"' + (opts.attrs ? " " + opts.attrs : "") + ">" +
       (title ? '<div class="card-head"><h3>' + (opts.dot ? '<span class="dotmark ' + opts.dot + '"></span>' : "") + title + "</h3>" + (opts.right || "") + "</div>" : "") +
       body + "</section>";
   }
@@ -1019,7 +1038,15 @@
     state.finance.subs.push({ id: uid(), text: "Music streaming", amount: 11, cycle: "monthly", due: ymd(addDays(t, 5)) }, { id: uid(), text: "Cloud storage", amount: 3, cycle: "monthly", due: ymd(addDays(t, 11)) });
     state.finance.pots.push({ id: uid(), text: "Holiday fund", target: 1500, saved: 620 }, { id: uid(), text: "Rainy day", target: 3000, saved: 1100 });
     var tid = uid();
+    state.travel.bucket = [["Kyoto in spring", 0.856, 0.354, 0], ["Northern lights", 0.452, 0.180, 0], ["Patagonia", 0.323, 0.887, 0], ["Santorini", 0.566, 0.345, 1], ["New York", 0.310, 0.318, 1], ["Cape Town", 0.549, 0.783, 0], ["Bali"]].map(function (x) {
+      var b = { id: uid(), text: x[0], done: x[3] === 1 }; if (x[1] != null) { b.x = x[1]; b.y = x[2]; } return b;
+    });
     state.travel.trips[tid] = { id: tid, text: "Lisbon long weekend", dest: "Lisbon", start: ymd(addDays(t, 21)), end: ymd(addDays(t, 25)), budget: 1200, itinerary: [], packing: [task("Passport", 1), task("Walking shoes", 0), task("Sunscreen", 0)], outfits: [], expenses: [] };
+    [["Paris in the rain", "Paris", -150, -145, 5], ["Lake District cabin", "Cumbria", -75, -72, 4]].forEach(function (x) {
+      var pid = uid();
+      state.travel.trips[pid] = { id: pid, text: x[0], dest: x[1], start: ymd(addDays(t, x[2])), end: ymd(addDays(t, x[3])), budget: 900, itinerary: [], packing: [], outfits: [], expenses: [], album: [], rating: x[4] };
+      if (x[0] === "Paris in the rain") state.travel.trips[pid].log = { ticket: { name: "Alex Morgan", date: ymd(addDays(t, -150)), time: "07:25", flight: "BA 304", from: "London", to: "Paris", seat: "12C", gate: "A9", boarding: "06:50" }, facts: { country: "France", language: "French", timeDiff: "+1 hour", currency: "Euro (€)", rate: "€1 = about £0.85", travelers: "2" }, transport: [{ id: uid(), date: ymd(addDays(t, -150)), from: "London St Pancras", to: "Paris Gare du Nord" }, { id: uid(), date: ymd(addDays(t, -145)), from: "Paris", to: "London" }], stay: [{ id: uid(), date: ymd(addDays(t, -150)), text: "Hotel near Le Marais", checkin: "15:00", checkout: "11:00" }], meals: [{ id: uid(), date: ymd(addDays(t, -149)), text: "Little crêperie on rue Vieille" }, { id: uid(), date: ymd(addDays(t, -148)), text: "Bistro by the river" }], activities: [{ id: uid(), date: ymd(addDays(t, -149)), text: "Musée d'Orsay" }, { id: uid(), date: ymd(addDays(t, -147)), text: "Walk along the Seine" }], review: "Rainy but magical. Book the museum in advance next time and pack a better umbrella." };
+    });
     state.ui.trip = tid;
     var g1 = newGoal("Run a 5k"); g1.area = "Health"; g1.why = "I want more energy and a goal that gets me outdoors."; g1.plan = "Three short runs a week, adding a little each week. Rest day after each run.";
     g1.start = ymd(addDays(t, -30)); g1.due = ymd(addDays(t, 60));
@@ -2355,14 +2382,119 @@
   }
   document.addEventListener("keydown", function (e) { if (lightbox && e.key === "Escape") closeLightbox(); });
 
+
+  /* ---- the world map: tap to drop a pin; pins are bucket-list entries that have a position ---- */
+  var mapFocus = "";
+  function r3(n) { return Math.round(n * 1000) / 1000; }
+  function mapPins() { return state.travel.bucket.filter(function (b) { return typeof b.x === "number" && typeof b.y === "number"; }); }
+  function pinSvg() { return '<svg viewBox="0 0 24 32" aria-hidden="true"><path d="M12 0C5.4 0 0 5.2 0 11.7 0 20 12 32 12 32s12-12 12-20.3C24 5.2 18.6 0 12 0z"/><circle cx="12" cy="11.5" r="4.4"/></svg>'; }
+  function worldMap() {
+    var W = window.LIFE_WORLD;
+    if (!W || !Array.isArray(W.countries)) return "";
+    var ui = state.ui, zoom = ui.mapZoom, pins = mapPins(), seen = pins.filter(function (b) { return b.done; }).length, dr = ui.pinDraft;
+    var place = ui.pinPlace ? state.travel.bucket.filter(function (b) { return b.id === ui.pinPlace; })[0] : null;
+    var sel = !place && !dr && ui.pinSel ? pins.filter(function (b) { return b.id === ui.pinSel; })[0] : null;
+    var svg = '<svg class="wmap-svg" viewBox="0 0 ' + W.w + " " + W.h + '" role="img" aria-label="World map. Tap a spot to drop a pin.">' +
+      W.countries.map(function (c) { return '<path data-n="' + esc(c[0]) + '" d="' + c[1] + '"/>'; }).join("") + "</svg>";
+    var marks = pins.map(function (b) {
+      var on = sel && b.id === sel.id;
+      return '<button class="wpin' + (b.done ? " seen" : "") + (on ? " sel" : "") + '" style="left:' + (b.x * 100).toFixed(2) + "%;top:" + (b.y * 100).toFixed(2) + '%" data-act="pin-sel" data-id="' + b.id + '" aria-label="' + esc((b.text || "Pin") + (b.done ? ", been there" : "")) + '">' + pinSvg() +
+        ((zoom > 1 || on) && b.text ? '<span class="wpin-l">' + esc(b.text) + "</span>" : "") + "</button>";
+    }).join("") + (dr ? '<span class="wpin draft" style="left:' + (dr.x * 100).toFixed(2) + "%;top:" + (dr.y * 100).toFixed(2) + '%">' + pinSvg() + "</span>" : "");
+    var below;
+    if (place) below = '<div class="wmap-note row wrap"><span class="grow">Tap the map to place <b>' + esc(place.text || "this place") + '</b>.</span><button class="btn sm ghost" data-act="pin-cancel">Cancel</button></div>';
+    else if (dr) below = '<div class="wmap-note"><label class="lbl" for="pin-label">Name this place</label><div class="row wrap" data-form="pin-add"><input type="text" id="pin-label" name="label" class="grow" style="min-width:160px" maxlength="120" value="' + esc(dr.name) + '" placeholder="e.g. Kyoto in spring"><button class="btn pink" data-act="pin-add">' + ic("pin") + ' Add pin</button><button class="btn ghost" data-act="pin-cancel">Cancel</button></div><p class="small muted" style="margin:8px 0 0">It will be added to your bucket list too.</p></div>';
+    else if (sel) below = '<div class="wmap-note"><div class="row wrap"><input type="text" class="grow" style="min-width:150px" maxlength="120" aria-label="Pin name" value="' + esc(sel.text) + '" data-item="travel.bucket|' + sel.id + '|text"><label class="of-pack"><input type="checkbox" class="check" data-item="travel.bucket|' + sel.id + '|done" data-rerender ' + (sel.done ? "checked" : "") + '> Been there</label><button class="btn sm ghost" data-act="pin-unpin" data-id="' + sel.id + '">Remove from map</button><button class="icon-btn sm" data-act="pin-close" aria-label="Close">' + ic("x") + "</button></div></div>";
+    else below = '<p class="small muted wmap-note">' + (pins.length ? "Tap a pin to edit it, or tap anywhere to add another." : "Tap anywhere on the map to drop your first pin. Each pin joins your bucket list.") + "</p>";
+    var bar = '<div class="row wrap wmap-bar"><div class="row"><button class="icon-btn sm" data-act="map-zoom" data-val="-1" aria-label="Zoom out"' + (zoom <= 1 ? " disabled" : "") + ">−</button><span class=\"small muted\">" + (zoom === 1 ? "Whole world" : zoom + "× zoom") + '</span><button class="icon-btn sm" data-act="map-zoom" data-val="1" aria-label="Zoom in"' + (zoom >= 4 ? " disabled" : "") + ">+</button></div>" +
+      '<span class="grow"></span>' + (pins.length ? '<span class="badge">' + pins.length + (pins.length === 1 ? " place" : " places") + (seen ? " · " + seen + " visited" : "") + "</span>" : "") + "</div>";
+    return card("My world", bar + '<div class="wmap-scroll"><div class="wmap-inner' + (place ? " placing" : "") + '" style="width:' + zoom * 100 + '%" data-act="map-tap">' + svg + marks + "</div></div>" + below, { cls: "wmap-card", dot: "k", attrs: 'data-zoom="' + zoom + '"' });
+  }
+
+
+  /* ---- trip cards under the map: cover photo, 1-5 hearts, name and dates ---- */
+  var scrollToMain = false;
+  function tripCover(t) {
+    var a = (t.album || []).filter(function (x) { return imgs.url(x.imgId); })[0] || (t.outfits || []).filter(function (x) { return imgs.url(x.imgId); })[0];
+    return a ? imgs.url(a.imgId) : "";
+  }
+  function tripCards(trips, cur) {
+    var items = trips.map(function (t, i) {
+      var u = tripCover(t), r = clamp(parseInt(t.rating, 10) || 0, 0, 5), now = today();
+      var from = t.start ? parseD(t.start) : null, to = t.end ? parseD(t.end) : from, badge = "";
+      if (from) {
+        if (from > now) badge = '<span class="badge pink">' + daysBetween(now, from) + (daysBetween(now, from) === 1 ? " day to go" : " days to go") + "</span>";
+        else if (to >= now) badge = '<span class="badge pink">Happening now</span>';
+        else badge = '<span class="badge sage">Been there</span>';
+      }
+      var hearts = [1, 2, 3, 4, 5].map(function (n) {
+        return '<button class="tc-heart' + (n <= r ? " on" : "") + '" data-act="trip-rate" data-id="' + t.id + '" data-val="' + n + '" aria-label="Rate ' + n + " of 5" + (n === r ? " (tap to clear)" : "") + '" aria-pressed="' + (n === r) + '">' + ic("heart") + "</button>";
+      }).join("");
+      var dates = from ? shortDay(from) + (t.end && t.end !== t.start ? " – " + shortDay(parseD(t.end)) : "") : "No dates yet";
+      return '<article class="tcard' + (cur && cur.id === t.id ? " on" : "") + '"><div class="tc-head"><span class="tc-n">' + pad(i + 1) + '</span><span class="tc-hearts" role="group" aria-label="Trip rating">' + hearts + "</span></div>" +
+        '<button class="tc-photo" data-act="trip-open" data-go="1" data-id="' + t.id + '" aria-label="Open ' + esc(t.text || "trip") + '">' + (u ? '<img alt="" src="' + u + '">' : "<span>" + ic("image") + "<small>Add photos in the trip's Album</small></span>") + "</button>" +
+        '<div class="tc-info"><b>' + esc(t.text || "Untitled trip") + "</b>" + (t.dest ? "<span>" + esc(t.dest) + "</span>" : "") + '<span class="muted">' + esc(dates) + "</span>" + badge + "</div></article>";
+    }).join("");
+    return card("My trips", '<div class="tcards">' + items + '<button class="tcard tc-add" data-act="trip-add" data-go="1">' + ic("plus") + "<span>Plan a trip</span></button></div>", { dot: "p" });
+  }
+
+
+  /* ---- trip log: boarding pass, country facts, transport, stay, meals, activities, review ---- */
+  var LOG_TABLES = {
+    transport: { title: "Transportation", add: "Add a journey", cols: [["date", "Date", "date"], ["from", "Departure", "text"], ["to", "Arrival", "text"]] },
+    stay: { title: "Accommodation", add: "Add a stay", cols: [["date", "Date", "date"], ["text", "Where", "text"], ["checkin", "Check-in", "text"], ["checkout", "Check-out", "text"]] },
+    meals: { title: "Meals & restaurants", add: "Add a meal", cols: [["date", "Date", "date"], ["text", "Restaurant", "text"]] },
+    activities: { title: "Activities", add: "Add an activity", cols: [["date", "Date", "date"], ["text", "What", "text"]] }
+  };
+  function tripLog(t) {
+    if (!t.log || typeof t.log !== "object" || Array.isArray(t.log)) t.log = {};
+    var l = t.log;
+    ["ticket", "facts"].forEach(function (k) { if (!l[k] || typeof l[k] !== "object" || Array.isArray(l[k])) l[k] = {}; });
+    Object.keys(LOG_TABLES).forEach(function (k) { if (!Array.isArray(l[k])) l[k] = []; });
+    if (typeof l.review !== "string") l.review = "";
+    return l;
+  }
+  function logTable(p, key) {
+    var T = LOG_TABLES[key], path = p + ".log." + key, list = listAt(path);
+    var rows = list.map(function (it) {
+      return '<div class="lg-row lg-' + T.cols.length + '">' + T.cols.map(function (c) {
+        return itemInput(path, it, c[0], 'placeholder="' + c[1] + '" aria-label="' + c[1] + '" maxlength="120"', c[2]);
+      }).join("") + '<button class="del" data-act="list-del" data-path="' + path + '" data-id="' + it.id + '" aria-label="Delete row">' + ic("x") + "</button></div>";
+    }).join("");
+    return '<section class="lg-sec"><h4 class="sub-h">' + T.title + "</h4>" + (rows ? '<div class="lg-rows">' + rows + "</div>" : "") +
+      '<button class="btn sm" data-act="log-add" data-id="' + p.split(".").pop() + '" data-key="' + key + '">' + ic("plus") + " " + T.add + "</button></section>";
+  }
+  function tripLogView(p, t) {
+    tripLog(t);
+    var tk = p + ".log.ticket", f = p + ".log.facts", fld = function (label, field, type, ph, cls) {
+      return '<label class="tk-f ' + (cls || "") + '"><span>' + label + "</span>" + '<input type="' + (type || "text") + '" data-bind="' + tk + "." + field + '" maxlength="60" placeholder="' + (ph || "") + '" value="' + esc(getP(tk + "." + field) || "") + '"></label>';
+    };
+    var ticket = '<div class="ticket"><div class="tk-main"><div class="tk-top"><b>Boarding pass</b><span>' + ic("plane") + "</span></div>" +
+      fld("Name", "name", "text", "Who's flying", "wide") +
+      '<div class="tk-row3">' + fld("Date", "date", "date") + fld("Time", "time", "text", "09:40") + fld("Flight no.", "flight", "text", "AB 123") + "</div>" +
+      '<div class="tk-route">' + fld("From", "from", "text", "Home") + '<span class="tk-plane" aria-hidden="true">' + ic("plane") + "</span>" + fld("To", "to", "text", "Away") + "</div>" +
+      '<div class="tk-row3">' + fld("Seat", "seat", "text", "14A") + fld("Gate", "gate", "text", "B7") + fld("Boarding", "boarding", "text", "08:55") + "</div></div>" +
+      '<div class="tk-stub" aria-hidden="true"></div></div>';
+    var facts = [["Country", "country"], ["Language", "language"], ["Time difference", "timeDiff"], ["Currency", "currency"], ["Exchange rate", "rate"], ["Travellers", "travelers"]].map(function (x) {
+      return '<label class="fact"><span>' + x[0] + '</span><input type="text" data-bind="' + f + "." + x[1] + '" maxlength="80" aria-label="' + x[0] + '" value="' + esc(getP(f + "." + x[1]) || "") + '"></label>';
+    }).join("");
+    var r = clamp(parseInt(t.rating, 10) || 0, 0, 5);
+    var hearts = [1, 2, 3, 4, 5].map(function (n) { return '<button class="tc-heart' + (n <= r ? " on" : "") + '" data-act="trip-rate" data-id="' + t.id + '" data-val="' + n + '" aria-label="Rate ' + n + ' of 5" aria-pressed="' + (n === r) + '">' + ic("heart") + "</button>"; }).join("");
+    return '<div class="lg-top">' + ticket + '<div class="lg-facts"><h4 class="sub-h">Good to know</h4>' + facts + "</div></div>" +
+      '<div class="lg-grid">' + logTable(p, "transport") + logTable(p, "stay") + logTable(p, "meals") + logTable(p, "activities") + "</div>" +
+      '<p class="small muted" style="margin:14px 0 0">Your day-by-day plan is on the Itinerary tab and your spending is on the Budget tab.</p>' +
+      '<section class="lg-sec"><div class="row wrap" style="align-items:center"><h4 class="sub-h grow" style="margin:18px 0 6px">Review</h4><span class="tc-hearts" role="group" aria-label="Trip rating">' + hearts + "</span></div>" +
+      bindArea(p + ".log.review", "What you loved, what you'd do differently, tips for next time…", 'style="min-height:110px" maxlength="6000"') + "</section>";
+  }
+
   function viewTravel() {
     var trips = Object.keys(state.travel.trips).map(function (id) { return state.travel.trips[id]; }).sort(function (a, b) { return (a.start || "9") < (b.start || "9") ? -1 : 1; });
     var cur = state.ui.trip && state.travel.trips[state.ui.trip] ? state.travel.trips[state.ui.trip] : trips[0];
-    var list = trips.map(function (t) {
-      return '<button class="trip-pill ' + (cur && cur.id === t.id ? "on" : "") + '" data-act="trip-open" data-id="' + t.id + '"><b>' + esc(t.text || "Untitled trip") + '</b><span class="small muted">' + esc(t.dest || "Somewhere lovely") + (t.start ? " · " + shortDay(parseD(t.start)) : "") + "</span></button>";
-    }).join("");
-    var tripsCard = card("Trips", (trips.length > 1 ? '<p class="small muted" style="margin:0 0 10px">Tap a trip to open its plan.</p>' : "") + '<div class="trip-list">' + list + '</div><div class="spacer"></div><button class="btn pink" data-act="trip-add">' + ic("plus") + " Plan a trip</button>", { dot: "p" });
-    var bucketCard = card("Bucket list", listEd("travel.bucket", { placeholder: "Somewhere you dream of…", empty: "Northern lights? Kyoto in spring?" }), { cls: "tint-butter", dot: "b" });
+    var bucketCard = card("Bucket list", '<p class="small muted" style="margin:0 0 10px">Tap a pin icon to place a place on your world map. Ticking one marks it as visited.</p>' + listEd("travel.bucket", { placeholder: "Somewhere you dream of…", empty: "Northern lights? Kyoto in spring?", meta: function (b) {
+      var pinned = typeof b.x === "number" && typeof b.y === "number";
+      return pinned ? '<button class="icon-btn sm pin-btn on" data-act="pin-sel" data-go="1" data-id="' + b.id + '" aria-label="Show on the map" title="Show on the map">' + ic("pin") + "</button>"
+        : '<button class="icon-btn sm pin-btn" data-act="pin-place" data-id="' + b.id + '" aria-label="Place on the map" title="Place on the map">' + ic("pin") + "</button>";
+    } }), { cls: "tint-butter", dot: "b" });
     var main = "";
     if (!cur) {
       main = card("", '<div class="empty" style="padding:40px 10px;text-align:center">Plan your first getaway — itinerary, packing, outfits and budget all in one place.</div>');
@@ -2370,7 +2502,7 @@
       var p = "travel.trips." + cur.id;
       var nights = cur.start && cur.end ? daysBetween(parseD(cur.start), parseD(cur.end)) : null;
       var until = cur.start ? daysBetween(today(), parseD(cur.start)) : null;
-      var tt = tabs("trip", [["itinerary", "Itinerary"], ["packing", "Packing"], ["outfits", "Outfits"], ["budget", "Budget"], ["album", "Album"]]);
+      var tt = tabs("trip", [["itinerary", "Itinerary"], ["packing", "Packing"], ["outfits", "Outfits"], ["budget", "Budget"], ["album", "Album"], ["log", "Log"]]);
       var inner = "";
       var dayMeta = function (path) { return function (it) { return '<input type="date" data-item="' + path + "|" + it.id + '|day" value="' + esc(it.day || "") + '" style="max-width:150px;padding:5px 8px;font-size:12px" aria-label="Day">'; }; };
       if (tt.cur === "itinerary") inner = listEd(p + ".itinerary", { noCheck: false, meta: dayMeta(p + ".itinerary"), placeholder: "Add a plan, booking or reservation…", empty: "Flights, stays, tables booked, sights to see…" });
@@ -2379,6 +2511,7 @@
         inner = '<div class="row" style="margin-bottom:12px"><span class="grow">' + progress(pk.length ? (got / pk.length) * 100 : 0) + '</span><span class="badge">' + got + "/" + pk.length + ' packed</span><button class="btn sm" data-act="pack-essentials" data-id="' + cur.id + '">Add essentials</button></div>' + listEd(p + ".packing", { placeholder: "Add something to pack…" });
       } else if (tt.cur === "outfits") inner = outfitCards(p, cur, dayMeta(p + ".outfits"));
       else if (tt.cur === "album") inner = albumGrid(cur);
+      else if (tt.cur === "log") inner = tripLogView(p, cur);
       else {
         var ex = listAt(p + ".expenses"), total = sum(ex, function (x) { return x.amount; }), budget = num(cur.budget);
         inner = '<div class="row" style="margin-bottom:12px"><span class="grow">' + progress(budget ? (total / budget) * 100 : 0) + '</span><span class="badge ' + (budget && total > budget ? "pink" : "") + '">' + money(total) + " of " + money(budget) + "</span></div>" +
@@ -2391,7 +2524,7 @@
         '<button class="del" data-act="trip-del" data-id="' + cur.id + '" aria-label="Delete trip" title="Delete trip">' + ic("trash") + "</button></div>", { cls: "tint-pink" }) +
         '<div class="spacer"></div>' + tt.html + card("", inner);
     }
-    return head("Life · Adventure", 'Travel <span class="em">&amp; vacations</span>') + '<div class="travel-grid"><div class="tg-trips">' + tripsCard + '</div><div class="tg-main">' + main + '</div><div class="tg-bucket">' + bucketCard + "</div></div>";
+    return head("Life · Adventure", 'Travel <span class="em">&amp; vacations</span>') + worldMap() + tripCards(trips, cur) + '<div class="travel-grid"><div class="tg-main">' + main + '</div><div class="tg-bucket">' + bucketCard + "</div></div>";
   }
 
   /* ------------------------------------------------------------ views: home care */
@@ -2996,6 +3129,9 @@
       try { ss = active.selectionStart; se = active.selectionEnd; } catch (e) { /* not a text input */ }
     }
 
+    var mapSc = !routeChanged && view.querySelector(".wmap-scroll"), mapKeep = null;
+    if (mapSc && mapSc.firstElementChild && mapSc.firstElementChild.offsetWidth) mapKeep = { x: (mapSc.scrollLeft + mapSc.clientWidth / 2) / mapSc.firstElementChild.offsetWidth, y: (mapSc.scrollTop + mapSc.clientHeight / 2) / mapSc.firstElementChild.offsetHeight };
+
     var html = "", mount = null;
     try {
       switch (r.name) {
@@ -3067,6 +3203,15 @@
     wrapDates(view);
     if (mount) mount();
     closeSheet();
+    var ms = view.querySelector(".wmap-scroll"), mi = ms && ms.firstElementChild;
+    if (mi) {
+      var cx = mapKeep ? mapKeep.x : 0.5, cy = mapKeep ? mapKeep.y : 0.45, pe = mapFocus && mapFocus !== "top" ? mi.querySelector('.wpin[data-id="' + mapFocus + '"]') : null;
+      if (pe) { cx = parseFloat(pe.style.left) / 100; cy = parseFloat(pe.style.top) / 100; }
+      ms.scrollLeft = cx * mi.offsetWidth - ms.clientWidth / 2; ms.scrollTop = cy * mi.offsetHeight - ms.clientHeight / 2;
+      if (mapFocus) { var mc = view.querySelector(".wmap-card"); if (mc && mc.scrollIntoView) mc.scrollIntoView({ block: "start", behavior: "smooth" }); }
+    }
+    mapFocus = "";
+    if (scrollToMain) { var tm = view.querySelector(".tg-main"); if (tm && tm.scrollIntoView) tm.scrollIntoView({ block: "start", behavior: "smooth" }); scrollToMain = false; }
 
     if (routeChanged) {
       window.scrollTo(0, 0);
@@ -3207,6 +3352,7 @@
     var el = e.target.closest("[data-act]");
     if (!el || el.tagName === "SELECT" || (el.tagName === "INPUT" && el.type !== "button")) return;
     if (el.tagName === "A" && el.dataset.act !== "tab-go") e.preventDefault();
+    lastEv = e;
     act(el.dataset.act, el);
   });
   $("#sheet-scrim").addEventListener("click", closeSheet);
@@ -3214,6 +3360,7 @@
 
   /* ------------------------------------------------------------ actions */
 
+  var lastEv = null;
   function act(name, el) {
     var d = el.dataset;
     switch (name) {
@@ -3275,6 +3422,47 @@
         state.workouts.push({ id: uid(), date: w.date, type: w.type, minutes: num(w.minutes), notes: w.notes });
         save(); render(); toast("Workout logged 💪"); return;
       }
+      case "map-tap": {
+        var le = lastEv, mr = el.getBoundingClientRect();
+        if (!le || !mr.width || !mr.height) return;
+        var mx = r3(clamp((le.clientX - mr.left) / mr.width, 0, 1)), my = r3(clamp((le.clientY - mr.top) / mr.height, 0, 1));
+        if (state.ui.pinPlace) {
+          var pb = state.travel.bucket.filter(function (b) { return b.id === state.ui.pinPlace; })[0];
+          state.ui.pinPlace = "";
+          if (pb) { pb.x = mx; pb.y = my; state.ui.pinSel = pb.id; toast("Pinned " + (pb.text || "it")); }
+          save(); render(); return;
+        }
+        var cp = le.target && le.target.closest ? le.target.closest("path[data-n]") : null;
+        state.ui.pinDraft = { x: mx, y: my, name: cp ? cp.getAttribute("data-n") : "" };
+        state.ui.pinSel = "";
+        save(); render();
+        var pl = view.querySelector("#pin-label"); if (pl) pl.focus({ preventScroll: true });
+        return;
+      }
+      case "pin-add": {
+        var pd = state.ui.pinDraft, pv = formVals(el), pn = (pv.label || "").trim().slice(0, 120);
+        if (!pd) return;
+        if (!pn) { toast("Give this place a name."); return; }
+        var nb = { id: uid(), text: pn, done: false, x: pd.x, y: pd.y };
+        state.travel.bucket.push(nb); state.ui.pinDraft = null; state.ui.pinSel = nb.id;
+        save(); render(); toast("Pinned — and added to your bucket list"); return;
+      }
+      case "pin-cancel": state.ui.pinDraft = null; state.ui.pinPlace = ""; save(); render(); return;
+      case "pin-close": state.ui.pinSel = ""; save(); render(); return;
+      case "pin-sel":
+        state.ui.pinSel = d.go || state.ui.pinSel !== d.id ? d.id : "";
+        state.ui.pinDraft = null; state.ui.pinPlace = "";
+        if (d.go) mapFocus = d.id;
+        save(); render(); return;
+      case "pin-place":
+        state.ui.pinPlace = d.id; state.ui.pinDraft = null; state.ui.pinSel = "";
+        mapFocus = "top"; save(); render(); toast("Now tap the map where it goes."); return;
+      case "pin-unpin": {
+        var up = state.travel.bucket.filter(function (b) { return b.id === d.id; })[0];
+        if (up) { delete up.x; delete up.y; }
+        state.ui.pinSel = ""; save(); render(); toast("Removed from the map (still on your list)"); return;
+      }
+      case "map-zoom": state.ui.mapZoom = clamp(state.ui.mapZoom + (parseInt(d.val, 10) || 0), 1, 4); save(); render(); return;
       case "body-add": {
         var be = { id: uid(), date: todayKey(), note: "" };
         BODY_FIELDS.forEach(function (f) { be[f[0]] = ""; });
@@ -3424,9 +3612,21 @@
       case "trip-add": {
         var id = uid();
         state.travel.trips[id] = { id: id, text: "New trip", dest: "", start: "", end: "", budget: "", itinerary: [], packing: [], outfits: [], expenses: [] };
-        state.ui.trip = id; save(); render(); return;
+        state.ui.trip = id; if (d.go) scrollToMain = true; save(); render(); return;
       }
-      case "trip-open": state.ui.trip = d.id; save(); render(); return;
+      case "trip-open": state.ui.trip = d.id; if (d.go) scrollToMain = true; save(); render(); return;
+      case "log-add": {
+        var lt = state.travel.trips[d.id], LT = LOG_TABLES[d.key];
+        if (!lt || !LT) return;
+        var lrow = { id: uid() }; LT.cols.forEach(function (c) { lrow[c[0]] = ""; });
+        tripLog(lt)[d.key].push(lrow); save(); render(); return;
+      }
+      case "trip-rate": {
+        var rt = state.travel.trips[d.id], rn = clamp(parseInt(d.val, 10) || 0, 0, 5);
+        if (!rt) return;
+        rt.rating = rt.rating === rn ? 0 : rn;
+        save(); render(); return;
+      }
       case "trip-del":
         if (!confirm("Delete this trip and all its lists?")) return;
         var dead = state.travel.trips[d.id], deadIds = dead ? (dead.outfits || []).concat(dead.album || []).map(function (x) { return x.imgId; }) : [];
@@ -3908,6 +4108,13 @@
       data[k] = { items: items, log: log };
     });
 
+    /* Bucket list and map pins. */
+    var bk = data.travel && typeof data.travel === "object" && !Array.isArray(data.travel) ? data.travel : null;
+    if (bk) bk.bucket = (Array.isArray(bk.bucket) ? bk.bucket : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 500).map(function (x) {
+      var o = { id: String(x.id), text: str(x.text, 120), done: x.done === true };
+      if (typeof x.x === "number" && typeof x.y === "number" && isFinite(x.x) && isFinite(x.y)) { o.x = Math.max(0, Math.min(1, x.x)); o.y = Math.max(0, Math.min(1, x.y)); }
+      return o;
+    });
     /* Trips: ids end up in page markup, so keep only safe ones; photo ids must look like ours. */
     var tr = data.travel && typeof data.travel === "object" ? data.travel : null;
     if (tr && tr.trips && typeof tr.trips === "object") {
@@ -3923,7 +4130,22 @@
         var t = tr.trips[k];
         if (!SAFE_ID.test(k) || !t || typeof t !== "object") return;
         t.id = k;
+        t.rating = Math.max(0, Math.min(5, parseInt(t.rating, 10) || 0));
         t.itinerary = cleanList(t.itinerary); t.packing = cleanList(t.packing); t.expenses = cleanList(t.expenses);
+        var lg = t.log && typeof t.log === "object" && !Array.isArray(t.log) ? t.log : {}, lt = lg.ticket && typeof lg.ticket === "object" ? lg.ticket : {}, lf = lg.facts && typeof lg.facts === "object" ? lg.facts : {};
+        var newLog = { ticket: {}, facts: {}, review: str(lg.review, 6000) };
+        ["name", "time", "flight", "from", "to", "seat", "gate", "boarding"].forEach(function (k) { newLog.ticket[k] = str(lt[k], 60); });
+        newLog.ticket.date = DKEY.test(String(lt.date)) ? lt.date : "";
+        ["country", "language", "timeDiff", "currency", "rate", "travelers"].forEach(function (k) { newLog.facts[k] = str(lf[k], 80); });
+        var LCOLS = { transport: ["date", "from", "to"], stay: ["date", "text", "checkin", "checkout"], meals: ["date", "text"], activities: ["date", "text"] };
+        Object.keys(LCOLS).forEach(function (k) {
+          newLog[k] = (Array.isArray(lg[k]) ? lg[k] : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 300).map(function (x) {
+            var o = { id: String(x.id) };
+            LCOLS[k].forEach(function (c) { o[c] = c === "date" ? (DKEY.test(String(x[c])) ? x[c] : "") : str(x[c], 120); });
+            return o;
+          });
+        });
+        t.log = newLog;
         t.outfits = cleanList(t.outfits, true); t.album = cleanList(t.album, true);
         t.album.forEach(function (a) { a.caption = str(a.caption, 120); });
         safeTrips[k] = t;
