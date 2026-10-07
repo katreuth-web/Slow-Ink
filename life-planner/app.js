@@ -100,6 +100,7 @@
     upload: '<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>',
     branch: '<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8.3 11l7.4-4M8.3 13l7.4 4"/>',
     check: '<path d="M5 12.5l4.5 4.5L19 7"/>',
+    heart: '<path d="M12 20.5s-7.5-4.6-9-9.3C2 7.6 4.2 5 7 5c1.9 0 3.6 1 5 3 1.4-2 3.1-3 5-3 2.8 0 5 2.6 4 6.2-1.5 4.7-9 9.3-9 9.3z"/>',
     pin: '<path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10z"/><circle cx="12" cy="11" r="2.2"/>',
     arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>'
   };
@@ -663,7 +664,7 @@
 
   function card(title, body, opts) {
     opts = opts || {};
-    return '<section class="card ' + (opts.cls || "") + '">' +
+    return '<section class="card ' + (opts.cls || "") + '"' + (opts.attrs ? " " + opts.attrs : "") + ">" +
       (title ? '<div class="card-head"><h3>' + (opts.dot ? '<span class="dotmark ' + opts.dot + '"></span>' : "") + title + "</h3>" + (opts.right || "") + "</div>" : "") +
       body + "</section>";
   }
@@ -1041,6 +1042,10 @@
       var b = { id: uid(), text: x[0], done: x[3] === 1 }; if (x[1] != null) { b.x = x[1]; b.y = x[2]; } return b;
     });
     state.travel.trips[tid] = { id: tid, text: "Lisbon long weekend", dest: "Lisbon", start: ymd(addDays(t, 21)), end: ymd(addDays(t, 25)), budget: 1200, itinerary: [], packing: [task("Passport", 1), task("Walking shoes", 0), task("Sunscreen", 0)], outfits: [], expenses: [] };
+    [["Paris in the rain", "Paris", -150, -145, 5], ["Lake District cabin", "Cumbria", -75, -72, 4]].forEach(function (x) {
+      var pid = uid();
+      state.travel.trips[pid] = { id: pid, text: x[0], dest: x[1], start: ymd(addDays(t, x[2])), end: ymd(addDays(t, x[3])), budget: 900, itinerary: [], packing: [], outfits: [], expenses: [], album: [], rating: x[4] };
+    });
     state.ui.trip = tid;
     var g1 = newGoal("Run a 5k"); g1.area = "Health"; g1.why = "I want more energy and a goal that gets me outdoors."; g1.plan = "Three short runs a week, adding a little each week. Rest day after each run.";
     g1.start = ymd(addDays(t, -30)); g1.due = ymd(addDays(t, 60));
@@ -2402,16 +2407,39 @@
     else below = '<p class="small muted wmap-note">' + (pins.length ? "Tap a pin to edit it, or tap anywhere to add another." : "Tap anywhere on the map to drop your first pin. Each pin joins your bucket list.") + "</p>";
     var bar = '<div class="row wrap wmap-bar"><div class="row"><button class="icon-btn sm" data-act="map-zoom" data-val="-1" aria-label="Zoom out"' + (zoom <= 1 ? " disabled" : "") + ">−</button><span class=\"small muted\">" + (zoom === 1 ? "Whole world" : zoom + "× zoom") + '</span><button class="icon-btn sm" data-act="map-zoom" data-val="1" aria-label="Zoom in"' + (zoom >= 4 ? " disabled" : "") + ">+</button></div>" +
       '<span class="grow"></span>' + (pins.length ? '<span class="badge">' + pins.length + (pins.length === 1 ? " place" : " places") + (seen ? " · " + seen + " visited" : "") + "</span>" : "") + "</div>";
-    return card("My world", bar + '<div class="wmap-scroll"><div class="wmap-inner' + (place ? " placing" : "") + '" style="width:' + zoom * 100 + '%" data-act="map-tap">' + svg + marks + "</div></div>" + below, { cls: "wmap-card", dot: "k" });
+    return card("My world", bar + '<div class="wmap-scroll"><div class="wmap-inner' + (place ? " placing" : "") + '" style="width:' + zoom * 100 + '%" data-act="map-tap">' + svg + marks + "</div></div>" + below, { cls: "wmap-card", dot: "k", attrs: 'data-zoom="' + zoom + '"' });
+  }
+
+
+  /* ---- trip cards under the map: cover photo, 1-5 hearts, name and dates ---- */
+  var scrollToMain = false;
+  function tripCover(t) {
+    var a = (t.album || []).filter(function (x) { return imgs.url(x.imgId); })[0] || (t.outfits || []).filter(function (x) { return imgs.url(x.imgId); })[0];
+    return a ? imgs.url(a.imgId) : "";
+  }
+  function tripCards(trips, cur) {
+    var items = trips.map(function (t, i) {
+      var u = tripCover(t), r = clamp(parseInt(t.rating, 10) || 0, 0, 5), now = today();
+      var from = t.start ? parseD(t.start) : null, to = t.end ? parseD(t.end) : from, badge = "";
+      if (from) {
+        if (from > now) badge = '<span class="badge pink">' + daysBetween(now, from) + (daysBetween(now, from) === 1 ? " day to go" : " days to go") + "</span>";
+        else if (to >= now) badge = '<span class="badge pink">Happening now</span>';
+        else badge = '<span class="badge sage">Been there</span>';
+      }
+      var hearts = [1, 2, 3, 4, 5].map(function (n) {
+        return '<button class="tc-heart' + (n <= r ? " on" : "") + '" data-act="trip-rate" data-id="' + t.id + '" data-val="' + n + '" aria-label="Rate ' + n + " of 5" + (n === r ? " (tap to clear)" : "") + '" aria-pressed="' + (n === r) + '">' + ic("heart") + "</button>";
+      }).join("");
+      var dates = from ? shortDay(from) + (t.end && t.end !== t.start ? " – " + shortDay(parseD(t.end)) : "") : "No dates yet";
+      return '<article class="tcard' + (cur && cur.id === t.id ? " on" : "") + '"><div class="tc-head"><span class="tc-n">' + pad(i + 1) + '</span><span class="tc-hearts" role="group" aria-label="Trip rating">' + hearts + "</span></div>" +
+        '<button class="tc-photo" data-act="trip-open" data-go="1" data-id="' + t.id + '" aria-label="Open ' + esc(t.text || "trip") + '">' + (u ? '<img alt="" src="' + u + '">' : "<span>" + ic("image") + "<small>Add photos in the trip's Album</small></span>") + "</button>" +
+        '<div class="tc-info"><b>' + esc(t.text || "Untitled trip") + "</b>" + (t.dest ? "<span>" + esc(t.dest) + "</span>" : "") + '<span class="muted">' + esc(dates) + "</span>" + badge + "</div></article>";
+    }).join("");
+    return card("My trips", '<div class="tcards">' + items + '<button class="tcard tc-add" data-act="trip-add" data-go="1">' + ic("plus") + "<span>Plan a trip</span></button></div>", { dot: "p" });
   }
 
   function viewTravel() {
     var trips = Object.keys(state.travel.trips).map(function (id) { return state.travel.trips[id]; }).sort(function (a, b) { return (a.start || "9") < (b.start || "9") ? -1 : 1; });
     var cur = state.ui.trip && state.travel.trips[state.ui.trip] ? state.travel.trips[state.ui.trip] : trips[0];
-    var list = trips.map(function (t) {
-      return '<button class="trip-pill ' + (cur && cur.id === t.id ? "on" : "") + '" data-act="trip-open" data-id="' + t.id + '"><b>' + esc(t.text || "Untitled trip") + '</b><span class="small muted">' + esc(t.dest || "Somewhere lovely") + (t.start ? " · " + shortDay(parseD(t.start)) : "") + "</span></button>";
-    }).join("");
-    var tripsCard = card("Trips", (trips.length > 1 ? '<p class="small muted" style="margin:0 0 10px">Tap a trip to open its plan.</p>' : "") + '<div class="trip-list">' + list + '</div><div class="spacer"></div><button class="btn pink" data-act="trip-add">' + ic("plus") + " Plan a trip</button>", { dot: "p" });
     var bucketCard = card("Bucket list", '<p class="small muted" style="margin:0 0 10px">Tap a pin icon to place a place on your world map. Ticking one marks it as visited.</p>' + listEd("travel.bucket", { placeholder: "Somewhere you dream of…", empty: "Northern lights? Kyoto in spring?", meta: function (b) {
       var pinned = typeof b.x === "number" && typeof b.y === "number";
       return pinned ? '<button class="icon-btn sm pin-btn on" data-act="pin-sel" data-go="1" data-id="' + b.id + '" aria-label="Show on the map" title="Show on the map">' + ic("pin") + "</button>"
@@ -2445,7 +2473,7 @@
         '<button class="del" data-act="trip-del" data-id="' + cur.id + '" aria-label="Delete trip" title="Delete trip">' + ic("trash") + "</button></div>", { cls: "tint-pink" }) +
         '<div class="spacer"></div>' + tt.html + card("", inner);
     }
-    return head("Life · Adventure", 'Travel <span class="em">&amp; vacations</span>') + worldMap() + '<div class="travel-grid"><div class="tg-trips">' + tripsCard + '</div><div class="tg-main">' + main + '</div><div class="tg-bucket">' + bucketCard + "</div></div>";
+    return head("Life · Adventure", 'Travel <span class="em">&amp; vacations</span>') + worldMap() + tripCards(trips, cur) + '<div class="travel-grid"><div class="tg-main">' + main + '</div><div class="tg-bucket">' + bucketCard + "</div></div>";
   }
 
   /* ------------------------------------------------------------ views: home care */
@@ -3132,6 +3160,7 @@
       if (mapFocus) { var mc = view.querySelector(".wmap-card"); if (mc && mc.scrollIntoView) mc.scrollIntoView({ block: "start", behavior: "smooth" }); }
     }
     mapFocus = "";
+    if (scrollToMain) { var tm = view.querySelector(".tg-main"); if (tm && tm.scrollIntoView) tm.scrollIntoView({ block: "start", behavior: "smooth" }); scrollToMain = false; }
 
     if (routeChanged) {
       window.scrollTo(0, 0);
@@ -3532,9 +3561,15 @@
       case "trip-add": {
         var id = uid();
         state.travel.trips[id] = { id: id, text: "New trip", dest: "", start: "", end: "", budget: "", itinerary: [], packing: [], outfits: [], expenses: [] };
-        state.ui.trip = id; save(); render(); return;
+        state.ui.trip = id; if (d.go) scrollToMain = true; save(); render(); return;
       }
-      case "trip-open": state.ui.trip = d.id; save(); render(); return;
+      case "trip-open": state.ui.trip = d.id; if (d.go) scrollToMain = true; save(); render(); return;
+      case "trip-rate": {
+        var rt = state.travel.trips[d.id], rn = clamp(parseInt(d.val, 10) || 0, 0, 5);
+        if (!rt) return;
+        rt.rating = rt.rating === rn ? 0 : rn;
+        save(); render(); return;
+      }
       case "trip-del":
         if (!confirm("Delete this trip and all its lists?")) return;
         var dead = state.travel.trips[d.id], deadIds = dead ? (dead.outfits || []).concat(dead.album || []).map(function (x) { return x.imgId; }) : [];
@@ -4038,6 +4073,7 @@
         var t = tr.trips[k];
         if (!SAFE_ID.test(k) || !t || typeof t !== "object") return;
         t.id = k;
+        t.rating = Math.max(0, Math.min(5, parseInt(t.rating, 10) || 0));
         t.itinerary = cleanList(t.itinerary); t.packing = cleanList(t.packing); t.expenses = cleanList(t.expenses);
         t.outfits = cleanList(t.outfits, true); t.album = cleanList(t.album, true);
         t.album.forEach(function (a) { a.caption = str(a.caption, 120); });

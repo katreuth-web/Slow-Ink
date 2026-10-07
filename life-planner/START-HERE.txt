@@ -29,7 +29,7 @@ KEEP YOUR WORK SAFE  (please read - it's important)
 
 WHAT'S INSIDE
 - Yearly, Monthly, Weekly and Daily spreads, each with a matching Review page.
-- Fitness (workouts, weight and progress photos, body measurements, vitamins & supplements, medication tracker), Meals & Recipes (recipe cards in sections like Breakfast and Drinks, with cover photos and photos on each recipe), Finance, Mind & Ikigai, Travel (an interactive world map with pins that sync to your bucket list, itinerary, packing, outfit photos, budget and a photo album for each trip), Home & Chores.
+- Fitness (workouts, weight and progress photos, body measurements, vitamins & supplements, medication tracker), Meals & Recipes (recipe cards in sections like Breakfast and Drinks, with cover photos and photos on each recipe), Finance, Mind & Ikigai, Travel (an interactive world map with pins that sync to your bucket list, trip cards with cover photos and heart ratings, itinerary, packing, outfit photos, budget and a photo album for each trip), Home & Chores.
 - PRODUCTIVITY: Habits, Mood Log, Goals (plan, action steps, target date, progress
   and a review of how the plan is going), Projects (a planning framework, phases and steps
   with progress and a review), Routines & To-Dos (to-do list, daily and weekly routines,

@@ -792,10 +792,10 @@ body.markup-on .book { margin-bottom: 90px; }
 .datefield:focus-within { box-shadow: var(--press-sm), 0 0 0 2px var(--pink); }
 
 /* travel: trips, then the open trip, then the bucket list (so the plan sits right under the trip list on phones) */
-.travel-grid { display: grid; gap: 22px; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-areas: "trips trips trips trips main main main main main main main main" "bucket bucket bucket bucket main main main main main main main main"; grid-template-rows: auto 1fr; align-items: start; }
-.tg-trips { grid-area: trips; } .tg-main { grid-area: main; min-width: 0; } .tg-bucket { grid-area: bucket; }
-.tg-trips > .card, .tg-bucket > .card { margin: 0; }
-@media (max-width: 900px) { .travel-grid { gap: 16px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "trips" "main" "bucket"; } }
+.travel-grid { display: grid; gap: 22px; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-areas: "bucket bucket bucket bucket main main main main main main main main"; align-items: start; }
+.tg-main { grid-area: main; min-width: 0; } .tg-bucket { grid-area: bucket; }
+.tg-bucket > .card { margin: 0; }
+@media (max-width: 900px) { .travel-grid { gap: 16px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "main" "bucket"; } }
 
 /* travel expenses: category, what, amount, delete. On phones the description gets its own line. */
 .exp-list { display: flex; flex-direction: column; }
@@ -1134,3 +1134,31 @@ body.markup-on .book { margin-bottom: 90px; }
 .pin-btn.on { color: var(--pink-deep); }
 @media (max-width: 520px) { .wpin { width: 20px; height: 27px; } .wmap-scroll { max-height: 64vh; } }
 @media (prefers-reduced-motion: reduce) { .wpin.draft { animation: none; } }
+
+/* ---------- Travel: flat world map + trip cards ---------- */
+.wmap-scroll { background: transparent; box-shadow: none; }
+.wmap-svg path { fill: #e1dcd9; fill: color-mix(in srgb, var(--ink) 13%, transparent); stroke: none; }
+.wmap-card[data-zoom="1"] .wmap-svg path { stroke: none; }
+.wmap-card:not([data-zoom="1"]) .wmap-svg path { stroke: var(--rule-strong); stroke-width: 0.6; vector-effect: non-scaling-stroke; }
+.wmap-card:not([data-zoom="1"]) .wmap-scroll { border: 1px solid var(--rule); }
+.tcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 16px; }
+.tcard { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 10px; border-radius: 18px; background: var(--surface); box-shadow: var(--raise-sm); text-align: left; font: inherit; color: inherit; }
+.tcard.on { box-shadow: var(--press-sm); background: var(--pink-soft); }
+.tc-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.tc-n { font-size: 11.5px; letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+.tc-hearts { display: inline-flex; gap: 0; }
+.tc-heart { width: 24px; height: 28px; padding: 0; border: 0; background: none; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+.tc-heart svg { width: 15px; height: 15px; fill: none; }
+.tc-heart.on { color: var(--pink-deep); }
+.tc-heart.on svg { fill: currentColor; }
+.tc-photo { display: block; width: 100%; aspect-ratio: 3 / 4; padding: 0; border: 0; border-radius: 12px; overflow: hidden; background: var(--bg-soft, rgba(128, 128, 128, 0.1)); box-shadow: var(--press-sm); cursor: pointer; color: var(--muted); }
+.tc-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tc-photo > span { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; height: 100%; padding: 10px; text-align: center; }
+.tc-photo svg { width: 26px; height: 26px; }
+.tc-photo small { font-size: 11.5px; line-height: 1.35; }
+.tc-info { display: flex; flex-direction: column; gap: 3px; align-items: flex-start; min-width: 0; font-size: 12.5px; }
+.tc-info b { font-family: var(--serif); font-size: 1.1rem; line-height: 1.2; overflow-wrap: anywhere; }
+.tc-info .badge { margin-top: 4px; }
+.tc-add { align-items: center; justify-content: center; min-height: 200px; border: 2px dashed var(--rule-strong); background: transparent; box-shadow: none; color: var(--muted); cursor: pointer; font-size: 13px; }
+.tc-add svg { width: 24px; height: 24px; }
+@media (max-width: 520px) { .tcards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } .tc-heart { width: 20px; } .tc-heart svg { width: 14px; height: 14px; } }
