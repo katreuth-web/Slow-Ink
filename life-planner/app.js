@@ -202,6 +202,7 @@
       goalsFromSmart: true,
       projects: {},
       todos: [],
+      dump: [],
       routines: {},
       blocks: {},
       usualDay: [],
@@ -450,7 +451,20 @@
   function hm(mins) { mins = Math.round(mins); var h = Math.floor(mins / 60), m = mins % 60; return h ? h + " h" + (m ? " " + m + " min" : "") : m + " min"; }
   function blocksFor(k) { return Array.isArray(state.blocks[k]) ? state.blocks[k] : []; }
   function byStart(a, b) { return (tmin(a.start) || 0) - (tmin(b.start) || 0); }
+  /* ---- Brain dump (Productivity): quick capture, then send each item where it belongs ---- */
+  var DUMP_KINDS = { todo: "To-dos", project: "Projects", goal: "Goals", routine: "Routines", note: "Notebook" };
+  function dumpAgo(ms) {
+    var d = new Date(ms || Date.now()), t = today(), diff = daysBetween(new Date(d.getFullYear(), d.getMonth(), d.getDate()), t);
+    var hh = pad(d.getHours()) + ":" + pad(d.getMinutes());
+    return diff === 0 ? "Today " + hh : diff === 1 ? "Yesterday " + hh : shortDay(d);
+  }
+  function addDumpLines(text) {
+    var lines = String(text || "").split(/\r?\n+/).map(function (l) { return l.replace(/^\s*(?:[-*•·]|\d+[.)])\s+/, "").trim(); }).filter(Boolean).slice(0, 100), now = Date.now();
+    lines.forEach(function (l, i) { state.dump.push({ id: uid(), text: l.slice(0, 300), at: now + i, sorted: "" }); });
+    return lines.length;
+  }
   function ensureRoutines() {
+    if (!Array.isArray(state.dump)) state.dump = [];
     if (!Array.isArray(state.todos)) state.todos = [];
     if (!state.routines || typeof state.routines !== "object" || Array.isArray(state.routines)) state.routines = {};
     if (!state.blocks || typeof state.blocks !== "object" || Array.isArray(state.blocks)) state.blocks = {};
@@ -787,7 +801,7 @@
   var NAV = [
     { group: "Plan", items: [["home", "Today", "home"], ["year", "Year", "year"], ["month", "Month", "month"], ["week", "Week", "week"], ["day", "Day", "sun"]] },
     { group: "Life", items: [["fitness", "Fitness", "dumbbell"], ["meals", "Meals & Recipes", "bowl"], ["finance", "Finance", "wallet"], ["mind", "Mind & Ikigai", "lotus"], ["travel", "Travel", "plane"], ["home-care", "Home & Chores", "house"]] },
-    { group: "Productivity", items: [["habits", "Habits", "check"], ["mood", "Mood Log", "smile"], ["goals", "Goals", "target"], ["projects", "Projects", "layers"], ["routines", "Routines & To-Dos", "clock"], ["vision", "Vision Board", "image"], ["mindmap", "Mind Map", "branch"]] },
+    { group: "Productivity", items: [["habits", "Habits", "check"], ["mood", "Mood Log", "smile"], ["goals", "Goals", "target"], ["projects", "Projects", "layers"], ["routines", "Routines & To-Dos", "clock"], ["braindump", "Brain Dump", "bulb"], ["vision", "Vision Board", "image"], ["mindmap", "Mind Map", "branch"]] },
     { group: "Journal", items: [["notebook", "Notebook", "book"]] },
     { group: "System", items: [["settings", "Settings", "sliders"]] }
   ];
@@ -990,6 +1004,8 @@
     state.usualDay = dayPlan.map(function (x) { return { start: x[0], end: x[1], title: x[2], cat: x[3] }; });
     state.focus.sessions = [[0, 25, "Write product descriptions"], [0, 25, "Write product descriptions"], [-1, 25, "Photograph new stock"], [-1, 25, "Photograph new stock"], [-1, 25, "Emails"], [-2, 25, "Write product descriptions"], [-4, 25, "Photograph new stock"]].map(function (x) { return { id: uid(), date: ymd(addDays(t, x[0])), mins: x[1], label: x[2] }; });
     state.focus.round = 2;
+    var nowMs = Date.now();
+    state.dump = [["Call the plumber about the tap", 0, ""], ["Maybe start a podcast?", 3, ""], ["Learn to bake sourdough", 26, ""], ["Renew passport", 50, ""], ["Why do I keep putting off emails", 70, ""], ["Buy a birthday gift for Mum", 120, "todo"], ["Plan a girls' trip next spring", 200, "project"]].map(function (x) { return { id: uid(), text: x[0], at: nowMs - x[1] * 3600000, sorted: x[2] }; });
 
     var dinner = state.recipeSections.filter(function (x) { return x.name === "Dinner"; })[0] || state.recipeSections[0];
     state.recipes.unshift({ id: uid(), text: "Sheet-pan salmon and greens", cat: dinner.name, sec: dinner.id, imgId: "", time: "25 min", serves: "2", ingredients: "Salmon fillets\nBroccoli\nLemon\nOlive oil\nGarlic", method: "Roast everything on one tray at 200°C for 15 minutes." });
@@ -1015,6 +1031,11 @@
     return '<a class="kpi" href="' + href + '"><span class="kpi-num">' + num + '</span><span class="kpi-label">' + esc(label) + "</span>" + (frac == null ? "" : progress(frac * 100)) + "</a>";
   }
 
+  function dumpCard() {
+    var n = state.dump.filter(function (x) { return !x.sorted; }).length;
+    return card("Brain dump", '<div class="row wrap" data-form="dump-quick"><input type="text" name="text" class="grow" style="min-width:160px" placeholder="Jot something down…" aria-label="Quick brain dump" maxlength="300"><button class="btn pink sm" data-act="dump-quick">' + ic("plus") + " Add</button></div>" +
+      '<p class="small muted" style="margin:10px 0 0">' + (n ? n + (n === 1 ? " item waiting to sort · " : " items waiting to sort · ") + '<a href="#/braindump">Sort them</a>' : '<a href="#/braindump">Open brain dump</a>') + "</p>", { dot: "b" });
+  }
   function projectsCard() {
     var act = projectList().filter(function (x) { return x.status === "going" || x.status === "plan"; }).slice(0, 3);
     if (!act.length) return "";
@@ -1045,7 +1066,7 @@
     var right =
       card("How are you feeling?", moodPicker("days." + k + ".mood") + '<div class="spacer"></div><label class="lbl">Hydration</label>' + waterPicker("days." + k + ".water"), { cls: "tint-pink", dot: "p" }) +
       card("Habits today", habitChecks(k), { dot: "l", right: '<a class="btn sm ghost" href="#/habits">Tracker</a>' }) +
-      goalsCard() + projectsCard() +
+      dumpCard() + goalsCard() + projectsCard() +
       card("Coming up", upcoming(), { dot: "k" }) +
       card(MONTHS[t.getMonth()] + " intention", bindArea("months." + mk + ".intention", "One sentence to steer the month…", 'style="min-height:64px"') + '<div class="spacer"></div><p class="quote">“' + esc(quote) + "”</p>", { cls: "tint-butter", dot: "b" });
     var y = t.getFullYear(), doy = daysBetween(new Date(y, 0, 1), t) + 1, ylen = daysInMonth(y, 1) === 29 ? 366 : 365, ypct = Math.round(doy / ylen * 100);
@@ -1922,6 +1943,54 @@
   setInterval(focusTick, 1000);
   document.addEventListener("visibilitychange", function () { if (!document.hidden) { focusTick(); wakeSync(); } });
 
+
+  /* ------------------------------------------------------------ views: brain dump */
+
+  function viewDump() {
+    var f = state.ui.dumpTab === "sorted" ? "sorted" : "new", all = state.dump.slice().sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
+    var fresh = all.filter(function (x) { return !x.sorted; }), done = all.filter(function (x) { return x.sorted; });
+    var tabsHtml = '<div class="chips" style="margin:14px 0 10px"><button class="chip' + (f === "new" ? " on" : "") + '" data-act="dump-tab" data-val="new" aria-pressed="' + (f === "new") + '">To sort (' + fresh.length + ')</button><button class="chip' + (f === "sorted" ? " on" : "") + '" data-act="dump-tab" data-val="sorted" aria-pressed="' + (f === "sorted") + '">Sorted (' + done.length + ")</button></div>";
+    var rts = Object.keys(state.routines).map(function (id) { return state.routines[id]; });
+    var opts = '<option value="">Send to…</option><option value="todo">To-do</option><option value="project">New project</option><option value="goal">New goal</option>' +
+      rts.map(function (r) { return '<option value="routine:' + r.id + '">Routine step: ' + esc((r.title || "Routine").slice(0, 40)) + "</option>"; }).join("") + '<option value="note">Notebook page</option>';
+    var rows = (f === "new" ? fresh : done).map(function (it) {
+      if (f === "new") return '<li class="dump-item"><textarea class="txt" rows="1" aria-label="Item" data-item="dump|' + it.id + '|text" maxlength="300">' + esc(it.text) + '</textarea><span class="dump-when">' + esc(dumpAgo(it.at)) + '</span><select class="dump-send" data-send="' + it.id + '" aria-label="Send this item to">' + opts + '</select><button class="del" data-act="list-del" data-path="dump" data-id="' + it.id + '" aria-label="Delete">' + ic("x") + "</button></li>";
+      var where = { todo: "#/routines", project: "#/projects", goal: "#/goals", routine: "#/routines", note: "#/notebook" }[it.sorted] || "#/home";
+      return '<li class="dump-item done"><span class="grow dump-text">' + esc(it.text) + '</span><span class="badge sage">' + esc(DUMP_KINDS[it.sorted] || "Sorted") + '</span><a class="small" href="' + where + '">Open</a><button class="del" data-act="list-del" data-path="dump" data-id="' + it.id + '" aria-label="Delete">' + ic("x") + "</button></li>";
+    }).join("");
+    var capture = card("Get it out of your head", '<p class="small muted" style="margin-top:0">Type or paste anything: tasks, worries, ideas, things to remember. Every line becomes its own item. Sort it later.</p><textarea id="dump-input" rows="4" placeholder="What is on your mind?" maxlength="20000" style="min-height:110px"></textarea><div class="spacer"></div><button class="btn pink" data-act="dump-add">' + ic("plus") + " Add to my brain dump</button>", { cls: "tint-pink", dot: "p" });
+    var list = card(f === "new" ? "To sort" : "Sorted", (rows ? '<ul class="list dump-list">' + rows + "</ul>" : '<div class="empty">' + (f === "new" ? "Nothing waiting. Your head is clear." : "Nothing sorted yet. Use Send to… on an item.") + "</div>") +
+      (f === "sorted" && done.length ? '<div class="spacer"></div><button class="btn sm" data-act="dump-clear">' + ic("trash") + " Clear sorted</button>" : ""), { dot: "s" });
+    return head("Productivity", 'Brain <span class="em">dump</span>') + capture + tabsHtml + list;
+  }
+  function dumpSend(id, val) {
+    var it = state.dump.filter(function (x) { return x.id === id; })[0];
+    if (!it || it.sorted || !val) return;
+    var parts = val.split(":"), kind = parts[0], text = it.text.trim(), undo = null, label = DUMP_KINDS[kind];
+    if (!label) return;
+    if (kind === "todo") {
+      var t = { id: uid(), text: text.slice(0, 160), done: false, prio: 0, due: "", est: 0 };
+      state.todos.push(t); state.ui.tabs.rt = "todo"; undo = function () { state.todos = state.todos.filter(function (x) { return x.id !== t.id; }); };
+    } else if (kind === "project") {
+      var pr = newProject(text.slice(0, 120)); state.projects[pr.id] = pr; state.ui.project = pr.id; state.ui.tabs.project = "framework"; undo = function () { delete state.projects[pr.id]; };
+    } else if (kind === "goal") {
+      var g = newGoal(text.slice(0, 120)); state.goals[g.id] = g; state.ui.goal = g.id; state.ui.tabs.goal = "plan"; undo = function () { delete state.goals[g.id]; };
+    } else if (kind === "routine") {
+      var ro = state.routines[parts[1]];
+      if (!ro) return;
+      var step = { id: uid(), text: text.slice(0, 160), mins: 0, done: false };
+      ro.steps = ro.steps || []; ro.steps.push(step); state.ui.tabs.rt = "routines"; label = "the " + (ro.title || "routine"); undo = function () { ro.steps = ro.steps.filter(function (x) { return x.id !== step.id; }); };
+    } else {
+      ensureNb();
+      var sec = state.nbSections.filter(function (x) { return x.name.toLowerCase() === "notes"; })[0] || state.nbSections[0], pid = uid(), ts = Date.now();
+      state.notebook[pid] = { id: pid, paper: "lined", section: sec.id, title: text.slice(0, 60), created: ts, updated: ts, text: text, ink: "", strokes: [], topic: "", cues: "", summary: "" };
+      undo = function () { delete state.notebook[pid]; };
+    }
+    it.sorted = kind;
+    save(); render();
+    toastUndo("Sent to " + label, function () { undo(); it.sorted = ""; save(); render(); });
+  }
+
   /* ------------------------------------------------------------ views: travel */
 
   function outfitCards(p, trip, dayMeta) {
@@ -2648,6 +2717,7 @@
         case "goals": html = viewGoals(); break;
         case "projects": html = viewProjects(); break;
         case "routines": html = viewRoutines(); break;
+        case "braindump": html = viewDump(); break;
         case "vision":
         case "mindmap":
           html = viewBoards(r.name);
@@ -2759,6 +2829,7 @@
   document.addEventListener("change", function (e) {
     var el = e.target;
     if (el.hasAttribute("data-import")) { importFile(el.files[0]); el.value = ""; return; }
+    if (el.dataset.send) { dumpSend(el.dataset.send, el.value); return; }
     if (el.dataset.photo) {
       var pp = el.dataset.photo.split("|"), pit = listAt(pp[0]).filter(function (x) { return x.id === pp[1]; })[0];
       if (pit && el.files && el.files[0]) setPhoto(pit, el.files[0]);
@@ -3234,6 +3305,22 @@
       case "focus-skip": state.focus.run = null; save(); wakeSync(); render(); return;
       case "focus-reset": state.focus.run = null; state.focus.round = 0; save(); wakeSync(); render(); return;
       case "focus-block": state.focus.label = (d.title || "").slice(0, 80); state.ui.tabs.rt = "focus"; save(); render(); return;
+      case "dump-tab": state.ui.dumpTab = d.val; save(); render(); return;
+      case "dump-add": {
+        var di = view.querySelector("#dump-input"), n = addDumpLines(di ? di.value : "");
+        if (!n) { if (di) di.focus(); return; }
+        save(); render(); toast(n === 1 ? "Added" : n + " items added"); return;
+      }
+      case "dump-quick": {
+        var qv = formVals(el), qn = addDumpLines(qv.text);
+        if (!qn) { var qi = view.querySelector('[data-form="dump-quick"] [name="text"]'); if (qi) qi.focus(); return; }
+        save(); render(); toast("Added to your brain dump"); return;
+      }
+      case "dump-clear": {
+        var nsd = state.dump.filter(function (x) { return x.sorted; }).length;
+        if (!nsd || !confirm("Remove " + nsd + " sorted item" + (nsd === 1 ? "" : "s") + "?")) return;
+        state.dump = state.dump.filter(function (x) { return !x.sorted; }); save(); render(); return;
+      }
       case "goal-go": state.ui.goal = d.id; save(); go("#/goals"); return;
       case "goal-open": state.ui.goal = d.id; save(); render(); return;
       case "goal-del": {
@@ -3376,6 +3463,9 @@
       pout[k] = o;
     });
     data.projects = pout;
+    data.dump = (Array.isArray(data.dump) ? data.dump : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 3000).map(function (x) {
+      return { id: String(x.id), text: str(x.text, 300), at: Number(x.at) || Date.now(), sorted: ["todo", "project", "goal", "routine", "note"].indexOf(x.sorted) >= 0 ? x.sorted : "" };
+    });
     /* Routines & to-dos: rebuilt from known fields only. */
     var TKEY = /^([01]\d|2[0-3]):[0-5]\d$/, CATS_OK = ["focus", "admin", "health", "leisure", "essential", "wasted"], cn = function (v, lo, hi) { return Math.max(lo, Math.min(hi, Number(v) || 0)); };
     data.todos = (Array.isArray(data.todos) ? data.todos : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 2000).map(function (x) {

@@ -34,6 +34,8 @@ WHAT'S INSIDE
   and a review of how the plan is going), Projects (a planning framework, phases and steps
   with progress and a review), Routines & To-Dos (to-do list, daily and weekly routines,
   time blocking, a Pomodoro focus timer, a weekly time review and the Eisenhower matrix),
+  Brain Dump (jot everything down, then send each item to a to-do, project, goal, routine
+  or notebook page),
   Vision Board and Mind Map (keep as many boards
   and maps as you like).
 - NOTEBOOK (left menu > Journal > Notebook): a separate bound book with coloured
