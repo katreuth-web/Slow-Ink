@@ -926,3 +926,24 @@ body.markup-on .book { margin-bottom: 90px; }
 .board-bar .sheet-title:focus, .board-bar .sheet-title:hover { outline: none; border-bottom-color: var(--rule-strong); }
 .board-sheet { min-height: 640px; }
 @media (max-width: 600px) { .board-sheet { min-height: 560px; } .board-list .trip-pill { min-width: 0; flex: 1 1 140px; } }
+
+/* ---------- Productivity: goals ---------- */
+.goal-list { flex-direction: row; flex-wrap: wrap; align-items: stretch; margin-bottom: 16px; }
+.goal-pill { min-width: 190px; max-width: 280px; display: flex; flex-direction: column; gap: 6px; }
+.goal-pill .progress { height: 6px; }
+.goal-pill.is-done b { text-decoration: line-through; opacity: 0.7; }
+.goal-chips { flex: 1 1 240px; }
+.goal-chips .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.goal-mini { display: block; padding: 6px 0 10px; color: var(--ink); text-decoration: none; }
+.goal-mini .progress { margin-top: 6px; height: 7px; }
+.review-verdict { margin: 0 0 12px; font-family: var(--serif); font-size: 1.6rem; font-weight: 600; }
+.review-verdict.warn { color: var(--danger); }
+.review-verdict.good { color: var(--sage-deep); }
+.insights { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.insights li { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; line-height: 1.5; }
+.insights .i-dot { flex: none; width: 10px; height: 10px; margin-top: 7px; border-radius: 50%; background: var(--muted); }
+.insights .k-good .i-dot { background: var(--sage-deep); }
+.insights .k-warn .i-dot { background: var(--danger); }
+.insights .k-info .i-dot { background: var(--sky-deep); }
+@media (max-width: 600px) { .goal-pill { min-width: 0; flex: 1 1 100%; max-width: none; } }
+@media (max-width: 600px) { .goal-steps .list li { flex-wrap: wrap; row-gap: 6px; } .goal-steps .list li .txt { flex: 1 1 60%; min-width: 0; } .goal-steps .list li input[type="date"], .goal-steps .list li .datefield { flex: 1 1 140px; max-width: none !important; width: auto; min-width: 0; } }

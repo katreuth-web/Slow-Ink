@@ -30,7 +30,9 @@ KEEP YOUR WORK SAFE  (please read - it's important)
 WHAT'S INSIDE
 - Yearly, Monthly, Weekly and Daily spreads, each with a matching Review page.
 - Fitness, Meals & Recipes (recipe cards in sections like Breakfast and Drinks, with cover photos and photos on each recipe), Finance, Mind & Ikigai, Travel (itinerary, packing, outfit photos, budget and a photo album for each trip), Home & Chores.
-- PRODUCTIVITY: Habits, Mood Log, Vision Board and Mind Map (keep as many boards and maps as you like).
+- PRODUCTIVITY: Habits, Mood Log, Goals (plan, action steps, target date, progress
+  and a review of how the plan is going), Vision Board and Mind Map (keep as many boards
+  and maps as you like).
 - NOTEBOOK (left menu > Journal > Notebook): a separate bound book with coloured
   section tabs (Journal, Notes, Ideas - add your own with the + tab). Seven
   papers: blank, lined, squared, dot grid, Cornell, and two and three columns.
