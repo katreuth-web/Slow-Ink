@@ -1257,3 +1257,14 @@ body.markup-on .book { margin-bottom: 90px; }
 .calc-out > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 12px; border-radius: 12px; background: var(--surface); box-shadow: var(--press-sm); }
 .calc-out span { color: var(--ink-soft); } .calc-out b { text-align: right; }
 @media (max-width: 380px) { .calc-key { height: 50px; } .calc-keys { gap: 8px; } .calc-res { font-size: 2rem; } }
+
+/* ---------- Debt payoff plan ---------- */
+.pay-chart { display: block; width: 100%; height: auto; margin-top: 10px; }
+.pc-axis { stroke: var(--rule-strong); stroke-width: 1; }
+.pc-plan { fill: none; stroke: var(--sage-deep); stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
+.pc-base { fill: none; stroke: var(--pink-deep); stroke-width: 2; stroke-dasharray: 5 5; }
+.pc-lbl { fill: var(--muted); font-size: 12px; }
+.pay-key { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pay-key .pk-plan, .pay-key .pk-base { display: inline-block; width: 22px; border-top: 3px solid var(--sage-deep); }
+.pay-key .pk-base { border-top: 3px dashed var(--pink-deep); margin-left: 8px; }
+.pay-warn { padding: 12px 14px; border-radius: 14px; background: var(--pink-soft); line-height: 1.5; }

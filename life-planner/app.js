@@ -219,7 +219,7 @@
       meals: {},
       recipes: seedRecipes(),
       grocery: [],
-      finance: { months: {}, pots: [], debts: [], subs: [], wish: [], wishBudget: { shop: "", wish: "" } },
+      finance: { months: {}, pots: [], debts: [], subs: [], wish: [], wishBudget: { shop: "", wish: "" }, payoff: { method: "avalanche", extra: "" } },
       mind: {
         ikigai: { love: "", good: "", world: "", paid: "", center: "" },
         wheel: {},
@@ -550,6 +550,10 @@
     var f = state.finance;
     if (!f || typeof f !== "object" || Array.isArray(f)) f = state.finance = { months: {}, pots: [], debts: [], subs: [] };
     if (!Array.isArray(f.wish)) f.wish = [];
+    if (!Array.isArray(f.debts)) f.debts = [];
+    if (!f.payoff || typeof f.payoff !== "object" || Array.isArray(f.payoff)) f.payoff = {};
+    if (f.payoff.method !== "snowball") f.payoff.method = "avalanche";
+    if (f.payoff.extra == null) f.payoff.extra = "";
     if (!f.wishBudget || typeof f.wishBudget !== "object" || Array.isArray(f.wishBudget)) f.wishBudget = { shop: "", wish: "" };
     f.wish.forEach(function (x) {
       x.want = Math.max(0, Math.min(5, parseInt(x.want, 10) || 0));
@@ -1056,6 +1060,8 @@
     state.finance.wish = [["shop", "Skincare", "Gentle cleanser", 14, 4], ["shop", "Cleaning supplies", "Laundry detergent pods", 9, 2], ["shop", "Toiletries", "Toothpaste and floss", 6, 1], ["wish", "Clothing", "Linen shirt dress", 68, 5], ["wish", "Accessories", "Leather crossbody bag", 120, 4], ["wish", "Makeup", "Cream blush in rose", 22, 3], ["wish", "Home goods", "Ceramic planter", 28, 3], ["shop", "Skincare", "Daily SPF 50", 18, 3]].map(function (x, i) {
       return { id: uid(), list: x[0], cat: x[1], text: x[2], price: x[3], link: i === 3 ? "https://example.com/linen-shirt-dress" : "", imgUrl: "", imgId: "", note: "", want: x[4], done: i === 2 };
     });
+    state.finance.debts = [["Credit card", 3200, 2400, 21.9, 75], ["Car loan", 6800, 5200, 6.5, 140], ["Student loan", 9000, 8600, 4.2, 95]].map(function (x) { return { id: uid(), text: x[0], start: x[1], balance: x[2], rate: x[3], min: x[4] }; });
+    state.finance.payoff = { method: "avalanche", extra: 100 };
     state.finance.pots.push({ id: uid(), text: "Holiday fund", target: 1500, saved: 620 }, { id: uid(), text: "Rainy day", target: 3000, saved: 1100 });
     var tid = uid();
     state.travel.bucket = [["Kyoto in spring", 0.856, 0.354, 0], ["Northern lights", 0.452, 0.180, 0], ["Patagonia", 0.323, 0.887, 0], ["Santorini", 0.566, 0.345, 1], ["New York", 0.310, 0.318, 1], ["Cape Town", 0.549, 0.783, 0], ["Bali"]].map(function (x) {
@@ -1824,6 +1830,70 @@
       '<div class="c12">' + grid + "</div></div>";
   }
 
+
+  /* ---- debt payoff plan (avalanche / snowball), worked out month by month ---- */
+  function payoffSim(debts, extra, method, rollover) {
+    var ds = debts.map(function (d) { return { id: d.id, name: d.name, bal: d.bal, apr: d.apr, min: d.min, done: false }; });
+    var start = ds.reduce(function (t, d) { return t + d.bal; }, 0), budget = ds.reduce(function (t, d) { return t + d.min; }, 0) + extra;
+    var out = { months: 0, interest: 0, paid: 0, order: [], series: [start], never: false, first: null };
+    if (!ds.length) return out;
+    while (out.months < 600 && ds.some(function (d) { return !d.done; })) {
+      out.months++;
+      var live = ds.filter(function (d) { return !d.done; }), spent = 0, total;
+      live.forEach(function (d) { var i = d.bal * d.apr / 1200; d.bal += i; out.interest += i; });
+      live.forEach(function (d) { var pay = Math.min(d.min, d.bal); d.bal -= pay; spent += pay; out.paid += pay; });
+      var rest = rollover ? Math.max(0, budget - spent) : 0;
+      live.slice().sort(function (a, b) { return method === "snowball" ? a.bal - b.bal : (b.apr - a.apr) || (a.bal - b.bal); }).forEach(function (d) {
+        if (rest <= 0 || d.bal <= 0.005) return;
+        var pay = Math.min(rest, d.bal); d.bal -= pay; rest -= pay; out.paid += pay;
+      });
+      live.forEach(function (d) { if (d.bal <= 0.005 && !d.done) { d.done = true; d.bal = 0; out.order.push({ id: d.id, name: d.name, month: out.months }); } });
+      total = ds.reduce(function (t, d) { return t + d.bal; }, 0);
+      out.series.push(total);
+      if (total > start * 20) break;
+    }
+    out.never = ds.some(function (d) { return !d.done; });
+    out.first = out.order.length ? out.order[0].month : null;
+    return out;
+  }
+  function monthsLabel(m) {
+    var y = Math.floor(m / 12), r = m % 12, o = [];
+    if (y) o.push(y + (y === 1 ? " year" : " years"));
+    if (r || !y) o.push(r + (r === 1 ? " month" : " months"));
+    return o.join(" ");
+  }
+  function monthsFromNow(m) { var t = new Date(); t = new Date(t.getFullYear(), t.getMonth() + m, 1); return t.toLocaleDateString(undefined, { month: "short", year: "numeric" }); }
+  function payoffChart(plan, base) {
+    var W = 600, H = 200, pl = 8, pr = 8, pt = 10, pb = 22, len = Math.max(plan.series.length, base.never ? 1 : base.series.length, 2), top = Math.max.apply(null, plan.series.concat(base.never ? [] : base.series)) || 1;
+    var path = function (ser) { return ser.map(function (v, i) { return (i ? "L" : "M") + (pl + (W - pl - pr) * i / (len - 1)).toFixed(1) + "," + (pt + (H - pt - pb) * (1 - v / top)).toFixed(1); }).join(""); };
+    return '<svg class="pay-chart" viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Total debt over time: zero in ' + esc(monthsLabel(plan.months)) + ' with your plan"><line class="pc-axis" x1="' + pl + '" y1="' + (H - pb) + '" x2="' + (W - pr) + '" y2="' + (H - pb) + '"/>' +
+      (base.never ? "" : '<path class="pc-base" d="' + path(base.series) + '"/>') + '<path class="pc-plan" d="' + path(plan.series) + '"/><text class="pc-lbl" x="' + pl + '" y="' + (H - 5) + '">Now</text><text class="pc-lbl" x="' + (W - pr) + '" y="' + (H - 5) + '" text-anchor="end">' + esc(monthsFromNow(len - 1)) + "</text></svg>" +
+      '<p class="pay-key"><span class="pk-plan"></span> Your plan' + (base.never ? "" : ' <span class="pk-base"></span> Minimums only') + "</p>";
+  }
+  function payoffCard() {
+    var po = state.finance.payoff, debts = state.finance.debts.map(function (d) { return { id: d.id, name: d.text || "Unnamed debt", bal: Math.max(0, num(d.balance)), apr: Math.max(0, num(d.rate)), min: Math.max(0, num(d.min)) }; }).filter(function (d) { return d.bal > 0.005; });
+    var controls = '<div class="chips" role="group" aria-label="Plan type">' + [["avalanche", "Avalanche"], ["snowball", "Snowball"]].map(function (m) {
+      return '<button class="chip ' + (po.method === m[0] ? "on" : "") + '" data-act="payoff-method" data-val="' + m[0] + '" aria-pressed="' + (po.method === m[0]) + '">' + m[1] + "</button>";
+    }).join("") + '</div><p class="small muted" style="margin:8px 0 12px">' + (po.method === "avalanche" ? "Avalanche: extra money goes to the highest interest rate first. It usually costs the least." : "Snowball: extra money goes to the smallest balance first. Quick wins keep many people going.") + "</p>" +
+      '<label class="lbl" for="payoff-extra">Extra each month (' + esc(state.currency) + ')</label>' + bindNum("finance.payoff.extra", 'id="payoff-extra" data-rerender step="1" min="0" style="max-width:160px" placeholder="0"');
+    if (!debts.length) return card("Payoff plan", '<p class="small muted" style="margin:0 0 12px">Add a debt above with its balance, rate and minimum payment, and a plan will appear here.</p>' + controls, { dot: "p" });
+    var extra = Math.max(0, num(po.extra)), other = po.method === "snowball" ? "avalanche" : "snowball";
+    var plan = payoffSim(debts, extra, po.method, true), base = payoffSim(debts, 0, po.method, false), alt = payoffSim(debts, extra, other, true);
+    var m0 = function (v) { return money(Math.round(v)); }, warn = debts.filter(function (d) { return d.min < d.bal * d.apr / 1200 - 0.005; });
+    var out;
+    if (plan.never) {
+      out = '<div class="pay-warn"><b>This plan doesn’t reach zero yet.</b> ' + (warn.length ? "The interest on " + warn.map(function (d) { return esc(d.name) + " (" + money(d.bal * d.apr / 1200) + " a month)"; }).join(", ") + " is more than you pay on it, so it keeps growing. " : "") + "Try a little extra each month, or check the minimum payments.</div>";
+    } else {
+      var sooner = base.never ? null : base.months - plan.months, saved = base.never ? null : base.interest - plan.interest;
+      var A = po.method === "avalanche" ? plan : alt, Sn = po.method === "avalanche" ? alt : plan;
+      out = '<div class="stats"><div class="stat"><span class="v">' + esc(monthsFromNow(plan.months)) + '</span><span class="k">Debt-free · ' + esc(monthsLabel(plan.months)) + '</span></div><div class="stat"><span class="v">' + m0(plan.interest) + '</span><span class="k">Total interest</span></div></div><ul class="insights" style="margin-top:14px">' +
+        '<li class="k-good"><span class="i-dot"></span><span>' + (base.never ? "With only the minimums some debts would never be cleared. This plan fixes that." : sooner > 0 || saved > 1 ? "That is <b>" + monthsLabel(Math.max(0, sooner)) + " sooner</b> and <b>" + m0(Math.max(0, saved)) + " less interest</b> than paying only the minimums." : "Add an amount in “Extra each month” to see how much sooner you could be free.") + "</span></li>" +
+        (plan.order.length ? '<li class="k-info"><span class="i-dot"></span><span>Order cleared: ' + plan.order.map(function (o) { return "<b>" + esc(o.name) + "</b> (" + esc(monthsFromNow(o.month)) + ")"; }).join(" → ") + ".</span></li>" : "") +
+        '<li class="k-info"><span class="i-dot"></span><span>' + (Math.abs(A.interest - Sn.interest) < 1 ? "Avalanche and snowball come out almost the same for your debts, so pick the one that feels better." : "Avalanche: " + m0(A.interest) + " interest, free " + esc(monthsFromNow(A.months)) + ". Snowball: " + m0(Sn.interest) + " interest, free " + esc(monthsFromNow(Sn.months)) + ".") + "</span></li></ul>" + payoffChart(plan, base);
+    }
+    return card("Payoff plan", controls + '<div class="spacer"></div>' + out, { dot: "p" });
+  }
+
   function viewFinance() {
     var mk = state.ui.finMonth || monthKey(today()), md = parseD(mk + "-01"), f = finMonth(mk);
     var tb = tabs("finance", [["overview", "Overview"], ["budget", "Income & spending"], ["savings", "Savings & debt"], ["subs", "Subscriptions"], ["wish", "Shopping"], ["calc", "Calculator"]]);
@@ -1860,10 +1930,10 @@
       }).join("");
       var debts = state.finance.debts.map(function (d) {
         var paid = num(d.start) ? (1 - num(d.balance) / num(d.start)) * 100 : 0;
-        return "<tr><td>" + itemInput("finance.debts", d, "text", 'aria-label="Debt"') + '</td><td style="width:120px">' + itemInput("finance.debts", d, "start", "data-rerender", "number") + '</td><td style="width:120px">' + itemInput("finance.debts", d, "balance", "data-rerender", "number") + '</td><td style="width:90px">' + itemInput("finance.debts", d, "rate", 'placeholder="%"', "number") + '</td><td style="min-width:120px">' + progress(paid, "sage") + '<span class="small muted">' + Math.round(clamp(paid, 0, 100)) + '% paid</span></td><td><button class="del" data-act="list-del" data-path="finance.debts" data-id="' + d.id + '" aria-label="Delete">' + ic("x") + "</button></td></tr>";
+        return '<tr><td style="min-width:150px">' + itemInput("finance.debts", d, "text", 'aria-label="Debt"') + '</td><td style="width:120px">' + itemInput("finance.debts", d, "start", "data-rerender", "number") + '</td><td style="width:120px">' + itemInput("finance.debts", d, "balance", "data-rerender", "number") + '</td><td style="width:90px">' + itemInput("finance.debts", d, "rate", 'placeholder="%" data-rerender', "number") + '</td><td style="width:110px">' + itemInput("finance.debts", d, "min", 'placeholder="Min" aria-label="Minimum payment a month" data-rerender', "number") + '</td><td style="min-width:120px">' + progress(paid, "sage") + '<span class="small muted">' + Math.round(clamp(paid, 0, 100)) + '% paid</span></td><td><button class="del" data-act="list-del" data-path="finance.debts" data-id="' + d.id + '" aria-label="Delete">' + ic("x") + "</button></td></tr>";
       }).join("");
       body = card("Savings pots", '<div class="pots">' + pots + '<button class="pot v-add" style="min-height:150px" data-act="pot-add">' + ic("plus") + "<span>New savings pot</span></button></div>", { dot: "b", right: '<span class="badge">' + money(saved) + " saved</span>" }) +
-        '<div class="spacer"></div>' + card("Debt paydown", (debts ? '<div class="scroll-x"><table class="table"><tr><th>Debt</th><th>Started at</th><th>Balance now</th><th>Rate</th><th>Progress</th><th></th></tr>' + debts + "</table></div>" : '<div class="empty">Debt-free, or not tracking any yet.</div>') + '<div class="spacer"></div><button class="btn sm" data-act="debt-add">' + ic("plus") + " Add debt</button>", { dot: "s", right: '<span class="badge sage">' + money(sum(state.finance.debts, function (d) { return d.balance; })) + " remaining</span>" });
+        '<div class="spacer"></div>' + card("Debt paydown", (debts ? '<div class="scroll-x"><table class="table" style="min-width:640px"><tr><th>Debt</th><th>Started at</th><th>Balance now</th><th>Rate %</th><th>Min / month</th><th>Progress</th><th></th></tr>' + debts + "</table></div>" : '<div class="empty">Debt-free, or not tracking any yet.</div>') + '<div class="spacer"></div><button class="btn sm" data-act="debt-add">' + ic("plus") + " Add debt</button>", { dot: "s", right: '<span class="badge sage">' + money(sum(state.finance.debts, function (d) { return d.balance; })) + " remaining</span>" }) + '<div class="spacer"></div>' + payoffCard();
     } else if (tb.cur === "wish") {
       body = wishTab();
     } else if (tb.cur === "calc") {
@@ -3556,6 +3626,7 @@
         state.ui.pinSel = ""; save(); render(); toast("Removed from the map (still on your list)"); return;
       }
       case "map-zoom": state.ui.mapZoom = clamp(state.ui.mapZoom + (parseInt(d.val, 10) || 0), 1, 4); save(); render(); return;
+      case "payoff-method": state.finance.payoff.method = d.val === "snowball" ? "snowball" : "avalanche"; save(); render(); return;
       case "wish-mode": state.ui.wishMode = ["shop", "wish", "bought"].indexOf(d.val) >= 0 ? d.val : "shop"; state.ui.wishCat = ""; save(); render(); return;
       case "wish-cat": state.ui.wishCat = wishCatNames().indexOf(d.val) >= 0 ? d.val : ""; save(); render(); return;
       case "wish-add": {
@@ -3708,7 +3779,7 @@
         save(); render(); return;
       }
       case "pot-add": state.finance.pots.push({ id: uid(), text: "New pot", target: 1000, saved: 0 }); save(); render(); return;
-      case "debt-add": state.finance.debts.push({ id: uid(), text: "Card / loan", start: 0, balance: 0, rate: "" }); save(); render(); return;
+      case "debt-add": state.finance.debts.push({ id: uid(), text: "Card / loan", start: 0, balance: 0, rate: "", min: "" }); save(); render(); return;
       case "sub-add": state.finance.subs.push({ id: uid(), text: "New subscription", amount: 0, cycle: "monthly", due: ymd(addDays(today(), 30)) }); save(); render(); return;
       case "sub-paid": {
         var sb = state.finance.subs.filter(function (x) { return x.id === d.id; })[0];
@@ -4237,6 +4308,15 @@
       });
       var wb = fin.wishBudget && typeof fin.wishBudget === "object" ? fin.wishBudget : {}, wbn = function (v) { var n = parseFloat(v); return isFinite(n) ? Math.max(0, Math.min(1e9, n)) : ""; };
       fin.wishBudget = { shop: wbn(wb.shop), wish: wbn(wb.wish) };
+    }
+    /* Debts and the payoff plan. */
+    if (fin) {
+      var dnum = function (v) { var x = parseFloat(v); return isFinite(x) && x >= 0 ? Math.min(1e9, x) : ""; };
+      fin.debts = (Array.isArray(fin.debts) ? fin.debts : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 200).map(function (x) {
+        return { id: String(x.id), text: str(x.text, 120), start: dnum(x.start) || 0, balance: dnum(x.balance) || 0, rate: dnum(x.rate), min: dnum(x.min) };
+      });
+      var pp = fin.payoff && typeof fin.payoff === "object" ? fin.payoff : {};
+      fin.payoff = { method: pp.method === "snowball" ? "snowball" : "avalanche", extra: dnum(pp.extra) };
     }
     /* Trips: ids end up in page markup, so keep only safe ones; photo ids must look like ours. */
     var tr = data.travel && typeof data.travel === "object" ? data.travel : null;
