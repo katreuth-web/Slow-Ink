@@ -1135,12 +1135,7 @@ body.markup-on .book { margin-bottom: 90px; }
 @media (max-width: 520px) { .wpin { width: 20px; height: 27px; } .wmap-scroll { max-height: 64vh; } }
 @media (prefers-reduced-motion: reduce) { .wpin.draft { animation: none; } }
 
-/* ---------- Travel: flat world map + trip cards ---------- */
-.wmap-scroll { background: transparent; box-shadow: none; }
-.wmap-svg path { fill: #e1dcd9; fill: color-mix(in srgb, var(--ink) 13%, transparent); stroke: none; }
-.wmap-card[data-zoom="1"] .wmap-svg path { stroke: none; }
-.wmap-card:not([data-zoom="1"]) .wmap-svg path { stroke: var(--rule-strong); stroke-width: 0.6; vector-effect: non-scaling-stroke; }
-.wmap-card:not([data-zoom="1"]) .wmap-scroll { border: 1px solid var(--rule); }
+/* ---------- Travel: trip cards ---------- */
 .tcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 16px; }
 .tcard { display: flex; flex-direction: column; gap: 10px; min-width: 0; padding: 10px; border-radius: 18px; background: var(--surface); box-shadow: var(--raise-sm); text-align: left; font: inherit; color: inherit; }
 .tcard.on { box-shadow: var(--press-sm); background: var(--pink-soft); }
@@ -1300,3 +1295,12 @@ body.markup-on .book { margin-bottom: 90px; }
   .pk-t .pk-lab { margin: 0; font-size: 13px; color: var(--ink-soft); }
   .pk-end { grid-column: 1 / -1; justify-content: flex-start; flex-wrap: wrap; }
 }
+
+/* ---------- Day schedule options ---------- */
+.sched-tools summary { cursor: pointer; font-size: 13px; color: var(--muted); padding: 4px 0; }
+.sched-tools { text-align: right; }
+.sched-set { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; justify-content: flex-end; padding: 8px 0 2px; font-size: 13px; color: var(--ink-soft); text-align: left; }
+.sched-set select { padding: 6px 8px; width: auto; min-width: 0; }
+.hours .h.half { font-size: 10px; opacity: 0.7; }
+.card-head:has(.sched-tools) { flex-wrap: wrap; }
+.sched-tools[open] { flex: 1 1 100%; }

@@ -1288,15 +1288,54 @@
 
   /* ------------------------------------------------------------ views: day */
 
+  /* the day's schedule: first and last hour, and optional half hours (saved in ui.sched) */
+  function schedCfg() {
+    var u = state.ui.sched && typeof state.ui.sched === "object" ? state.ui.sched : {}, a = parseInt(u.start, 10), b = parseInt(u.end, 10);
+    a = isFinite(a) ? clamp(a, 0, 22) : 6;
+    b = isFinite(b) ? clamp(b, a + 1, 23) : Math.max(a + 1, 22);
+    return { start: a, end: b, half: u.half === true, open: u.open === true };
+  }
+  function schedSet(patch) {
+    var c = schedCfg();
+    state.ui.sched = { start: c.start, end: c.end, half: c.half, open: true };
+    Object.keys(patch).forEach(function (k) { state.ui.sched[k] = patch[k]; });
+    var s0 = state.ui.sched;
+    if (s0.end <= s0.start) { if ("start" in patch) s0.end = Math.min(23, s0.start + 1); else s0.start = Math.max(0, s0.end - 1); }
+    save(); render();
+  }
+  document.addEventListener("toggle", function (e) {
+    var d = e.target;
+    if (!d || !d.classList || !d.classList.contains("sched-tools")) return;
+    var c = schedCfg();
+    if (c.open !== d.open) { state.ui.sched = { start: c.start, end: c.end, half: c.half, open: d.open }; save(); }
+  }, true);
+
   function viewDay(d) {
     var k = ymd(d), day = ensureDay(k), wk = ymd(mondayOf(d)), di = dowIdx(d);
     var nowH = new Date().getHours(), isToday = k === todayKey();
-    var hours = '<div class="hours">';
-    for (var h = 6; h <= 22; h++) {
-      var lab = (h % 12 || 12) + (h < 12 ? " am" : " pm");
-      hours += '<span class="h ' + (isToday && h === nowH ? "now" : "") + '">' + lab + "</span>" + bindInput("days." + k + ".schedule." + h, 'aria-label="' + lab + '"');
-    }
+    var sc = schedCfg(), step = sc.half ? 30 : 60, rec = day.schedule || {}, lo = sc.start * 60, hi = sc.end * 60 + 60 - step, extra = [];
+    /* anything already written stays visible: outside the chosen hours, or between the lines (e.g. 9:30 in hours mode) */
+    Object.keys(rec).forEach(function (key) {
+      var m = /^(\d{1,2})(_30)?$/.exec(key);
+      if (!m || +m[1] > 23 || typeof rec[key] !== "string" || !rec[key]) return;
+      var mins = +m[1] * 60 + (m[2] ? 30 : 0);
+      if (mins < lo) lo = Math.floor(mins / step) * step;
+      if (mins > hi) hi = Math.floor(mins / step) * step;
+      extra.push(mins);
+    });
+    var slots = [];
+    for (var tm = lo; tm <= hi; tm += step) slots.push(tm);
+    extra.forEach(function (mins) { if (slots.indexOf(mins) < 0) slots.push(mins); });
+    slots.sort(function (a, b) { return a - b; });
+    var nowM = new Date().getHours() * 60 + Math.floor(new Date().getMinutes() / step) * step, hours = '<div class="hours">';
+    slots.forEach(function (mins) {
+      var h = Math.floor(mins / 60), half = mins % 60 === 30, lab = (h % 12 || 12) + (half ? ":30" : "") + (h < 12 ? " am" : " pm");
+      hours += '<span class="h ' + (isToday && mins === nowM ? "now" : "") + (half ? " half" : "") + '">' + lab + "</span>" + bindInput("days." + k + ".schedule." + h + (half ? "_30" : ""), 'aria-label="' + lab + '"');
+    });
     hours += "</div>";
+    var hourOpts = function (from, to, sel) { var o = ""; for (var hh = from; hh <= to; hh++) o += '<option value="' + hh + '"' + (hh === sel ? " selected" : "") + ">" + (hh % 12 || 12) + (hh < 12 ? " am" : " pm") + "</option>"; return o; };
+    var schedTools = '<details class="sched-tools"' + (sc.open ? " open" : "") + '><summary>Hours</summary><div class="sched-set"><label>From <select data-sched="start" aria-label="First hour">' + hourOpts(0, 22, sc.start) + '</select></label><label>To <select data-sched="end" aria-label="Last hour">' + hourOpts(1, 23, sc.end) + '</select></label>' +
+      '<button class="chip ' + (sc.half ? "on" : "") + '" data-act="sched-half" aria-pressed="' + sc.half + '">Half hours</button></div></details>';
     var top3 = [0, 1, 2].map(function (i) { return '<div class="row"><span class="badge pink">' + (i + 1) + "</span>" + bindInput("days." + k + ".top3." + i, 'placeholder="' + ["The one that matters most", "Then this", "And if there's time"][i] + '"') + "</div>"; }).join('<div style="height:8px"></div>');
     var meals = MEAL_SLOTS.map(function (sl) { return '<label class="lbl">' + sl[1] + "</label>" + bindInput("meals." + wk + "." + di + "." + sl[0], 'placeholder="—"'); }).join('<div style="height:8px"></div>');
     var nbPage = findDayPage(k);
@@ -1313,7 +1352,7 @@
     var left =
       card("Top three", top3, { cls: "tint-pink", dot: "p" }) +
       card("Tasks & deadlines", listEd("days." + k + ".tasks", { prio: true, placeholder: "Add a task…", empty: "No tasks yet." }), { dot: "b", right: '<span class="badge">' + day.tasks.filter(function (x) { return x.done; }).length + "/" + day.tasks.length + "</span>" }) +
-      card("Schedule", hours, { dot: "k" }) +
+      card("Schedule", hours, { dot: "k", right: schedTools }) +
       card("Notes", bindArea("days." + k + ".notes", "Thoughts, ideas, things to remember…", 'style="min-height:150px"'), { dot: "l" });
     var right =
       card("Mood & energy", moodPicker("days." + k + ".mood") + '<div class="spacer"></div>' + bindInput("days." + k + ".moodNote", 'placeholder="A word for how you feel…"'), { dot: "p" }) +
@@ -3500,6 +3539,7 @@
     var el = e.target;
     if (el.hasAttribute("data-import")) { importFile(el.files[0]); el.value = ""; return; }
     if (el.dataset.send) { dumpSend(el.dataset.send, el.value); return; }
+    if (el.dataset.sched) { var sv = parseInt(el.value, 10); if (isFinite(sv)) { var pt = {}; pt[el.dataset.sched === "end" ? "end" : "start"] = sv; schedSet(pt); } return; }
     if (el.dataset.photo) {
       var pp = el.dataset.photo.split("|"), pit = listAt(pp[0]).filter(function (x) { return x.id === pp[1]; })[0];
       if (pit && el.files && el.files[0]) setPhoto(pit, el.files[0]);
@@ -3685,6 +3725,7 @@
         if (d.kind === "orders") { pr.date = todayKey(); pr.link = ""; }
         state.finance.pkg[d.kind].push(pr); save(); render(); return;
       }
+      case "sched-half": schedSet({ half: !schedCfg().half }); return;
       case "payoff-method": state.finance.payoff.method = d.val === "snowball" ? "snowball" : "avalanche"; save(); render(); return;
       case "wish-mode": state.ui.wishMode = ["shop", "wish", "bought"].indexOf(d.val) >= 0 ? d.val : "shop"; state.ui.wishCat = ""; save(); render(); return;
       case "wish-cat": state.ui.wishCat = wishCatNames().indexOf(d.val) >= 0 ? d.val : ""; save(); render(); return;
