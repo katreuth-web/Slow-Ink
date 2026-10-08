@@ -170,6 +170,7 @@
       goals: [],
       reflections: {},
       debt: { items: [], method: "avalanche", extra: "", cur: "$" },
+      money: { income: [], goals: [], deposits: [] },
       notebook: { sections: secs, pages: [page], current: page.id, section: "s-journal" },
       ui: { nbMode: "type" },
       name: ""
@@ -386,6 +387,20 @@
     };
   }
 
+  /* Income & savings: rebuilt from known fields; a deposit can only point at a goal that exists. */
+  function cleanMoney(m) {
+    m = m && typeof m === "object" && !Array.isArray(m) ? m : {};
+    var amt = function (v) { var x = parseFloat(v); return isFinite(x) && x > 0 ? String(Math.min(1e9, x)) : ""; }, day = function (v) { return DAY_RE.test(String(v)) && SI.parseKey(v) ? String(v) : ""; };
+    var list = function (a, max) { return (Array.isArray(a) ? a : []).filter(function (x) { return x && typeof x === "object" && ID_RE.test(String(x.id)); }).slice(0, max); };
+    var goals = list(m.goals, 100).map(function (x) { return { id: String(x.id), name: String(x.name == null ? "" : x.name).slice(0, 80), target: amt(x.target), due: day(x.due) }; });
+    var ids = {}; goals.forEach(function (g) { ids[g.id] = true; });
+    return {
+      income: list(m.income, 5000).map(function (x) { return { id: String(x.id), date: day(x.date), src: String(x.src == null ? "" : x.src).slice(0, 80), amt: amt(x.amt) }; }),
+      goals: goals,
+      deposits: list(m.deposits, 10000).map(function (x) { return { id: String(x.id), date: day(x.date), goal: ids[x.goal] ? String(x.goal) : "", amt: amt(x.amt), note: String(x.note == null ? "" : x.note).slice(0, 80) }; })
+    };
+  }
+
   SI.importData = function (file) {
     if (!file) return;
     var r = new FileReader();
@@ -401,6 +416,7 @@
       if (!window.confirm("Restore this backup? It will replace everything currently in this planner.")) return;
       s.name = typeof s.name === "string" ? s.name.slice(0, 40) : "";
       s.debt = cleanDebt(s.debt);
+      s.money = cleanMoney(s.money);
       var nb = s.notebook;
       nb.pages = (Array.isArray(nb.pages) ? nb.pages : []).map(cleanPage).filter(Boolean);
       nb.sections = (Array.isArray(nb.sections) ? nb.sections : []).filter(function (x) { return x && ID_RE.test(String(x.id)); })

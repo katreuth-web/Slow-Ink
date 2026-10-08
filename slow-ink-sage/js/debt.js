@@ -124,10 +124,13 @@
       '<div class="add-row"><input class="add-input" inputmode="decimal" data-pay="' + it.id + '" placeholder="Log a payment…" aria-label="Payment amount"><button class="btn sm" data-act="debt-pay" data-id="' + it.id + '">Log payment</button></div></article>';
   }
 
-  SI.views.debt = function (args) {
-    var d = D(), tab = args && args[0] === "calc" ? "calc" : "plan";
-    var tabs = '<div class="seg" role="tablist"><a role="tab" class="' + (tab === "plan" ? "on" : "") + '" href="#/debt">Payoff plan</a><a role="tab" class="' + (tab === "calc" ? "on" : "") + '" href="#/debt/calc">Calculator</a></div>';
-    var head = '<div class="head"><div class="head-text"><p class="eyebrow">Debt payoff</p><h1>' + (tab === "calc" ? "Money calculator" : "Becoming debt-free") + '</h1><p class="sub">' +
+  /* shared by the Money page: the currency symbol chosen on the Debt payoff page */
+  SI.moneyCur = cur;
+  SI.moneyFmt = money;
+  SI.debtPage = function (tab) {
+    var d = D();
+    var tabs = SI.moneySeg(tab === "calc" ? "calc" : "debt");
+    var head = '<div class="head"><div class="head-text"><p class="eyebrow">' + (tab === "calc" ? "Money · calculator" : "Money · debt payoff") + '</p><h1>' + (tab === "calc" ? "Money calculator" : "Becoming debt-free") + '</h1><p class="sub">' +
       (tab === "calc" ? "Quick sums, plus tip, sale, savings and loan shortcuts." : "List what you owe, pick a plan, and watch the date come closer.") + '</p></div><div class="head-nav">' + tabs + "</div></div>";
     if (tab === "calc") return head + '<section class="card calc-card">' + (window.SlowCalc ? SlowCalc.html() : "") + "</section>";
     var items = d.items.map(debtRow).join("");
@@ -159,7 +162,6 @@
     }
   };
 
-  SI.after.debt = function (args) { if (window.SlowCalc && args && args[0] === "calc") SlowCalc.mount(document.getElementById("view"), { currency: D().cur }); };
 
   /* ------------------------------------------------------------ actions */
   var A = SI.actions;
