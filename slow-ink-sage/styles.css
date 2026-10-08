@@ -852,9 +852,9 @@ html[data-mode="dark"] .stk svg { filter: drop-shadow(0 1px 1.5px rgba(0, 0, 0, 
 .lk-name { width: 100%; }
 
 /* ---------- Debt payoff ---------- */
-body[data-page="debt"] .page > .card, body[data-page="debt"] .page > .goal-grid, body[data-page="debt"] .page > #debt-results { margin-top: 18px; }
-body[data-page="debt"] #debt-results > .card { margin-top: 18px; }
-body[data-page="debt"] .debt-grid .card { margin-top: 0; }
+body[data-page="money"] .page > .card, body[data-page="money"] .page > .goal-grid, body[data-page="money"] .page > #debt-results { margin-top: 18px; }
+body[data-page="money"] #debt-results > .card { margin-top: 18px; }
+body[data-page="money"] .debt-grid .card { margin-top: 0; }
 .debt-fields, .debt-plan-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; margin: 12px 0 4px; }
 .debt-fields label, .debt-plan-fields label { display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: var(--ink-mute); min-width: 0; }
 .debt-add { display: grid; grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)) auto; gap: 10px; align-items: center; }
@@ -918,3 +918,28 @@ body[data-page="debt"] .debt-grid .card { margin-top: 0; }
 @media (max-width: 700px) { .debt-add { grid-template-columns: repeat(2, minmax(0, 1fr)); } .debt-add input:first-child { grid-column: 1 / -1; } .debt-add .btn { grid-column: 1 / -1; } }
 @media (max-width: 480px) { .debt-cmp { grid-template-columns: minmax(0, 1fr); } .debt-order li { flex-wrap: wrap; } .stats { gap: 18px; } }
 @media (max-width: 380px) { .calc-key { height: 50px; } .calc-keys { gap: 8px; } .calc-res { font-size: 2rem; } }
+
+/* ---------- Money: income & savings ---------- */
+body[data-page="money"] .page > .card, body[data-page="money"] .page > #money-live, body[data-page="money"] .page > .money-cols, body[data-page="money"] .page > .money-goals { margin-top: 18px; }
+body[data-page="money"] #money-live > .card, body[data-page="money"] #money-live > .goal-grid { margin-top: 18px; }
+body[data-page="money"] #money-live > .card:first-child { margin-top: 0; }
+body[data-page="money"] .money-goals .card { margin-top: 0; }
+.money-cols { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+body[data-page="money"] .money-cols > .card { margin-top: 0; }
+.money-list { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.money-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.money-row .field, .money-add .field { width: auto; min-width: 0; }
+.m-date { flex: 0 0 160px; } .m-amt { flex: 0 0 120px; } .m-text { flex: 1 1 160px; } .m-goal { flex: 1 1 160px; }
+.money-add { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.money-add .btn { flex: none; }
+.goal-prog .goal-top { align-items: baseline; justify-content: space-between; }
+.gp-name { font-family: var(--serif); font-style: var(--hstyle); font-size: 19px; color: var(--forest); overflow-wrap: anywhere; }
+.gp-amt { color: var(--ink-soft); font-size: 14px; white-space: nowrap; }
+.money-chart { display: block; width: 100%; height: auto; margin-top: 12px; }
+.mc-axis { stroke: var(--rule-2); stroke-width: 1; }
+.mc-inc { fill: var(--forest); } .mc-sav { fill: var(--gold); }
+.mc-lbl { fill: var(--ink-mute); font-size: 12px; }
+.money-key { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-mute); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.money-key .mk-inc, .money-key .mk-sav { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: var(--forest); }
+.money-key .mk-sav { background: var(--gold); margin-left: 8px; }
+@media (max-width: 520px) { .m-date, .m-amt { flex: 1 1 45%; } .money-row .icon-btn { margin-left: auto; } .money-add .btn { width: 100%; } }

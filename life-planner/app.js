@@ -219,7 +219,7 @@
       meals: {},
       recipes: seedRecipes(),
       grocery: [],
-      finance: { months: {}, pots: [], debts: [], subs: [], wish: [], wishBudget: { shop: "", wish: "" }, payoff: { method: "avalanche", extra: "" } },
+      finance: { months: {}, pots: [], debts: [], subs: [], wish: [], wishBudget: { shop: "", wish: "" }, payoff: { method: "avalanche", extra: "" }, pkg: { orders: [], returns: [], exchanges: [] } },
       mind: {
         ikigai: { love: "", good: "", world: "", paid: "", center: "" },
         wheel: {},
@@ -550,6 +550,8 @@
     var f = state.finance;
     if (!f || typeof f !== "object" || Array.isArray(f)) f = state.finance = { months: {}, pots: [], debts: [], subs: [] };
     if (!Array.isArray(f.wish)) f.wish = [];
+    if (!f.pkg || typeof f.pkg !== "object" || Array.isArray(f.pkg)) f.pkg = {};
+    ["orders", "returns", "exchanges"].forEach(function (k) { if (!Array.isArray(f.pkg[k])) f.pkg[k] = []; });
     if (!Array.isArray(f.debts)) f.debts = [];
     if (!f.payoff || typeof f.payoff !== "object" || Array.isArray(f.payoff)) f.payoff = {};
     if (f.payoff.method !== "snowball") f.payoff.method = "avalanche";
@@ -1062,6 +1064,12 @@
     });
     state.finance.debts = [["Credit card", 3200, 2400, 21.9, 75], ["Car loan", 6800, 5200, 6.5, 140], ["Student loan", 9000, 8600, 4.2, 95]].map(function (x) { return { id: uid(), text: x[0], start: x[1], balance: x[2], rate: x[3], min: x[4] }; });
     state.finance.payoff = { method: "avalanche", extra: 100 };
+    var pkd = function (n) { return ymd(addDays(t, n)); };
+    state.finance.pkg = {
+      orders: [["Linen shirt dress", "Everlane", 68, -6, 1, 1, 1], ["Ceramic planter", "West Elm", 28, -4, 2, 1, 0], ["Running shoes", "Nike", 110, -3, -1, 1, 0], ["Skincare set", "Sephora", 54, -1, 4, 0, 0]].map(function (x) { return { id: uid(), text: x[0], store: x[1], amount: x[2], date: pkd(x[3]), eta: pkd(x[4]), shipped: !!x[5], delivered: !!x[6], link: "" }; }),
+      returns: [{ id: uid(), text: "Wool jumper (too small)", store: "COS", amount: 79, date: pkd(-14), shipped: true, done: false }],
+      exchanges: [{ id: uid(), text: "Boots, size 7", swap: "Boots, size 8", store: "Dr. Martens", amount: 0, shipped: true, done: false }]
+    };
     state.finance.pots.push({ id: uid(), text: "Holiday fund", target: 1500, saved: 620 }, { id: uid(), text: "Rainy day", target: 3000, saved: 1100 });
     var tid = uid();
     state.travel.bucket = [["Kyoto in spring", 0.856, 0.354, 0], ["Northern lights", 0.452, 0.180, 0], ["Patagonia", 0.323, 0.887, 0], ["Santorini", 0.566, 0.345, 1], ["New York", 0.310, 0.318, 1], ["Cape Town", 0.549, 0.783, 0], ["Bali"]].map(function (x) {
@@ -1894,9 +1902,49 @@
     return card("Payoff plan", controls + '<div class="spacer"></div>' + out, { dot: "p" });
   }
 
+
+  /* ---- package tracker: orders, returns and exchanges ---- */
+  var PKG = {
+    orders: { title: "Orders", add: "Add an order", dot: "p", cols: [["text", "Item", "text"], ["store", "Store / website", "text"], ["amount", "Amount", "number"], ["date", "Order date", "date"], ["eta", "Expected delivery", "date"]], ticks: [["shipped", "Shipped"], ["delivered", "Delivered"]], done: "delivered" },
+    returns: { title: "Returns", add: "Add a return", dot: "k", cols: [["text", "Item returned", "text"], ["store", "Store / website", "text"], ["amount", "Amount", "number"], ["date", "Order date", "date"]], ticks: [["shipped", "Shipped"], ["done", "Complete"]], done: "done" },
+    exchanges: { title: "Exchanges", add: "Add an exchange", dot: "b", cols: [["text", "Item to exchange", "text"], ["swap", "Exchange for", "text"], ["store", "Store / website", "text"], ["amount", "Amount", "number"]], ticks: [["shipped", "Shipped"], ["done", "Complete"]], done: "done" }
+  };
+  function pkgBadge(it) {
+    if (it.delivered) return '<span class="badge sage">Delivered</span>';
+    if (!it.eta) return it.shipped ? '<span class="badge">On its way</span>' : "";
+    var n = daysBetween(today(), parseD(it.eta));
+    return '<span class="badge ' + (n < 0 ? "pink" : "") + '">' + (n < 0 ? "Late by " + (-n) + (n === -1 ? " day" : " days") : n === 0 ? "Due today" : n === 1 ? "Due tomorrow" : "In " + n + " days") + "</span>";
+  }
+  function pkgSection(kind) {
+    var T = PKG[kind], path = "finance.pkg." + kind, list = state.finance.pkg[kind];
+    var head = '<div class="pk-row pk-head pk-' + kind + '">' + T.cols.map(function (c) { return "<span>" + c[1] + "</span>"; }).join("") + T.ticks.map(function (t) { return '<span class="pk-c">' + t[1] + "</span>"; }).join("") + "<span></span></div>";
+    var rows = list.map(function (it) {
+      var isOrder = kind === "orders", link = isOrder ? safeUrl(it.link) : "";
+      return '<div class="pk-row pk-' + kind + (it[T.done] ? " done" : "") + '">' + T.cols.map(function (c, i) {
+        var lab = c[1];
+        return '<label class="pk-f pk-f' + i + '"><span class="pk-lab">' + lab + "</span>" + itemInput(path, it, c[0], 'aria-label="' + lab + '"' + (c[2] === "number" ? ' step="0.01" min="0" data-rerender' : "") + (c[2] === "date" ? " data-rerender" : "") + (c[2] === "text" ? ' maxlength="120"' : ""), c[2]) + "</label>";
+      }).join("") + T.ticks.map(function (t) {
+        return '<label class="pk-c pk-t"><span class="pk-lab">' + t[1] + '</span><input type="checkbox" class="pk-chk" aria-label="' + t[1] + '" data-item="' + path + "|" + it.id + "|" + t[0] + '" data-rerender ' + (it[t[0]] ? "checked" : "") + "></label>";
+      }).join("") + '<span class="pk-end">' + (isOrder ? pkgBadge(it) : "") +
+        (isOrder ? '<input type="text" class="pk-track" maxlength="300" placeholder="Tracking link or number" aria-label="Tracking link or number" value="' + esc(it.link) + '" data-item="' + path + "|" + it.id + '|link" data-rerender>' + (link ? '<a class="btn sm" href="' + esc(link) + '" target="_blank" rel="noopener noreferrer">Track</a>' : "") : "") +
+        '<button class="del" data-act="list-del" data-path="' + path + '" data-id="' + it.id + '" aria-label="Delete">' + ic("x") + "</button></span></div>";
+    }).join("");
+    var open = list.filter(function (x) { return !x[T.done]; }).length;
+    return card(T.title, '<div class="pk-table">' + head + rows + "</div>" + (list.length ? "" : '<div class="empty">Nothing here yet.</div>') +
+      '<div class="spacer"></div><button class="btn sm" data-act="pkg-add" data-kind="' + kind + '">' + ic("plus") + " " + T.add + "</button>", { dot: T.dot, right: open ? '<span class="badge">' + open + " open</span>" : "" });
+  }
+  function pkgTab() {
+    var P = state.finance.pkg, o = P.orders, wait = o.filter(function (x) { return !x.shipped && !x.delivered; }).length, way = o.filter(function (x) { return x.shipped && !x.delivered; }).length;
+    var late = o.filter(function (x) { return !x.delivered && x.eta && daysBetween(today(), parseD(x.eta)) < 0; }).length;
+    var transit = sum(o.filter(function (x) { return !x.delivered; }), function (x) { return x.amount; }), refund = sum(P.returns.filter(function (x) { return !x.done; }), function (x) { return x.amount; });
+    var stats = '<div class="stats"><div class="stat"><span class="v">' + way + '</span><span class="k">On the way</span></div><div class="stat"><span class="v">' + wait + '</span><span class="k">Not shipped yet</span></div><div class="stat"><span class="v">' + money(transit) + '</span><span class="k">Ordered, not here yet</span></div><div class="stat"><span class="v">' + money(refund) + '</span><span class="k">Waiting on returns</span></div></div>' +
+      (late ? '<p class="small" style="margin:12px 0 0"><b>' + late + (late === 1 ? " order is" : " orders are") + " past the expected date.</b> It may be worth contacting the store.</p>" : "");
+    return '<div class="grid"><div class="c12">' + card("Package tracker", stats, { cls: "tint-pink", dot: "p" }) + '</div><div class="c12">' + pkgSection("orders") + '</div><div class="c12">' + pkgSection("returns") + '</div><div class="c12">' + pkgSection("exchanges") + "</div></div>";
+  }
+
   function viewFinance() {
     var mk = state.ui.finMonth || monthKey(today()), md = parseD(mk + "-01"), f = finMonth(mk);
-    var tb = tabs("finance", [["overview", "Overview"], ["budget", "Income & spending"], ["savings", "Savings & debt"], ["subs", "Subscriptions"], ["wish", "Shopping"], ["calc", "Calculator"]]);
+    var tb = tabs("finance", [["overview", "Overview"], ["budget", "Income & spending"], ["savings", "Savings & debt"], ["subs", "Subscriptions"], ["wish", "Shopping"], ["pkg", "Packages"], ["calc", "Calculator"]]);
     var income = sum(f.income, function (x) { return x.amount; }), spent = sum(f.expenses, function (x) { return x.amount; });
     var subs = sum(state.finance.subs, subMonthly);
     var saved = sum(state.finance.pots, function (p) { return p.saved; });
@@ -1936,6 +1984,8 @@
         '<div class="spacer"></div>' + card("Debt paydown", (debts ? '<div class="scroll-x"><table class="table" style="min-width:640px"><tr><th>Debt</th><th>Started at</th><th>Balance now</th><th>Rate %</th><th>Min / month</th><th>Progress</th><th></th></tr>' + debts + "</table></div>" : '<div class="empty">Debt-free, or not tracking any yet.</div>') + '<div class="spacer"></div><button class="btn sm" data-act="debt-add">' + ic("plus") + " Add debt</button>", { dot: "s", right: '<span class="badge sage">' + money(sum(state.finance.debts, function (d) { return d.balance; })) + " remaining</span>" }) + '<div class="spacer"></div>' + payoffCard();
     } else if (tb.cur === "wish") {
       body = wishTab();
+    } else if (tb.cur === "pkg") {
+      body = pkgTab();
     } else if (tb.cur === "calc") {
       body = '<div class="grid"><div class="c6">' + card("Calculator", window.SlowCalc ? SlowCalc.html() : "", { dot: "b" }) + '</div></div>';
     } else {
@@ -1947,7 +1997,7 @@
       body = card("Recurring subscriptions", (rows ? '<div class="scroll-x"><table class="table"><tr><th>Service</th><th>Amount</th><th>Cycle</th><th>Next due</th><th></th><th></th><th></th></tr>' + rows + "</table></div>" : '<div class="empty">Add Netflix, gym, cloud storage… and never miss a renewal.</div>') +
         '<div class="spacer"></div><button class="btn sm" data-act="sub-add">' + ic("plus") + " Add subscription</button>", { dot: "k", right: '<span class="badge">' + money(subs) + " / month · " + money(subs * 12) + " / year</span>" });
     }
-    return head("Life · Money", 'Finance <span class="em">&amp; subscriptions</span>', tb.cur === "wish" || tb.cur === "calc" ? "" : monthNav) + tb.html + body;
+    return head("Life · Money", 'Finance <span class="em">&amp; subscriptions</span>', tb.cur === "wish" || tb.cur === "calc" || tb.cur === "pkg" ? "" : monthNav) + tb.html + body;
   }
 
   /* ------------------------------------------------------------ views: mind */
@@ -3626,6 +3676,15 @@
         state.ui.pinSel = ""; save(); render(); toast("Removed from the map (still on your list)"); return;
       }
       case "map-zoom": state.ui.mapZoom = clamp(state.ui.mapZoom + (parseInt(d.val, 10) || 0), 1, 4); save(); render(); return;
+      case "pkg-add": {
+        var pk = PKG[d.kind];
+        if (!pk) return;
+        var pr = { id: uid() };
+        pk.cols.forEach(function (c) { pr[c[0]] = c[2] === "number" ? "" : ""; });
+        pk.ticks.forEach(function (t) { pr[t[0]] = false; });
+        if (d.kind === "orders") { pr.date = todayKey(); pr.link = ""; }
+        state.finance.pkg[d.kind].push(pr); save(); render(); return;
+      }
       case "payoff-method": state.finance.payoff.method = d.val === "snowball" ? "snowball" : "avalanche"; save(); render(); return;
       case "wish-mode": state.ui.wishMode = ["shop", "wish", "bought"].indexOf(d.val) >= 0 ? d.val : "shop"; state.ui.wishCat = ""; save(); render(); return;
       case "wish-cat": state.ui.wishCat = wishCatNames().indexOf(d.val) >= 0 ? d.val : ""; save(); render(); return;
@@ -4317,6 +4376,21 @@
       });
       var pp = fin.payoff && typeof fin.payoff === "object" ? fin.payoff : {};
       fin.payoff = { method: pp.method === "snowball" ? "snowball" : "avalanche", extra: dnum(pp.extra) };
+    }
+    /* Package tracker. */
+    if (fin) {
+      var pk0 = fin.pkg && typeof fin.pkg === "object" && !Array.isArray(fin.pkg) ? fin.pkg : {}, pnum = function (v) { var x = parseFloat(v); return isFinite(x) && x >= 0 ? Math.min(1e9, x) : ""; };
+      var PCOLS = { orders: ["text", "store", "amount", "date", "eta"], returns: ["text", "store", "amount", "date"], exchanges: ["text", "swap", "store", "amount"] }, PTICK = { orders: ["shipped", "delivered"], returns: ["shipped", "done"], exchanges: ["shipped", "done"] };
+      fin.pkg = {};
+      Object.keys(PCOLS).forEach(function (k) {
+        fin.pkg[k] = (Array.isArray(pk0[k]) ? pk0[k] : []).filter(function (x) { return x && typeof x === "object" && SAFE_ID.test(String(x.id)); }).slice(0, 1000).map(function (x) {
+          var o = { id: String(x.id) };
+          PCOLS[k].forEach(function (c) { o[c] = c === "amount" ? pnum(x[c]) : (c === "date" || c === "eta") ? (DKEY.test(String(x[c])) ? x[c] : "") : str(x[c], 120); });
+          PTICK[k].forEach(function (t) { o[t] = x[t] === true; });
+          if (k === "orders") o.link = str(x.link, 300);
+          return o;
+        });
+      });
     }
     /* Trips: ids end up in page markup, so keep only safe ones; photo ids must look like ours. */
     var tr = data.travel && typeof data.travel === "object" ? data.travel : null;

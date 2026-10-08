@@ -6,7 +6,7 @@
 
   var TABS = [
     ["today", "Today"], ["year", "Year"], ["month", "Month"], ["week", "Week"], ["day", "Day"],
-    ["habits", "Habits"], ["goals", "Goals"], ["debt", "Debt"], ["reflect", "Reflect"], ["notebook", "Notebook"]
+    ["habits", "Habits"], ["goals", "Goals"], ["money", "Money"], ["reflect", "Reflect"], ["notebook", "Notebook"]
   ];
 
   function parseRoute() {
@@ -60,7 +60,7 @@
   /* The left-hand menu (wide screens). The same pages as the top tabs, grouped. */
   var SIDE = [
     ["Plan", [["today", "Today", "sun"], ["year", "Year", "grid"], ["month", "Month", "calendar"], ["week", "Week", "columns"], ["day", "Day", "clock"]]],
-    ["Track", [["habits", "Habits", "loop"], ["goals", "Goals", "target"], ["debt", "Debt payoff", "wallet"], ["reflect", "Reflect", "moon"]]],
+    ["Track", [["habits", "Habits", "loop"], ["goals", "Goals", "target"], ["money", "Money", "wallet"], ["reflect", "Reflect", "moon"]]],
     ["Journal", [["notebook", "Notebook", "book"]]]
   ];
   function buildSide(active) {
