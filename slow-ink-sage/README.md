@@ -4,7 +4,7 @@ A warm, paper-and-sage yearly planner with a notebook of its own. Plain HTML, CS
 
 ## Pages
 
-**Today** · **Year** · **Month** · **Week** · **Day** · **Habits** · **Goals** · **Reflect** · **Notebook**
+**Today** · **Year** · **Month** · **Week** · **Day** · **Habits** · **Goals** · **Debt payoff** · **Reflect** · **Notebook**
 
 - **Today** is the home dashboard. It opens on the real date with a greeting, an intention, a year-progress ring and four live numbers (tasks done, habits today, best habit streak, average goal progress). Below that: today's tasks, this week at a glance, habits with current streaks, goals with progress bars, the next starred key dates, mood and the latest notebook page.
 - **Getting started** is a checklist on Today that ticks itself off as you use the planner (intention, a task, a habit, a goal, a key date, a notebook page, a backup). It can be hidden.
@@ -13,12 +13,12 @@ A warm, paper-and-sage yearly planner with a notebook of its own. Plain HTML, CS
 - **Month** shows what's planned right inside each day (a dot per task on phones), plus a monthly focus and stats.
 - **Week** has a column per day with quick-add, a weekly focus and a "looking back" box.
 - **Day** has an intention, tasks (star one to make it a key date), habits, mood and a few lines about the day.
-- **Habits** is a month grid with streaks. **Goals** breaks a goal into steps with a progress bar. **Reflect** has monthly and yearly prompts.
+- **Habits** is a month grid with streaks. **Goals** breaks a goal into steps with a progress bar. **Debt payoff** lists what you owe (balance, interest rate, minimum payment), lets you choose an avalanche (highest interest first) or snowball (smallest balance first) plan with an optional extra amount each month, and works out the debt-free date, total interest, the order debts are cleared, how much sooner you finish than paying only the minimums, and a chart. Log payments to watch each balance fall. Its **Calculator** tab is a keypad calculator (brackets, percent, keyboard, copy result, recent calculations) with tip & split, sale price, savings goal and loan payment shortcuts. **Reflect** has monthly and yearly prompts.
 - Works for any year. Use the arrows on the Year, Month and Week pages to move around.
 
 ## Navigation
 
-On screens 1100px wide or more (laptops and desktops) a **left-hand menu** groups the pages: Plan (Today, Year, Month, Week, Day), Track (Habits, Goals, Reflect) and Journal (Notebook), with Personalise and Back up at the bottom. The Notebook still opens full-screen as its own book. On tablets in portrait and on phones the menu is replaced by the tab bar across the top.
+On screens 1100px wide or more (laptops and desktops) a **left-hand menu** groups the pages: Plan (Today, Year, Month, Week, Day), Track (Habits, Goals, Debt payoff, Reflect) and Journal (Notebook), with Personalise and Back up at the bottom. The Notebook still opens full-screen as its own book. On tablets in portrait and on phones the menu is replaced by the tab bar across the top.
 
 ## Personalise
 

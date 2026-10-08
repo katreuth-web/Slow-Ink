@@ -61,6 +61,11 @@
     s.notebook.current = s.notebook.pages[0].id;
     s.sample = true;
     s.ui.onboardHidden = true;
+    s.debt = { method: "avalanche", extra: "100", cur: "$", items: [
+      { id: SI.uid(), name: "Credit card", start: "3200", bal: "2400", apr: "21.9", min: "75" },
+      { id: SI.uid(), name: "Car loan", start: "6800", bal: "5200", apr: "6.5", min: "140" },
+      { id: SI.uid(), name: "Student loan", start: "9000", bal: "8600", apr: "4.2", min: "95" }
+    ] };
     return s;
   }
 

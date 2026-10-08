@@ -71,6 +71,7 @@
     redo: '<path d="M15 14l5-5-5-5"/><path d="M20 9H9.500a5.500 5.500 0 0 0 0 11H13"/>',
     print: '<path d="M7 9V4h10v5M7 17H5a1 1 0 0 1-1-1v-5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5a1 1 0 0 1-1 1h-2"/><path d="M7 14h10v6H7z"/>',
     close: '<path d="M6 6l12 12M18 6L6 18"/>',
+    wallet: '<path d="M4 7.500A2.500 2.500 0 0 1 6.500 5H18v3"/><path d="M4 7.500V17a2 2 0 0 0 2 2h12.500a1.500 1.500 0 0 0 1.500-1.500v-8A1.500 1.500 0 0 0 18.500 8H6.500A2.500 2.500 0 0 1 4 7.500z"/><circle cx="16" cy="13.500" r="1.200"/>',
     link: '<path d="M10 14a4 4 0 0 0 5.700 0l3-3a4 4 0 0 0-5.700-5.700l-1 1"/><path d="M14 10a4 4 0 0 0-5.700 0l-3 3a4 4 0 0 0 5.700 5.700l1-1"/>',
     ul: '<path d="M9 7h11M9 12h11M9 17h11"/><circle cx="4.500" cy="7" r="1"/><circle cx="4.500" cy="12" r="1"/><circle cx="4.500" cy="17" r="1"/>',
     ol: '<path d="M10 7h10M10 12h10M10 17h10M4 5.500l1.500-1v5M3.500 14.500c.5-1 2.500-1 2.500.5 0 1-2.500 2-2.500 3h3"/>',
@@ -168,6 +169,7 @@
       habitLog: {},
       goals: [],
       reflections: {},
+      debt: { items: [], method: "avalanche", extra: "", cur: "$" },
       notebook: { sections: secs, pages: [page], current: page.id, section: "s-journal" },
       ui: { nbMode: "type" },
       name: ""
@@ -371,6 +373,19 @@
     return out;
   }
 
+  /* Debt payoff: rebuilt from known fields; amounts are kept as plain numbers in text. */
+  function cleanDebt(d) {
+    d = d && typeof d === "object" && !Array.isArray(d) ? d : {};
+    var amt = function (v) { var x = parseFloat(v); return isFinite(x) && x > 0 ? String(Math.min(1e9, x)) : ""; };
+    return {
+      method: d.method === "snowball" ? "snowball" : "avalanche",
+      extra: amt(d.extra), cur: ["$", "£", "€", "¥", "₹", "A$", "C$", "R$", "kr", "₩"].indexOf(d.cur) >= 0 ? d.cur : "$",
+      items: (Array.isArray(d.items) ? d.items : []).filter(function (x) { return x && typeof x === "object" && ID_RE.test(String(x.id)); }).slice(0, 60).map(function (x) {
+        return { id: String(x.id), name: String(x.name == null ? "" : x.name).slice(0, 60), bal: amt(x.bal), start: amt(x.start), apr: amt(Math.min(1000, parseFloat(x.apr) || 0)), min: amt(x.min) };
+      })
+    };
+  }
+
   SI.importData = function (file) {
     if (!file) return;
     var r = new FileReader();
@@ -385,6 +400,7 @@
       if (!stateOk(s)) { SI.toast("That backup has unexpected contents, so it wasn’t restored."); return; }
       if (!window.confirm("Restore this backup? It will replace everything currently in this planner.")) return;
       s.name = typeof s.name === "string" ? s.name.slice(0, 40) : "";
+      s.debt = cleanDebt(s.debt);
       var nb = s.notebook;
       nb.pages = (Array.isArray(nb.pages) ? nb.pages : []).map(cleanPage).filter(Boolean);
       nb.sections = (Array.isArray(nb.sections) ? nb.sections : []).filter(function (x) { return x && ID_RE.test(String(x.id)); })
