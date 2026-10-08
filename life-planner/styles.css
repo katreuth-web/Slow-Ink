@@ -1223,3 +1223,48 @@ body.markup-on .book { margin-bottom: 90px; }
 @media (max-width: 520px) { .wgrid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } .wcard { padding: 8px; } .wc-row { grid-template-columns: 1fr; } }
 .wcard input.check { width: 20px; min-width: 20px; }
 .wc-foot .of-pack { white-space: nowrap; }
+
+/* ---------- Calculator widget ---------- */
+.calc { max-width: 420px; margin: 0 auto; outline: none; }
+.calc-display { padding: 14px 16px; border-radius: 18px; background: var(--surface); box-shadow: var(--press-sm); text-align: right; min-height: 92px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; overflow: hidden; }
+.calc-expr { min-height: 1.3em; color: var(--muted); font-size: 1rem; overflow-wrap: anywhere; word-break: break-all; }
+.calc-res { font-family: var(--serif); font-size: 2.3rem; font-weight: 600; line-height: 1.1; overflow-wrap: anywhere; word-break: break-all; }
+.calc-keys { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+.calc-key { height: 54px; border: 0; border-radius: 16px; background: var(--surface); color: var(--ink); font: inherit; font-size: 1.25rem; box-shadow: var(--raise-sm); cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.calc-key:active { box-shadow: var(--press-sm); }
+.calc-key.op { background: var(--pink-soft); color: var(--ink); }
+.calc-key.fn { color: var(--ink-soft); font-size: 1.05rem; }
+.calc-key.eq { grid-column: 1 / -1; background: var(--pink); font-weight: 600; }
+.calc-key:focus-visible, .calc-link:focus-visible, .calc-tab:focus-visible, .calc-h:focus-visible { outline: 2px solid var(--pink-deep); outline-offset: 2px; }
+.calc-bar { display: flex; align-items: center; gap: 12px; margin-top: 12px; min-height: 28px; }
+.calc-link { background: none; border: 0; padding: 4px 0; font: inherit; font-size: 13px; color: var(--pink-deep); text-decoration: underline; cursor: pointer; }
+.calc-note { font-size: 12.5px; color: var(--muted); }
+.calc-hist { margin-top: 8px; font-size: 13px; }
+.calc-hist summary { cursor: pointer; color: var(--ink-soft); padding: 4px 0; }
+.calc-hist ul { list-style: none; margin: 6px 0 8px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.calc-h { width: 100%; display: flex; justify-content: space-between; gap: 10px; padding: 8px 10px; border: 0; border-radius: 12px; background: var(--surface); box-shadow: var(--raise-sm); font: inherit; color: var(--ink); cursor: pointer; text-align: left; }
+.calc-h span { color: var(--muted); overflow-wrap: anywhere; }
+.calc-empty { color: var(--muted); font-size: 13px; margin: 6px 0; }
+.calc-tools { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--rule); }
+.calc-tools-h { margin: 0 0 10px; font-family: var(--serif); font-size: 1.1rem; font-weight: 600; }
+.calc-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.calc-tab { border: 0; border-radius: 999px; padding: 7px 13px; background: var(--surface); box-shadow: var(--raise-sm); font: inherit; font-size: 13px; color: var(--ink); cursor: pointer; }
+.calc-tab.on { background: var(--pink-soft); box-shadow: var(--press-sm); }
+.calc-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.calc-f { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 12px; color: var(--muted); }
+.calc-f input { width: 100%; min-width: 0; }
+.calc-out { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.calc-out > div { display: flex; justify-content: space-between; gap: 12px; padding: 8px 12px; border-radius: 12px; background: var(--surface); box-shadow: var(--press-sm); }
+.calc-out span { color: var(--ink-soft); } .calc-out b { text-align: right; }
+@media (max-width: 380px) { .calc-key { height: 50px; } .calc-keys { gap: 8px; } .calc-res { font-size: 2rem; } }
+
+/* ---------- Debt payoff plan ---------- */
+.pay-chart { display: block; width: 100%; height: auto; margin-top: 10px; }
+.pc-axis { stroke: var(--rule-strong); stroke-width: 1; }
+.pc-plan { fill: none; stroke: var(--sage-deep); stroke-width: 2.6; stroke-linejoin: round; stroke-linecap: round; }
+.pc-base { fill: none; stroke: var(--pink-deep); stroke-width: 2; stroke-dasharray: 5 5; }
+.pc-lbl { fill: var(--muted); font-size: 12px; }
+.pay-key { margin: 6px 0 0; font-size: 12.5px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pay-key .pk-plan, .pay-key .pk-base { display: inline-block; width: 22px; border-top: 3px solid var(--sage-deep); }
+.pay-key .pk-base { border-top: 3px dashed var(--pink-deep); margin-left: 8px; }
+.pay-warn { padding: 12px 14px; border-radius: 14px; background: var(--pink-soft); line-height: 1.5; }
