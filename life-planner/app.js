@@ -1826,7 +1826,7 @@
 
   function viewFinance() {
     var mk = state.ui.finMonth || monthKey(today()), md = parseD(mk + "-01"), f = finMonth(mk);
-    var tb = tabs("finance", [["overview", "Overview"], ["budget", "Income & spending"], ["savings", "Savings & debt"], ["subs", "Subscriptions"], ["wish", "Shopping"]]);
+    var tb = tabs("finance", [["overview", "Overview"], ["budget", "Income & spending"], ["savings", "Savings & debt"], ["subs", "Subscriptions"], ["wish", "Shopping"], ["calc", "Calculator"]]);
     var income = sum(f.income, function (x) { return x.amount; }), spent = sum(f.expenses, function (x) { return x.amount; });
     var subs = sum(state.finance.subs, subMonthly);
     var saved = sum(state.finance.pots, function (p) { return p.saved; });
@@ -1866,6 +1866,8 @@
         '<div class="spacer"></div>' + card("Debt paydown", (debts ? '<div class="scroll-x"><table class="table"><tr><th>Debt</th><th>Started at</th><th>Balance now</th><th>Rate</th><th>Progress</th><th></th></tr>' + debts + "</table></div>" : '<div class="empty">Debt-free, or not tracking any yet.</div>') + '<div class="spacer"></div><button class="btn sm" data-act="debt-add">' + ic("plus") + " Add debt</button>", { dot: "s", right: '<span class="badge sage">' + money(sum(state.finance.debts, function (d) { return d.balance; })) + " remaining</span>" });
     } else if (tb.cur === "wish") {
       body = wishTab();
+    } else if (tb.cur === "calc") {
+      body = '<div class="grid"><div class="c6">' + card("Calculator", window.SlowCalc ? SlowCalc.html() : "", { dot: "b" }) + '</div></div>';
     } else {
       var rows = state.finance.subs.map(function (s) {
         var n = s.due ? daysBetween(today(), parseD(s.due)) : null;
@@ -1875,7 +1877,7 @@
       body = card("Recurring subscriptions", (rows ? '<div class="scroll-x"><table class="table"><tr><th>Service</th><th>Amount</th><th>Cycle</th><th>Next due</th><th></th><th></th><th></th></tr>' + rows + "</table></div>" : '<div class="empty">Add Netflix, gym, cloud storage… and never miss a renewal.</div>') +
         '<div class="spacer"></div><button class="btn sm" data-act="sub-add">' + ic("plus") + " Add subscription</button>", { dot: "k", right: '<span class="badge">' + money(subs) + " / month · " + money(subs * 12) + " / year</span>" });
     }
-    return head("Life · Money", 'Finance <span class="em">&amp; subscriptions</span>', tb.cur === "wish" ? "" : monthNav) + tb.html + body;
+    return head("Life · Money", 'Finance <span class="em">&amp; subscriptions</span>', tb.cur === "wish" || tb.cur === "calc" ? "" : monthNav) + tb.html + body;
   }
 
   /* ------------------------------------------------------------ views: mind */
@@ -3291,6 +3293,7 @@
     view.innerHTML = html;
     wrapTxt(view);
     wrapDates(view);
+    if (window.SlowCalc) SlowCalc.mount(view, { currency: state.currency });
     if (mount) mount();
     closeSheet();
     var ms = view.querySelector(".wmap-scroll"), mi = ms && ms.firstElementChild;
