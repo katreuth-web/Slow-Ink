@@ -961,3 +961,9 @@ body[data-page="money"] .money-cols > .card { margin-top: 0; }
 .sched-row.now { background: var(--sage-wash); border-radius: 10px; }
 .sched-row.now .sched-time { color: var(--forest); font-weight: 600; }
 @media print { .sched-tools { display: none; } .sched-input { padding: 6px 4px; } }
+.wsched { display: flex; flex-direction: column; gap: 3px; padding: 6px 0 8px; margin-bottom: 4px; border-bottom: 1px dashed var(--rule-2); text-decoration: none; color: var(--ink); }
+.ws-item { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 6px; font-size: 12.5px; line-height: 1.35; align-items: baseline; }
+.ws-item b { font-weight: 600; color: var(--forest); font-size: 11.5px; white-space: nowrap; }
+.ws-item span { overflow-wrap: anywhere; }
+.ws-more { font-size: 11.5px; color: var(--ink-mute); padding-left: 52px; }
+.wsched:hover .ws-item span { text-decoration: underline; }

@@ -52,6 +52,22 @@
       '<div class="sched-body">' + rows + "</div>" + (filled ? "" : '<p class="small hint">Pencil in appointments and time blocks. Leave a line empty if the hour is yours.</p>') + "</section>";
   };
 
+
+  /* a read-only list of the day's plans, for the Week page: "9 AM  Dentist" (tap the day to edit) */
+  SI.scheduleSummary = function (key) {
+    var rec = (SI.state.days[key] && SI.state.days[key].sched) || {}, items = [];
+    Object.keys(rec).forEach(function (k) {
+      var m = /^t([01]\d|2[0-3])([0-5]\d)$/.exec(k);
+      if (m && typeof rec[k] === "string" && rec[k].trim()) { var mins = +m[1] * 60 + +m[2]; items.push({ mins: mins, text: rec[k].trim() }); }
+    });
+    if (!items.length) return "";
+    items.sort(function (a, b) { return a.mins - b.mins; });
+    var shown = items.slice(0, 6);
+    return '<a class="wsched" href="' + SI.href.dayKey(key) + '" aria-label="Schedule for this day">' + shown.map(function (it) {
+      return '<span class="ws-item"><b>' + esc(label(it.mins)) + "</b><span>" + esc(it.text) + "</span></span>";
+    }).join("") + (items.length > shown.length ? '<span class="ws-more">+' + (items.length - shown.length) + " more</span>" : "") + "</a>";
+  };
+
   SI.actions["sched-range"] = function (el) {
     var c = cfg(), v = parseInt(el.value, 10);
     if (!isFinite(v)) return;

@@ -313,7 +313,7 @@
     for (var i = 0; i < 7; i++) {
       var d = SI.addDays(mon, i), k = SI.key(d);
       cols += '<section class="wcol' + (k === tk ? " today" : "") + (i > 4 ? " wknd" : "") + '"><a class="wcol-head" href="' + href.day(d) + '"><span>' + SI.DOW[i] + "</span><b>" + d.getDate() + "</b></a>" +
-        taskList(k, true, "") + addRow(k, "Add…") + "</section>";
+        SI.scheduleSummary(k) + taskList(k, true, "") + addRow(k, "Add…") + "</section>";
     }
     var wrec = S().weeks[wk] || {};
     return head(mon.getFullYear() + " · Week " + weekNumber(mon), esc(label), "",
