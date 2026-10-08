@@ -30,6 +30,7 @@ KEEP YOUR WORK SAFE  (please read - it's important)
 WHAT'S INSIDE
 - MENU: on a laptop or desktop the pages are in a menu down the left side; on a phone or tablet they are in a row of tabs across the top.
 - TODAY: your home dashboard, with a greeting, your intention, a year-progress ring, today's numbers, habit streaks, goal progress and your next key dates. A short "Getting started" checklist ticks itself off as you go (you can hide it). Plus Year, Month, Week and Day pages. Use the arrows to move to any year.
+- SCHEDULE: the Day page (and Today) has an hour-by-hour schedule, from 6 AM to 9 PM unless you choose your own hours or switch to half hours.
 - PERSONALISE (the palette button at the top right): type your name for the greeting, pick a colour (Sage, Clay, Dusk or Rose), Light, Dark or Auto mode and a font. Your choice is saved with your planner.
 - Want to see how a lived-in planner looks? Press "Look around with sample data" on the Today page. A banner lets you clear it and start fresh.
 - Star a task to make it a KEY DATE: it is highlighted in the Year and Month pages.

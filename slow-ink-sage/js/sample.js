@@ -66,6 +66,9 @@
       { id: SI.uid(), name: "Car loan", start: "6800", bal: "5200", apr: "6.5", min: "140" },
       { id: SI.uid(), name: "Student loan", start: "9000", bal: "8600", apr: "4.2", min: "95" }
     ] };
+    s.days[K(0)].sched = { t0700: "Stretch + tea", t0900: "Garden project: outline", t1100: "Pick up the repaired bike", t1300: "Lunch with Sam", t1500: "Order seeds for spring", t1700: "Walk", t1900: "Cook + call Gran" };
+    s.days[K(1)].sched = { t1000: "Farmers' market", t1400: "Call Gran" };
+    s.days[K(5)].sched = { t1000: "Dentist, 10:15" };
     var g1 = SI.uid(), g2 = SI.uid(), M0 = function (back, day) { var d = new Date(t.getFullYear(), t.getMonth() - back, day); return SI.key(d); };
     s.money = { goals: [{ id: g1, name: "Holiday fund", target: "1500", due: SI.key(new Date(t.getFullYear(), t.getMonth() + 6, 1)) }, { id: g2, name: "Emergency cushion", target: "5000", due: "" }], income: [], deposits: [] };
     for (var b = 4; b >= 0; b--) {

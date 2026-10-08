@@ -201,6 +201,7 @@
       tiles + gettingStarted() +
       '<div class="cols cols-2"><div class="stack">' +
       card("To do today", taskList(key, false, "A quiet page. Add one small thing that would make today feel good.") + addRow(key)) +
+      SI.scheduleCard(key) +
       card("This week", '<div class="wstrip">' + week + '</div><p class="small"><a href="' + href.week(t) + '">Open the week</a></p>') +
       nbCard +
       '</div><div class="stack">' +
@@ -312,7 +313,7 @@
     for (var i = 0; i < 7; i++) {
       var d = SI.addDays(mon, i), k = SI.key(d);
       cols += '<section class="wcol' + (k === tk ? " today" : "") + (i > 4 ? " wknd" : "") + '"><a class="wcol-head" href="' + href.day(d) + '"><span>' + SI.DOW[i] + "</span><b>" + d.getDate() + "</b></a>" +
-        taskList(k, true, "") + addRow(k, "Add…") + "</section>";
+        SI.scheduleSummary(k) + taskList(k, true, "") + addRow(k, "Add…") + "</section>";
     }
     var wrec = S().weeks[wk] || {};
     return head(mon.getFullYear() + " · Week " + weekNumber(mon), esc(label), "",
@@ -335,7 +336,7 @@
       stepper(href.day(SI.addDays(d, -1)), href.day(SI.addDays(d, 1)), SI.DOW[SI.dowIndex(d)] + " " + d.getDate(), isNow ? "" : "#/today", "Today")) +
       '<div class="intention"><label for="intent" class="eyebrow">Intention</label>' +
       bound("days." + key + ".intention", rec.intention, 'id="intent" placeholder="Today would be good if…" maxlength="160"', "field intent-field") + "</div>" +
-      '<div class="cols cols-2"><div class="stack">' +
+      '<div class="cols cols-2"><div class="stack">' + SI.scheduleCard(key) +
       card("To do", taskList(key, false, "Nothing planned yet. Add one small thing.") + addRow(key) + '<p class="small hint">Tap the star to mark something as a key date. It will show up in your year and month pages.</p>') +
       card("A few lines about the day", area("days." + key + ".note", rec.note, 'rows="6" placeholder="What happened? What are you noticing?"') +
         '<div class="row-actions"><button class="btn sm ghost" data-act="nb-new-journal" data-day="' + key + '">' + ic("book") + "Write a full journal page</button></div>") +
