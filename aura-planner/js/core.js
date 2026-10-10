@@ -69,6 +69,7 @@
       ikigai: { love: [], good: [], paid: [], need: [], statement: "" },
       mindmap: { nodes: [{ id: "root", text: "My dream life", x: 50, y: 50, color: "#B69CFF", parent: null }] },
       vision: { title: "The life I'm creating", tiles: [] },
+      beliefs: { pairs: [{ id: A.uid() + "0", from: "", to: "" }, { id: A.uid() + "1", from: "", to: "" }, { id: A.uid() + "2", from: "", to: "" }], deep: { belief: "", origin: "", cost: "", forEv: "", againstEv: "", balanced: "", action: "" } },
       dream: { parts: { who: "", health: "", career: "", relations: "", home: "", growth: "", experiences: "" }, grateful: "", paragraph: "" },
       manifest: { items: [], view: "board" },
       scripts: [],
@@ -465,7 +466,7 @@
   A.GROUPS = [
     { id: "home", label: "Home", icon: "home", items: [["home", "Home"]] },
     { id: "plan", label: "Planner", icon: "calendar", items: [["year", "Year"], ["month", "Month"], ["week", "Week"], ["day", "Daily Practice"]] },
-    { id: "manifest", label: "Manifest", icon: "sparkle", items: [["manifest", "My Manifestations"], ["script", "Scripting"], ["visualize", "Visualize"], ["affirm", "Affirmations"], ["rituals", "Rituals & Moon"]] },
+    { id: "manifest", label: "Manifest", icon: "sparkle", items: [["manifest", "My Manifestations"], ["script", "Scripting"], ["beliefs", "Reframe Beliefs"], ["visualize", "Visualize"], ["affirm", "Affirmations"], ["rituals", "Rituals & Moon"]] },
     { id: "align", label: "Align", icon: "compass", items: [["wheel", "Level 10 Life"], ["ikigai", "Ikigai"], ["dream", "Dream Life Script"], ["vision", "Vision Board"], ["mindmap", "Dream Map"], ["habits", "Habits"]] },
     { id: "notes", label: "Notebook", icon: "notebook", items: [["notebook", "Notebook"]] },
     { id: "ai", label: "Insights", icon: "eye", items: [["coach", "Pattern Insights"], ["synth", "Thought Sorter"]] }

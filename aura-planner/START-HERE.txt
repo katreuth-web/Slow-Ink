@@ -34,7 +34,7 @@ WHAT'S INSIDE
   auto, and three fonts. The moon / sun button switches dark mode.
 - PLANNER: Year, Month, Week and a Daily Practice page (intention, moon of the
   day, affirmation of the day, practice checklist, gratitude, feelings, reflection).
-- MANIFEST: My Manifestations (a board with a progress check-in and a log of signs
+- MANIFEST: My Manifestations (a board with a progress check-in and a log of signs Reframe Beliefs (limiting beliefs, what they cost, and fairer ones to practise).
   and wins), Scripting, guided Visualize sessions, Affirmations, and Rituals &
   Moon (369 method, 55 x 5, gratitude, signs, moon phases).
 - ALIGN: Level 10 Life wheel, Ikigai, Dream Life Script (write your dream life area by area, then save the affirmations you like), Dream Map, Vision Board and Habits.

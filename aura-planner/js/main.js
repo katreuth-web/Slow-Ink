@@ -125,6 +125,11 @@
         evidence: arr(m.evidence, 1000).filter(isObj).map(function (e) { return { id: ID.test(e.id) ? e.id : A.uid(), date: dkey(e.date), kind: KINDS.indexOf(e.kind) >= 0 ? e.kind : "win", text: str(e.text, 300) }; }) };
     }), view: "board" };
     out.scripts = arr(raw.scripts, 500).filter(isObj).map(function (s) { return { id: ID.test(s.id) ? s.id : A.uid(), title: str(s.title, 80), type: str(s.type, 20), text: str(s.text, 100000), manifestId: ID.test(s.manifestId) ? s.manifestId : "", date: dkey(s.date), updated: dkey(s.updated) || A.todayKey() }; });
+    if (isObj(raw.beliefs)) {
+      var bd = isObj(raw.beliefs.deep) ? raw.beliefs.deep : {};
+      out.beliefs = { pairs: arr(raw.beliefs.pairs, 200).filter(isObj).map(function (p) { return { id: ID.test(p.id) ? p.id : A.uid(), from: str(p.from, 300), to: str(p.to, 300) }; }), deep: {} };
+      Object.keys(A.defaults().beliefs.deep).forEach(function (k) { out.beliefs.deep[k] = str(bd[k], 4000); });
+    }
     if (isObj(raw.dream)) {
       var dp = isObj(raw.dream.parts) ? raw.dream.parts : {};
       Object.keys(out.dream.parts).forEach(function (k) { out.dream.parts[k] = str(dp[k], 4000); });
