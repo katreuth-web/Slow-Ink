@@ -192,7 +192,7 @@
     }).join("");
     return '<div class="grid">' +
       '<div class="c6">' + A.card("Today’s gratitude", intro("Try this:", "name three things, then feel the thanks in your body for a few breaths. Small and specific works best.") + inputs, { icon: "heart", tint: "pink" }) + "</div>" +
-      '<div class="c6">' + A.card("Gratitude jar", '<p class="small muted" style="margin:0 0 10px">' + total + " thank-yous so far.</p>" + (entries.length ? '<ul class="list">' + entries.slice(0, 14).map(function (e) {
+      '<div class="c6">' + A.card("Gratitude jar", '<img class="jar-img" src="img/gratitude-jar.png" alt="A pink glass jar filled with gold and pink stars" loading="lazy" width="600" height="600">' + '<p class="small muted" style="margin:0 0 10px">' + total + " thank-yous so far.</p>" + (entries.length ? '<ul class="list">' + entries.slice(0, 14).map(function (e) {
         return '<li class="li"><span class="badge grey">' + esc(A.fmtDay(A.parseD(e[0]), { month: "short", day: "numeric" })) + '</span><span class="li-text">' + esc(e[1]) + "</span></li>";
       }).join("") + "</ul>" : '<div class="empty">Past entries collect here.</div>'), { icon: "star", tone: "butter" }) + "</div></div>";
   }

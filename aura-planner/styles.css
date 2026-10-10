@@ -1173,3 +1173,6 @@ html[data-theme="meadow"] { --p-lsoft: 230, 247, 236; --p-psoft: 255, 246, 220; 
 
 .day-cell .small.muted, .day-cell .muted { color: var(--ink-2); }
 .lk > .lbl:first-child { margin-top: 12px; }
+
+/* the gratitude jar picture */
+.jar-img { display: block; width: min(100%, 200px); height: auto; margin: 0 auto 12px; }
