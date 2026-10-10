@@ -787,20 +787,25 @@
       '<div class="grow" style="min-width:180px">' + legend + "</div></div>";
   }
 
-  function radar(values, labels) {
-    var n = labels.length, cx = 190, cy = 175, R = 125, rings = "", spokes = "", txt = "";
-    function pt(i, r) { var a = (Math.PI * 2 * i) / n - Math.PI / 2; return [cx + Math.cos(a) * r, cy + Math.sin(a) * r]; }
+  /* the Level 10 wheel: one coloured wedge per area, sized by its score (same look as the Aura wheel) */
+  function wheelChart(values, labels) {
+    var n = labels.length, cx = 190, cy = 175, R = 125, rings = "", spokes = "", wedges = "", txt = "";
     for (var g = 2; g <= 10; g += 2) {
-      rings += '<polygon points="' + labels.map(function (_, i) { return pt(i, (R * g) / 10).join(","); }).join(" ") + '" fill="none" stroke="var(--line)"/>';
+      rings += '<circle cx="' + cx + '" cy="' + cy + '" r="' + (R * g) / 10 + '" fill="none" stroke="var(--line)"' + (g === 10 ? ' stroke-width="1.5"' : ' stroke-dasharray="3 4"') + "/>";
     }
     labels.forEach(function (l, i) {
-      var e = pt(i, R), t = pt(i, R + 22);
-      spokes += '<line x1="' + cx + '" y1="' + cy + '" x2="' + e[0] + '" y2="' + e[1] + '" stroke="var(--line)"/>';
-      txt += '<text x="' + t[0] + '" y="' + (t[1] + 3) + '" text-anchor="' + (Math.abs(t[0] - cx) < 10 ? "middle" : t[0] > cx ? "start" : "end") + '">' + esc(l) + "</text>";
+      var a0 = (i / n) * 2 * Math.PI - Math.PI / 2, a1 = ((i + 1) / n) * 2 * Math.PI - Math.PI / 2, am = (a0 + a1) / 2;
+      var rr = (R * clamp(values[i], 0, 10)) / 10;
+      var x0 = cx + rr * Math.cos(a0), y0 = cy + rr * Math.sin(a0), x1 = cx + rr * Math.cos(a1), y1 = cy + rr * Math.sin(a1);
+      wedges += '<path d="M' + cx + " " + cy + " L" + x0.toFixed(1) + " " + y0.toFixed(1) + " A" + rr + " " + rr + " 0 0 1 " + x1.toFixed(1) + " " + y1.toFixed(1) + ' Z" style="fill:' + CHART[i % CHART.length] + ';fill-opacity:.72;stroke:var(--paper)" stroke-width="2"><title>' + esc(l + ": " + (values[i] || 0) + "/10") + "</title></path>";
+      var ex = cx + R * Math.cos(a0), ey = cy + R * Math.sin(a0);
+      spokes += '<line x1="' + cx + '" y1="' + cy + '" x2="' + ex.toFixed(1) + '" y2="' + ey.toFixed(1) + '" stroke="var(--line)"/>';
+      var lx = cx + (R + 32) * Math.cos(am), ly = cy + (R + 32) * Math.sin(am);
+      txt += '<text x="' + lx.toFixed(1) + '" y="' + ly.toFixed(1) + '" text-anchor="middle" dominant-baseline="middle" style="fill:var(--ink);font-size:10.5px;font-weight:600">' + esc(l) + "</text>" +
+        '<text x="' + lx.toFixed(1) + '" y="' + (ly + 13).toFixed(1) + '" text-anchor="middle">' + (values[i] || 0) + "/10</text>";
     });
-    var poly = values.map(function (v, i) { return pt(i, (R * clamp(v, 0, 10)) / 10).join(","); }).join(" ");
-    return '<svg class="wheel-svg" viewBox="-40 0 460 350" role="img" aria-label="Level 10 life wheel">' + rings + spokes +
-      '<polygon points="' + poly + '" fill="var(--pink)" fill-opacity=".55" stroke="var(--pink-deep)" stroke-width="2" stroke-linejoin="round"/>' + txt + "</svg>";
+    return '<svg class="wheel-svg" viewBox="-40 0 460 350" role="img" aria-label="Level 10 life wheel">' + rings + spokes + wedges + txt +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="5" style="fill:var(--paper);stroke:var(--pink-deep)" stroke-width="2"/></svg>';
   }
 
   /* ------------------------------------------------------------ period stats */
@@ -2067,12 +2072,12 @@
         '<div class="stack">' + card("Reflect", '<div class="stack">' + fields + "</div>", { dot: "b" }) + card("My ikigai", bindArea("mind.ikigai.center", "Pull the threads together in one sentence…"), { cls: "tint-pink", dot: "p" }) + "</div></div>";
     } else if (tb.cur === "wheel") {
       var vals = WHEEL.map(function (w) { return num(getP("mind.wheel." + slug(w) + ".now")); });
-      var sliders = WHEEL.map(function (w) {
+      var sliders = WHEEL.map(function (w, i) {
         var p = "mind.wheel." + slug(w);
-        return '<div><div class="row"><span class="grow" style="font-weight:500">' + esc(w) + '</span><span class="badge pink" data-out="' + p + '.now">' + (num(getP(p + ".now")) || 0) + '/10</span></div><input type="range" min="0" max="10" step="1" value="' + (num(getP(p + ".now")) || 0) + '" data-bind="' + p + '.now" data-type="num" data-rerender aria-label="' + esc(w) + ' rating"><input type="text" style="margin-top:8px;font-size:12px;padding:7px 10px" data-bind="' + p + '.ten" value="' + esc(getP(p + ".ten")) + '" placeholder="What would a 10 look like?"></div>';
+        return '<div><div class="row"><span class="dotmark" style="background:' + CHART[i % CHART.length] + '"></span><span class="grow" style="font-weight:500">' + esc(w) + '</span><span class="badge pink" data-out="' + p + '.now">' + (num(getP(p + ".now")) || 0) + '/10</span></div><input type="range" min="0" max="10" step="1" value="' + (num(getP(p + ".now")) || 0) + '" data-bind="' + p + '.now" data-type="num" data-rerender aria-label="' + esc(w) + ' rating"><input type="text" style="margin-top:8px;font-size:12px;padding:7px 10px" data-bind="' + p + '.ten" value="' + esc(getP(p + ".ten")) + '" placeholder="What would a 10 look like?"></div>';
       }).join("");
       var avg = sum(vals) / vals.length;
-      body = '<div class="grid"><div class="c6">' + card("Your wheel", radar(vals, WHEEL) + '<div class="stats" style="margin-top:12px"><div class="stat"><span class="v">' + avg.toFixed(1) + '</span><span class="k">Average</span></div><div class="stat"><span class="v text">' + esc(WHEEL[vals.indexOf(Math.min.apply(null, vals))]) + '</span><span class="k">Needs love</span></div></div>', { dot: "p" }) + "</div>" +
+      body = '<div class="grid"><div class="c6">' + card("Your wheel", wheelChart(vals, WHEEL) + '<div class="stats" style="margin-top:12px"><div class="stat"><span class="v">' + avg.toFixed(1) + '</span><span class="k">Average</span></div><div class="stat"><span class="v text">' + esc(WHEEL[vals.indexOf(Math.min.apply(null, vals))]) + '</span><span class="k">Needs love</span></div></div>', { dot: "p" }) + "</div>" +
         '<div class="c6">' + card("Rate each area 1–10", '<div class="stack">' + sliders + "</div>", { dot: "b" }) + "</div></div>";
     }
     return head("Life · Mind", 'Mental <span class="em">wellbeing</span>') + tb.html + body;
