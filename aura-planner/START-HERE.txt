@@ -37,7 +37,7 @@ WHAT'S INSIDE
 - MANIFEST: My Manifestations (a board with a progress check-in and a log of signs
   and wins), Scripting, guided Visualize sessions, Affirmations, and Rituals &
   Moon (369 method, 55 x 5, gratitude, signs, moon phases).
-- ALIGN: Level 10 Life wheel, Ikigai, Dream Map, Vision Board and Habits.
+- ALIGN: Level 10 Life wheel, Ikigai, Dream Life Script (write your dream life area by area, then save the affirmations you like), Dream Map, Vision Board and Habits.
 - NOTEBOOK (top bar): a separate bound book with section tabs, seven papers,
   headings, lists and links, photos, stickers, and a Type / Markup switch for
   handwriting and sketching.

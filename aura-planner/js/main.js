@@ -125,6 +125,11 @@
         evidence: arr(m.evidence, 1000).filter(isObj).map(function (e) { return { id: ID.test(e.id) ? e.id : A.uid(), date: dkey(e.date), kind: KINDS.indexOf(e.kind) >= 0 ? e.kind : "win", text: str(e.text, 300) }; }) };
     }), view: "board" };
     out.scripts = arr(raw.scripts, 500).filter(isObj).map(function (s) { return { id: ID.test(s.id) ? s.id : A.uid(), title: str(s.title, 80), type: str(s.type, 20), text: str(s.text, 100000), manifestId: ID.test(s.manifestId) ? s.manifestId : "", date: dkey(s.date), updated: dkey(s.updated) || A.todayKey() }; });
+    if (isObj(raw.dream)) {
+      var dp = isObj(raw.dream.parts) ? raw.dream.parts : {};
+      Object.keys(out.dream.parts).forEach(function (k) { out.dream.parts[k] = str(dp[k], 4000); });
+      out.dream.grateful = str(raw.dream.grateful, 4000); out.dream.paragraph = str(raw.dream.paragraph, 8000);
+    }
     if (isObj(raw.viz)) out.viz = { sessions: arr(raw.viz.sessions, 400).filter(isObj).map(function (s) { return { date: dkey(s.date), mins: Math.round(num(s.mins, 1, 180, 5)), manifestId: ID.test(s.manifestId) ? s.manifestId : "", note: str(s.note, 400) }; }), sound: raw.viz.sound !== false, minutes: [3, 5, 10].indexOf(raw.viz.minutes) >= 0 ? raw.viz.minutes : 5, focus: ID.test(raw.viz.focus) ? raw.viz.focus : "" };
     if (isObj(raw.affirm)) {
       out.affirm = { favs: arr(raw.affirm.favs, 500).filter(function (x) { return ID.test(x); }), cat: str(raw.affirm.cat, 20) || "all", counts: {},
