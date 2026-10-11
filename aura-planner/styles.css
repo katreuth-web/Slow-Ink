@@ -1182,3 +1182,8 @@ html[data-theme="meadow"] { --p-lsoft: 230, 247, 236; --p-psoft: 255, 246, 220; 
 /* birth chart wheel */
 .birth-wheel-wrap { display: flex; justify-content: center; }
 .birth-wheel { width: 100%; max-width: 380px; height: auto; display: block; }
+
+/* 369 and 555 writing sheets */
+.sheet-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.sheet-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 0 18px; }
+@media (max-width: 640px) { .sheet-cols { grid-template-columns: 1fr; } }

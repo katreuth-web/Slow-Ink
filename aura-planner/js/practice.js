@@ -126,13 +126,30 @@
     while (r369Count(A.ymd(d)) === 3) { n++; d = A.addDays(d, -1); }
     return n;
   }
+  /* numbered writing lines, each saved to its own path (e.g. rituals.r369.sheets.<day>.m.0) */
+  function sheetLines(path, n) {
+    var rows = "";
+    for (var i = 0; i < n; i++) rows += '<div class="sheet-row"><span class="badge pink">' + (i + 1) + "</span>" + A.input(path + "." + i, 'placeholder="Write it…" maxlength="300" aria-label="Line ' + (i + 1) + '"', "grow") + "</div>";
+    return rows;
+  }
+
   function tab369() {
-    var tk = A.todayKey(), day = A.day(tk), r = A.state.rituals.r369;
-    var sets = [["m", "Morning", "Write it 3 times", "3"], ["a", "Afternoon", "Write it 6 times", "6"], ["e", "Evening", "Write it 9 times", "9"]];
-    var today = '<div class="r369-today">' + sets.map(function (s) {
-      var on = !!day.r369[s[0]];
-      return '<button class="r369-set' + (on ? " on" : "") + '" data-act="r369-toggle" data-p="' + s[0] + '" aria-pressed="' + on + '"><b>' + s[3] + "×</b><span>" + s[1] + '</span><small>' + (on ? "Done" : s[2]) + "</small></button>";
-    }).join("") + "</div>";
+    var tk = A.todayKey(), day = A.day(tk), sheet = "rituals.r369.sheets." + tk;
+    var sets = [
+      ["m", "Morning", "3 times", "sun", 3, "Write it three times, with positivity and gratitude."],
+      ["a", "Afternoon", "6 times", "sun", 6, "Write it six times, with belief and confidence."],
+      ["e", "Evening", "9 times", "moon", 9, "Write it nine times, with faith and a deep sense of thanks."]
+    ];
+    var head = A.card("Today’s 369", intro("How it works:", "write one affirmation 3 times in the morning, 6 in the afternoon and 9 in the evening: 18 times in all, every day.") +
+      '<label class="lbl">My affirmation</label>' + A.input("rituals.r369.text", 'maxlength="140" placeholder="I am calm and capable."', "hand") +
+      (A.state.rituals.r369.text ? '<p class="aff-big" style="margin:14px 0 0;font-size:18px">“' + esc(A.state.rituals.r369.text) + "”</p>" : ""), { icon: "infinity", tint: "grad" });
+    var cards = sets.map(function (x) {
+      var on = !!day.r369[x[0]];
+      return '<div class="c12">' + A.card(x[1] + " · " + x[2], '<p class="small muted" style="margin:0 0 12px">' + esc(x[5]) + "</p>" + sheetLines(sheet + "." + x[0], x[4]) +
+        '<label class="lbl" style="margin-top:12px">Focus</label>' + A.input(sheet + ".focus." + x[0], 'placeholder="What I’m holding in mind…" maxlength="300"') +
+        '<div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn sm' + (on ? "" : " soft") + '" data-act="r369-toggle" data-p="' + x[0] + '" aria-pressed="' + on + '">' + ic("check") + (on ? "Done" : "Mark this set done") + "</button></div>",
+        { icon: x[3], tone: on ? "mint" : "pink" }) + "</div>";
+    }).join("");
     var cells = "", start = A.addDays(A.today(), -34);
     for (var i = 0; i < 35; i++) {
       var d = A.addDays(start, i), k = A.ymd(d), c = r369Count(k);
@@ -140,11 +157,8 @@
     }
     var full = 0;
     Object.keys(A.state.days).forEach(function (k) { if (r369Count(k) === 3) full++; });
-    return '<div class="grid">' +
-      '<div class="c7">' + A.card("Today’s 369", intro("How it works:", "write one affirmation 3 times in the morning, 6 in the afternoon and 9 in the evening. Tick each set when you’ve done it.") +
-        '<label class="lbl">My 369 affirmation</label>' + A.input("rituals.r369.text", 'maxlength="140" placeholder="I am calm and capable."', "hand") + today +
-        (r.text ? '<p class="aff-big" style="margin-top:14px;font-size:18px">“' + esc(r.text) + "”</p>" : ""), { icon: "infinity", tint: "grad" }) + "</div>" +
-      '<div class="c5">' + A.card("Your rhythm", '<div class="stats" style="margin-bottom:12px"><div class="inner stat"><b>' + r369Streak() + "</b><span>day streak</span></div><div class=\"inner stat\"><b>" + full + "</b><span>complete days</span></div></div>" +
+    return '<div class="grid">' + '<div class="c12">' + head + "</div>" + cards +
+      '<div class="c12">' + A.card("Your rhythm", '<div class="stats" style="margin-bottom:12px"><div class="inner stat"><b>' + r369Streak() + "</b><span>day streak</span></div><div class=\"inner stat\"><b>" + full + "</b><span>complete days</span></div></div>" +
         '<div class="heat-grid" aria-label="Last 35 days">' + cells + '</div><p class="small muted" style="margin:8px 0 0">Darker means more sets done that day.</p>', { icon: "calendar", tone: "pink" }) + "</div></div>";
   }
   A.acts["r369-toggle"] = function (el) {
@@ -155,24 +169,35 @@
   };
 
   function tab555() {
-    var r = A.state.rituals.r555, tk = A.todayKey(), start = r.start ? A.parseD(r.start) : null, days = [];
+    var r = A.state.rituals.r555, tk = A.todayKey(), start = r.start ? A.parseD(r.start) : null, days = [], lines = "";
     for (var i = 0; i < 5; i++) if (start) days.push(A.addDays(start, i));
-    var done = days.filter(function (d) { return r.days[A.ymd(d)]; }).length;
+    var done = days.filter(function (d) { return r.days[A.ymd(d)]; }).length, todayOn = !!r.days[tk], mood = (r.mood || {})[tk];
     var chips = days.length ? '<div class="r555-days">' + days.map(function (d, i) {
       var k = A.ymd(d), on = !!r.days[k], future = k > tk;
       return '<button class="r555-day' + (on ? " on" : "") + (k === tk ? " today" : "") + '" data-act="r555-toggle" data-k="' + k + '"' + (future ? " disabled" : "") + ' aria-pressed="' + on + '"><small>Day ' + (i + 1) + "</small><b>" + d.getDate() + "</b><span>" + (on ? "Done" : "55×") + "</span></button>";
     }).join("") + "</div>" : '<div class="empty">Write your affirmation, then begin. Day 1 is today.</div>';
+    for (var n = 1; n <= 55; n++) lines += '<div class="sheet-row"><span class="badge pink">' + n + "</span>" + A.input("rituals.r555.lines." + tk + "." + (n - 1), 'placeholder="Write it…" maxlength="300" aria-label="Line ' + n + '"', "grow") + "</div>";
+    var moods = ["Heavy", "Low", "Okay", "Good", "Light"].map(function (m, i) {
+      return '<button class="btn xs' + (mood === i + 1 ? "" : " soft") + '" data-act="r555-mood" data-v="' + (i + 1) + '" aria-pressed="' + (mood === i + 1) + '">' + m + "</button>";
+    }).join("");
+    var steps = ["Choose one clear affirmation.", "Write it 55 times a day.", "Do this for 5 days in a row.", "Feel it as already yours.", "Trust the process and let go."];
     return '<div class="grid">' +
-      '<div class="c7">' + A.card("55 × 5", intro("How it works:", "write one affirmation 55 times a day for 5 days in a row, then notice how the words land. Tick each day when you’ve finished.") +
+      '<div class="c12">' + A.card("55 × 5", '<div class="row wrap" style="justify-content:space-between;gap:10px;margin-bottom:12px"><span class="badge">' + (start ? (done === 5 ? "All 5 days done" : "Day " + Math.min(5, days.filter(function (d) { return A.ymd(d) <= tk; }).length) + " of 5") : "Not started") + '</span><span class="small muted">' + esc(A.fmtDay(A.today(), { weekday: "long", month: "short", day: "numeric" })) + "</span></div>" +
         '<label class="lbl">My affirmation</label>' + A.input("rituals.r555.text", 'maxlength="140" placeholder="I am confident."', "hand") +
-        '<div class="row wrap" style="margin:12px 0"><button class="btn" data-act="r555-start">' + ic("play") + (start ? "Start again today" : "Begin today") + "</button>" +
-        (start ? '<span class="badge">' + done + " of 5 days</span>" : "") + "</div>" + chips +
-        (done === 5 ? '<div class="tip" style="margin-top:12px">You completed all five days. Take a moment to notice what has shifted.</div>' : "") + A.bar(done / 5), { icon: "star", tint: "grad" }) + "</div>" +
-      '<div class="c5">' + A.card("Tips", '<ul class="list"><li class="li"><span class="li-text">Write by hand if you can. It slows you down.</span></li><li class="li"><span class="li-text">Say each line quietly as you write it.</span></li><li class="li"><span class="li-text">Pick one affirmation that feels believable to you.</span></li><li class="li"><span class="li-text">Missed a day? Start again. There’s no pressure.</span></li></ul>', { icon: "sparkle", tone: "pink" }) + "</div></div>";
+        '<div class="row wrap" style="margin:12px 0"><button class="btn" data-act="r555-start">' + ic("play") + (start ? "Start again today" : "Begin today") + "</button></div>" + chips + A.bar(done / 5), { icon: "star", tint: "grad" }) + "</div>" +
+      '<div class="c12">' + A.card("How it works", '<ol class="insights" style="margin:0;padding-left:20px">' + steps.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ol>", { icon: "sparkle", tone: "" }) + "</div>" +
+      '<div class="c12">' + A.card("Today’s 55", '<div class="sheet-cols">' + lines + "</div>", { icon: "feather", tone: "pink", sub: "Write it out, one line at a time." }) + "</div>" +
+      '<div class="c12">' + A.card("Finish", '<div class="row wrap" style="gap:10px;justify-content:space-between;align-items:center"><button class="btn' + (todayOn ? "" : " soft") + '" data-act="r555-toggle" data-k="' + tk + '" aria-pressed="' + todayOn + '">' + ic("check") + (todayOn ? "Practice completed today" : "I completed today’s practice") + "</button></div>" +
+        '<p class="small muted" style="margin:14px 0 6px">How do you feel after writing?</p><div class="row wrap" style="gap:6px">' + moods + "</div>", { icon: "heart", tone: "butter" }) + "</div>" +
+      "</div>";
   }
   A.acts["r555-start"] = function () {
     var r = A.state.rituals.r555;
     r.start = A.todayKey(); r.days = {}; A.save(); A.render();
+  };
+  A.acts["r555-mood"] = function (el) {
+    var r = A.state.rituals.r555, tk = A.todayKey();
+    r.mood = r.mood || {}; r.mood[tk] = +el.getAttribute("data-v"); A.save(); A.render();
   };
   A.acts["r555-toggle"] = function (el) {
     var r = A.state.rituals.r555, k = el.getAttribute("data-k");

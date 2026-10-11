@@ -152,6 +152,17 @@
       out.rituals = { tab: ["369", "555", "gratitude", "signs", "moon"].indexOf(r.tab) >= 0 ? r.tab : "369", r369: { text: str(isObj(r.r369) ? r.r369.text : "", 140) },
         r555: { text: str(r5.text, 140), start: dkey(r5.start), days: {} },
         signs: arr(r.signs, 2000).filter(isObj).map(function (s) { return { id: ID.test(s.id) ? s.id : A.uid(), date: dkey(s.date), text: str(s.text, 300) }; }), moon: {} };
+      var r3 = isObj(r.r369) ? r.r369 : {};
+      out.rituals.r369.sheets = {};
+      if (isObj(r3.sheets)) Object.keys(r3.sheets).slice(0, 400).forEach(function (k) {
+        var sh = r3.sheets[k]; if (!DKEY.test(k) || !isObj(sh)) return;
+        var f = isObj(sh.focus) ? sh.focus : {};
+        out.rituals.r369.sheets[k] = { m: arr(sh.m, 3).map(function (x) { return str(x, 300); }), a: arr(sh.a, 6).map(function (x) { return str(x, 300); }), e: arr(sh.e, 9).map(function (x) { return str(x, 300); }),
+          focus: { m: str(f.m, 300), a: str(f.a, 300), e: str(f.e, 300) } };
+      });
+      out.rituals.r555.lines = {}; out.rituals.r555.mood = {};
+      if (isObj(r5.lines)) Object.keys(r5.lines).slice(0, 400).forEach(function (k) { if (DKEY.test(k)) out.rituals.r555.lines[k] = arr(r5.lines[k], 55).map(function (x) { return str(x, 300); }); });
+      if (isObj(r5.mood)) Object.keys(r5.mood).slice(0, 400).forEach(function (k) { if (DKEY.test(k) && [1, 2, 3, 4, 5].indexOf(+r5.mood[k]) >= 0) out.rituals.r555.mood[k] = +r5.mood[k]; });
       if (isObj(r5.days)) Object.keys(r5.days).slice(0, 10).forEach(function (k) { if (DKEY.test(k) && r5.days[k]) out.rituals.r555.days[k] = true; });
       if (isObj(r.moon)) Object.keys(r.moon).slice(0, 300).forEach(function (k) { if (DKEY.test(k) && isObj(r.moon[k])) out.rituals.moon[k] = { intentions: str(r.moon[k].intentions, 6000), release: str(r.moon[k].release, 6000) }; });
     }
