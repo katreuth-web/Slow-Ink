@@ -38,6 +38,7 @@
   var ID = /^[A-Za-z0-9_-]{1,40}$/, DKEY = /^\d{4}-\d{2}-\d{2}$/, MKEY = /^\d{4}-\d{2}$/, YKEY = /^\d{4}$/, HEX = /^#[0-9a-f]{3,8}$/i;
   var PAPERS = ["lined", "blank", "dot", "grid", "cornell", "col2", "col3"], TONES = ["lav", "pink", "mint", "sky", "butter"];
   var STATUSES = ["planted", "growing", "manifested", "released"], KINDS = ["win", "sign", "step"];
+  function tzOk(z) { try { new Intl.DateTimeFormat("en-US", { timeZone: z }); return typeof z === "string"; } catch (err) { return false; } }
   function isObj(v) { return v && typeof v === "object" && !Array.isArray(v); }
   function str(v, n) { return typeof v === "string" ? v.slice(0, n || 4000) : ""; }
   function num(v, lo, hi, d) { v = typeof v === "number" && isFinite(v) ? v : (d == null ? lo : d); return Math.max(lo, Math.min(hi, v)); }
@@ -129,6 +130,11 @@
       var bd = isObj(raw.beliefs.deep) ? raw.beliefs.deep : {};
       out.beliefs = { pairs: arr(raw.beliefs.pairs, 200).filter(isObj).map(function (p) { return { id: ID.test(p.id) ? p.id : A.uid(), from: str(p.from, 300), to: str(p.to, 300) }; }), deep: {} };
       Object.keys(A.defaults().beliefs.deep).forEach(function (k) { out.beliefs.deep[k] = str(bd[k], 4000); });
+    }
+    if (isObj(raw.birth) && DKEY.test(raw.birth.date)) {
+      var bp = isObj(raw.birth.place) ? raw.birth.place : {};
+      out.birth = { date: raw.birth.date, time: /^\d{2}:\d{2}$/.test(raw.birth.time) ? raw.birth.time : "", unknownTime: raw.birth.unknownTime === true,
+        place: { name: str(bp.name, 80), lat: num(bp.lat, -90, 90, 0), lon: num(bp.lon, -180, 180, 0), tz: tzOk(bp.tz) ? bp.tz : "UTC" } };
     }
     if (isObj(raw.dream)) {
       var dp = isObj(raw.dream.parts) ? raw.dream.parts : {};

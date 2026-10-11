@@ -1178,3 +1178,7 @@ html[data-theme="meadow"] { --p-lsoft: 230, 247, 236; --p-psoft: 255, 246, 220; 
 .jar-embed { max-width: 220px; margin: 0 auto 12px; }
 .jar-frame { position: relative; width: 100%; padding-top: 100%; overflow: hidden; border-radius: 8px; box-shadow: 0 2px 8px rgba(63,69,81,.16); }
 .jar-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: none; }
+
+/* birth chart wheel */
+.birth-wheel-wrap { display: flex; justify-content: center; }
+.birth-wheel { width: 100%; max-width: 380px; height: auto; display: block; }
