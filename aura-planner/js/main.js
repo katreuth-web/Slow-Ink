@@ -136,6 +136,16 @@
       out.birth = { date: raw.birth.date, time: /^\d{2}:\d{2}$/.test(raw.birth.time) ? raw.birth.time : "", unknownTime: raw.birth.unknownTime === true,
         place: { name: str(bp.name, 80), lat: num(bp.lat, -90, 90, 0), lon: num(bp.lon, -180, 180, 0), tz: tzOk(bp.tz) ? bp.tz : "UTC" } };
     }
+    if (isObj(raw.selfcare)) {
+      var sc = raw.selfcare, scd = A.defaults().selfcare;
+      out.selfcare = { intention: str(sc.intention, 1000), areas: {}, allowed: scd.allowed.map(function (_, i) { return (Array.isArray(sc.allowed) && sc.allowed[i]) === true; }),
+        custom: scd.custom.map(function (_, i) { return str(Array.isArray(sc.custom) ? sc.custom[i] : "", 120); }), support: {} };
+      Object.keys(scd.areas).forEach(function (k) {
+        var ar = isObj(sc.areas) && isObj(sc.areas[k]) ? sc.areas[k] : {};
+        out.selfcare.areas[k] = { ready: str(ar.ready, 1000), work: str(ar.work, 1000) };
+      });
+      Object.keys(scd.support).forEach(function (k) { out.selfcare.support[k] = str(isObj(sc.support) ? sc.support[k] : "", 1000); });
+    }
     if (isObj(raw.dream)) {
       var dp = isObj(raw.dream.parts) ? raw.dream.parts : {};
       Object.keys(out.dream.parts).forEach(function (k) { out.dream.parts[k] = str(dp[k], 4000); });
