@@ -1776,8 +1776,59 @@
     return '<div class="rs-adds"><button class="v-add" data-act="recipe-pick">' + ic("plus") + "<span>New recipe card</span></button><button class=\"v-add\" data-act=\"rsec-add\">" + ic("plus") + "<span>New section</span></button></div>" + pick + '<div class="rs-grid">' + state.recipeSections.map(sectionTile).join("") + "</div>";
   }
 
+  /* ------------------------------------------------------------ measures: cooking and baking converter */
+  /* US customary measures. Volume and weight convert within their own family only: a cup of flour
+     and a cup of sugar do not weigh the same, so use weight whenever a recipe gives grams or ounces. */
+  var CONV = {
+    volume: [["tsp", "Teaspoon (tsp)", 4.92892], ["tbsp", "Tablespoon (tbsp)", 14.7868], ["floz", "Fluid ounce (fl oz)", 29.5735], ["cup", "Cup", 236.588], ["pint", "Pint", 473.176], ["quart", "Quart", 946.353], ["gal", "Gallon", 3785.41], ["ml", "Milliliter (mL)", 1], ["l", "Liter (L)", 1000]],
+    weight: [["g", "Gram (g)", 1], ["kg", "Kilogram (kg)", 1000], ["oz", "Ounce (oz)", 28.3495], ["lb", "Pound (lb)", 453.592]]
+  };
+  var CONV_QUICK = [["volume", "3", "tsp", "tbsp", "3 tsp → 1 tbsp"], ["volume", "2", "tbsp", "floz", "2 tbsp → 1 fl oz"], ["volume", "1", "cup", "tbsp", "1 cup → 16 tbsp"], ["volume", "1", "cup", "ml", "1 cup → 236 mL"], ["volume", "2", "cup", "pint", "2 cups → 1 pint"], ["volume", "4", "cup", "quart", "4 cups → 1 quart"]];
+  var CONV_REF = [["1 tablespoon", "3 teaspoons"], ["1 fluid ounce", "2 tablespoons"], ["1 cup", "8 fluid ounces"], ["1 cup", "236.6 mL"], ["1 pint", "2 cups"], ["1 quart", "4 cups"], ["1 gallon", "4 quarts"], ["1 ounce", "28.35 g"], ["1 pound", "16 ounces (about 454 g)"]];
+  function convName(u, v) {
+    var n = u[1].replace(/ \(.*\)$/, "").toLowerCase();
+    return Math.abs(v - 1) < 1e-9 ? n : n + "s";
+  }
+  function convUnit(mode, key) { var u = CONV[mode].filter(function (x) { return x[0] === key; })[0]; return u || CONV[mode][0]; }
+  function convFmt(v) {
+    if (!isFinite(v)) return "—";
+    var a = Math.abs(v), t = a >= 100 ? v.toFixed(1) : a >= 1 ? v.toFixed(2) : v.toFixed(3);
+    return t.indexOf(".") >= 0 ? t.replace(/\.?0+$/, "") : t;
+  }
+  function convState() {
+    if (!state.ui.conv) state.ui.conv = { mode: "volume", amount: "", from: "tsp", to: "cup" };
+    return state.ui.conv;
+  }
+  function convValue(c) {
+    var amt = parseFloat(c.amount);
+    if (!isFinite(amt)) return null;
+    return amt * convUnit(c.mode, c.from)[2] / convUnit(c.mode, c.to)[2];
+  }
+  function viewConvert() {
+    var c = convState(), units = CONV[c.mode], v = convValue(c), from = convUnit(c.mode, c.from), to = convUnit(c.mode, c.to);
+    var opts = units.map(function (u) { return [u[0], u[1].replace(/ \(.*\)$/, "")]; });
+    var modeBtn = function (m, label) { return '<button class="chip ' + (c.mode === m ? "on" : "") + '" data-act="conv-mode" data-mode="' + m + '" aria-pressed="' + (c.mode === m) + '">' + label + "</button>"; };
+    var quick = CONV_QUICK.map(function (q) { return '<button class="chip" data-act="conv-quick" data-mode="' + q[0] + '" data-amount="' + q[1] + '" data-from="' + q[2] + '" data-to="' + q[3] + '">' + esc(q[4]) + "</button>"; }).join("");
+    var ref = CONV_REF.map(function (r) { return "<tr><td>" + esc(r[0]) + "</td><td>" + esc(r[1]) + "</td></tr>"; }).join("");
+    return '<div class="grid">' +
+      '<div class="c6">' + card("Measures", '<div class="chips" role="group" aria-label="Kind of measure">' + modeBtn("volume", "Liquid / volume") + modeBtn("weight", "Weight") + "</div>" +
+        '<label class="lbl" for="conv-amount" style="margin-top:14px">Amount</label>' +
+        '<input type="number" inputmode="decimal" id="conv-amount" data-bind="ui.conv.amount" data-rerender placeholder="e.g. 2.5" value="' + esc(c.amount) + '">' +
+        '<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end;margin-top:12px"><div><label class="lbl" for="conv-from">From</label>' + bindSelect("ui.conv.from", opts, 'id="conv-from" data-rerender style="width:100%"') + "</div>" +
+        '<button class="icon-btn" data-act="conv-swap" aria-label="Swap units" style="margin-bottom:2px">⇄</button>' +
+        '<div><label class="lbl" for="conv-to">To</label>' + bindSelect("ui.conv.to", opts, 'id="conv-to" data-rerender style="width:100%"') + "</div></div>" +
+        '<div class="stat" style="margin-top:14px;text-align:center"><span class="k">Result</span><span class="v" aria-live="polite">' + (v == null ? "—" : convFmt(v) + " " + convName(to, v)) + "</span>" +
+        '<span class="k" style="margin-top:4px">' + (v == null ? "Type an amount to see the result" : esc(convFmt(parseFloat(c.amount)) + " " + convName(from, parseFloat(c.amount)) + " = " + convFmt(v) + " " + convName(to, v))) + "</span></div>" +
+        '<div class="row" style="justify-content:center;margin-top:12px"><button class="btn ghost" data-act="conv-reset">' + ic("undo") + "Reset</button></div>", { dot: "b" }) + "</div>" +
+      '<div class="c6">' + card("Quick conversions", '<div class="chips">' + quick + "</div>" +
+        '<p class="small muted" style="margin:12px 0 0">Tap one to fill in the converter. US measures; some countries use a different cup.</p>', { dot: "p" }) + "</div>" +
+      '<div class="c12">' + card("Handy reference", '<div class="scroll-x"><table class="habit-table"><tr><th>Amount</th><th>Equals</th></tr>' + ref + "</table></div>" +
+        '<p class="small muted" style="margin:12px 0 0">Volume and weight are different. One cup of flour weighs less than one cup of sugar, so follow grams or ounces when a recipe gives them.</p>', { dot: "k" }) + "</div>" +
+      "</div>";
+  }
+
   function viewMeals() {
-    var tb = tabs("meals", [["plan", "Weekly plan"], ["recipes", "Recipe cards"], ["grocery", "Grocery list"]]);
+    var tb = tabs("meals", [["plan", "Weekly plan"], ["recipes", "Recipe cards"], ["grocery", "Grocery list"], ["convert", "Measures"]]);
     var body = "";
     if (tb.cur === "plan") {
       var wk = state.ui.mealWeek || ymd(mondayOf(today())), mon = parseD(wk);
@@ -1793,6 +1844,8 @@
       }) + '<div class="spacer"></div>' + card("Your recipes", '<p class="small muted" style="margin-top:0">Type a recipe name exactly into a meal slot and “Build grocery list” pulls its ingredients in. Tap to copy a name.</p><div class="chips">' + (names || '<span class="empty">No recipes yet.</span>') + "</div>", { dot: "b" });
     } else if (tb.cur === "recipes") {
       body = viewRecipes();
+    } else if (tb.cur === "convert") {
+      body = viewConvert();
     } else {
       var groups = {};
       state.grocery.forEach(function (g2) { (groups[g2.cat || "Other"] = groups[g2.cat || "Other"] || []).push(g2); });
@@ -3673,6 +3726,12 @@
       case "mood-month": state.ui.moodMonth = monthKey(addMonths(parseD((state.ui.moodMonth || monthKey(today())) + "-01"), num(d.val))); render(); return;
       case "fin-month": state.ui.finMonth = monthKey(addMonths(parseD((state.ui.finMonth || monthKey(today())) + "-01"), num(d.val))); render(); return;
       case "meal-week": state.ui.mealWeek = d.val; state.ui.tabs.meals = "plan"; save(); go("#/meals"); return;
+      case "conv-mode": {
+        var cv = convState(); cv.mode = d.mode; cv.from = CONV[d.mode][0][0]; cv.to = CONV[d.mode][3][0]; save(); render(); return;
+      }
+      case "conv-swap": { var cs = convState(), tmp = cs.from; cs.from = cs.to; cs.to = tmp; save(); render(); return; }
+      case "conv-reset": { var cr = convState(); cr.amount = ""; save(); render(); return; }
+      case "conv-quick": { var cq = convState(); cq.mode = d.mode; cq.amount = d.amount; cq.from = d.from; cq.to = d.to; save(); render(); return; }
       case "meal-week-step": state.ui.mealWeek = ymd(addDays(parseD(state.ui.mealWeek || ymd(mondayOf(today()))), num(d.val))); render(); return;
       case "workout-add": {
         var w = formVals(el);
