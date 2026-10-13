@@ -71,7 +71,7 @@
       vision: { title: "The life I'm creating", tiles: [] },
       beliefs: { pairs: [{ id: A.uid() + "0", from: "", to: "" }, { id: A.uid() + "1", from: "", to: "" }, { id: A.uid() + "2", from: "", to: "" }], deep: { belief: "", origin: "", cost: "", forEv: "", againstEv: "", balanced: "", action: "" } },
       birth: null,
-      selfcare: { intention: "", areas: { physical: { ready: "", work: "" }, mental: { ready: "", work: "" }, emotional: { ready: "", work: "" }, relationships: { ready: "", work: "" }, rest: { ready: "", work: "" }, nutrition: { ready: "", work: "" }, spiritual: { ready: "", work: "" }, identity: { ready: "", work: "" }, boundaries: { ready: "", work: "" } }, allowed: [false, false, false, false, false, false], custom: ["", ""], support: { reach: "", pro: "", tools: "", reminders: "" } },
+      selfcare: { intention: "", areas: { physical: { ready: "", work: "", rate: 5 }, mental: { ready: "", work: "", rate: 5 }, emotional: { ready: "", work: "", rate: 5 }, relationships: { ready: "", work: "", rate: 5 }, rest: { ready: "", work: "", rate: 5 }, nutrition: { ready: "", work: "", rate: 5 }, spiritual: { ready: "", work: "", rate: 5 }, identity: { ready: "", work: "", rate: 5 }, boundaries: { ready: "", work: "", rate: 5 } }, allowed: [false, false, false, false, false, false], custom: ["", ""], support: { reach: "", pro: "", tools: "", reminders: "" } },
       dream: { parts: { who: "", health: "", career: "", relations: "", home: "", growth: "", experiences: "" }, grateful: "", paragraph: "" },
       manifest: { items: [], view: "board" },
       scripts: [],

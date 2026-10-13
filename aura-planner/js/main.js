@@ -142,7 +142,7 @@
         custom: scd.custom.map(function (_, i) { return str(Array.isArray(sc.custom) ? sc.custom[i] : "", 120); }), support: {} };
       Object.keys(scd.areas).forEach(function (k) {
         var ar = isObj(sc.areas) && isObj(sc.areas[k]) ? sc.areas[k] : {};
-        out.selfcare.areas[k] = { ready: str(ar.ready, 1000), work: str(ar.work, 1000) };
+        out.selfcare.areas[k] = { ready: str(ar.ready, 1000), work: str(ar.work, 1000), rate: Math.round(num(ar.rate, 0, 10, 5)) };
       });
       Object.keys(scd.support).forEach(function (k) { out.selfcare.support[k] = str(isObj(sc.support) ? sc.support[k] : "", 1000); });
     }
