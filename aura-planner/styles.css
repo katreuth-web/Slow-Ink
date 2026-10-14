@@ -603,7 +603,10 @@ input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius
 .mm-node.root { background: var(--grad); color: var(--on-grad); border-color: transparent; font-weight: 600; font-size: 14px; padding: 12px 18px; }
 .mm-node.sel { box-shadow: 0 0 0 4px rgba(var(--ac-l), 0.35), 0 6px 18px rgba(var(--ac-d), 0.2); }
 .mm-node:active { cursor: grabbing; }
-.mm-tools { position: absolute; left: 12px; top: 12px; right: 12px; display: flex; gap: 6px; flex-wrap: wrap; z-index: 2; align-items: center; }
+textarea.mm-node { display: block; width: 150px; resize: none; overflow: hidden; font: inherit; font-size: 13px; color: var(--ink); line-height: 1.35; outline: none; margin: 0; cursor: grab; }
+textarea.mm-node.root { width: 170px; background: var(--grad); color: var(--on-grad); font-weight: 600; font-size: 14px; }
+textarea.mm-node:focus { cursor: text; box-shadow: 0 0 0 3px rgba(var(--ac-l), 0.45), 0 6px 18px rgba(var(--ac-d), 0.2); }
+.mm-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 12px; }
 .mm-tools .field { width: 220px; max-width: 100%; }
 
 .vision-board { columns: 4 220px; column-gap: 14px; }

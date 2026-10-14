@@ -99,28 +99,30 @@
       return '<path d="M' + x1 + " " + y1 + " C" + mx + " " + y1 + " " + mx + " " + y2 + " " + x2 + " " + y2 + '" fill="none" stroke="' + n.color + '" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>';
     }).join("");
   }
+  /* Type straight into a bubble, drag it to move it, and use Add branch / Remove selected, like the Life mind map. */
   A.views.mindmap = function () {
-    var mm = A.state.mindmap, sel = A.state.ui.mmSel || "root";
-    var si = mm.nodes.findIndex(function (n) { return n.id === sel; });
-    if (si < 0) { si = 0; sel = mm.nodes[0].id; }
-    var tools = '<div class="mm-tools"><input class="field" id="mm-text" data-bind="mindmap.nodes.' + si + '.text" data-live="mm-text" placeholder="Node text" />' +
-      '<button class="btn sm" data-act="mm-add">' + ic("plus") + "Branch</button>" +
-      '<div class="swatches">' + A.PALETTE.slice(0, 6).map(function (c) { return '<button class="swatch' + (mm.nodes[si].color === c ? " on" : "") + '" style="background:' + c + '" data-act="mm-color" data-c="' + c + '" aria-label="Colour"></button>'; }).join("") + "</div>" +
-      (sel !== "root" ? '<button class="btn sm danger" data-act="mm-del">' + ic("trash") + "</button>" : "") + "</div>";
-    var nodes = mm.nodes.map(function (n) {
-      return '<div class="mm-node' + (n.id === "root" ? " root" : "") + (n.id === sel ? " sel" : "") + '" data-node="' + n.id + '" style="left:' + n.x + "%;top:" + n.y + "%;--c:" + n.color + '">' + esc(n.text || "…") + "</div>";
+    var mm = A.state.mindmap, root = mm.nodes[0] ? mm.nodes[0].id : "root";
+    var sel = mm.nodes.some(function (n) { return n.id === A.state.ui.mmSel; }) ? A.state.ui.mmSel : root;
+    var nodes = mm.nodes.map(function (n, i) {
+      return '<textarea class="mm-node' + (n.id === root ? " root" : "") + (n.id === sel ? " sel" : "") + '" rows="1" data-node="' + esc(n.id) + '" data-bind="mindmap.nodes.' + i + '.text" aria-label="Idea" placeholder="Type an idea…" style="left:' + n.x + "%;top:" + n.y + "%;--c:" + n.color + '">' + esc(n.text) + "</textarea>";
     }).join("");
+    var tools = '<div class="mm-tools"><button class="btn sm pink" data-act="mm-add">' + ic("plus") + " Add branch</button>" +
+      '<button class="btn sm" data-act="mm-del"' + (sel === root ? " disabled" : "") + ">" + ic("trash") + " Remove selected</button></div>";
     A.afterRender = function () {
       var box = document.getElementById("mm"), svg = document.getElementById("mm-svg");
+      if (!box || !svg) return;
       var draw = function () { svg.innerHTML = mmPaths(mm.nodes, { w: box.clientWidth, h: box.clientHeight }); };
-      draw();
+      var fit = function () { Array.prototype.forEach.call(box.querySelectorAll(".mm-node"), function (t) { t.style.height = "auto"; t.style.height = t.scrollHeight + "px"; }); };
+      draw(); fit();
       var drag = null;
       box.addEventListener("pointerdown", function (e) {
         var el = e.target.closest(".mm-node");
-        if (!el) return;
+        if (!el || document.activeElement === el) return;
+        e.preventDefault();
         var n = mm.nodes.find(function (x) { return x.id === el.getAttribute("data-node"); });
+        if (!n) return;
         drag = { el: el, n: n, moved: false, sx: e.clientX, sy: e.clientY };
-        el.setPointerCapture(e.pointerId);
+        try { el.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
       });
       box.addEventListener("pointermove", function (e) {
         if (!drag) return;
@@ -132,46 +134,44 @@
         drag.el.style.left = drag.n.x + "%"; drag.el.style.top = drag.n.y + "%";
         draw();
       });
-      box.addEventListener("pointerup", function () {
+      var end = function () {
         if (!drag) return;
         var d = drag; drag = null;
-        if (d.moved) A.save();
-        else { A.state.ui.mmSel = d.n.id; A.save(); A.render(); var t = document.getElementById("mm-text"); if (t) t.focus(); }
-      });
+        if (d.moved) { A.save(); return; }
+        A.state.ui.mmSel = d.n.id; A.save(); A.render();
+        var again = document.querySelector('.mm-node[data-node="' + d.n.id + '"]'); if (again) again.focus();
+      };
+      box.addEventListener("pointerup", end);
+      box.addEventListener("pointercancel", end);
+      box.addEventListener("input", function (e) { if (e.target.classList.contains("mm-node")) { e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px"; draw(); } });
+      box.addEventListener("focusin", function (e) { if (e.target.classList.contains("mm-node")) A.state.ui.mmSel = e.target.getAttribute("data-node"); });
       window.addEventListener("resize", draw);
       A.cleanup = function () { window.removeEventListener("resize", draw); };
     };
-    return A.head("Align", 'Dream <span class="soft">map</span>', "Put your dream life in the centre, then branch out: how it looks, how it feels, and what you could do next. Tap a bubble to select it, drag to arrange.") +
-      A.card("", '<div class="mindmap" id="mm">' + tools + '<svg id="mm-svg"></svg>' + nodes + "</div>", {});
-  };
-  A.acts["mm-text"] = function (el) {
-    var sel = A.state.ui.mmSel || "root", node = document.querySelector('.mm-node[data-node="' + sel + '"]');
-    if (node) node.textContent = el.value || "…";
+    return A.head("Align", 'Dream <span class="soft">map</span>', "Put your dream life in the centre, then branch out: how it looks, how it feels, and what you could do next. Tap a bubble to type in it, and drag to arrange.") +
+      A.card("", tools + '<div class="mindmap" id="mm"><svg id="mm-svg"></svg>' + nodes + "</div>", {});
   };
   A.acts["mm-add"] = function () {
-    var mm = A.state.mindmap, sel = A.state.ui.mmSel || "root";
+    var mm = A.state.mindmap, root = mm.nodes[0].id, sel = A.state.ui.mmSel || root;
     var p = mm.nodes.find(function (n) { return n.id === sel; }) || mm.nodes[0];
     var kids = mm.nodes.filter(function (n) { return n.parent === p.id; }).length;
-    var ang = (kids * 52 + (p.id === "root" ? -90 : 0)) * Math.PI / 180, dist = p.id === "root" ? 24 : 16;
-    var n = { id: A.uid(), text: "New idea", x: A.clamp(p.x + Math.cos(ang) * dist, 6, 94), y: A.clamp(p.y + Math.sin(ang) * dist * 1.4, 8, 92), color: p.id === "root" ? A.PALETTE[(kids + 1) % 6] : p.color, parent: p.id };
+    var ang = (kids * 52 + (p.id === root ? -90 : 0)) * Math.PI / 180, dist = p.id === root ? 24 : 16;
+    var n = { id: A.uid(), text: "", x: A.clamp(p.x + Math.cos(ang) * dist, 6, 94), y: A.clamp(p.y + Math.sin(ang) * dist * 1.4, 8, 92), color: p.id === root ? A.PALETTE[(kids + 1) % 6] : p.color, parent: p.id };
     mm.nodes.push(n);
     A.state.ui.mmSel = n.id;
     A.save(); A.render();
-    var t = document.getElementById("mm-text"); if (t) { t.focus(); t.select(); }
-  };
-  A.acts["mm-color"] = function (el) {
-    var sel = A.state.ui.mmSel || "root", n = A.state.mindmap.nodes.find(function (x) { return x.id === sel; });
-    if (n) { n.color = el.getAttribute("data-c"); A.save(); A.render(); }
+    var t = document.querySelector('.mm-node[data-node="' + n.id + '"]'); if (t) t.focus();
   };
   A.acts["mm-del"] = function () {
-    var mm = A.state.mindmap, sel = A.state.ui.mmSel;
+    var mm = A.state.mindmap, root = mm.nodes[0].id, sel = A.state.ui.mmSel;
+    if (!sel || sel === root) return;
     var kill = [sel], changed = true;
     while (changed) {
       changed = false;
       mm.nodes.forEach(function (n) { if (n.parent && kill.indexOf(n.parent) >= 0 && kill.indexOf(n.id) < 0) { kill.push(n.id); changed = true; } });
     }
     mm.nodes = mm.nodes.filter(function (n) { return kill.indexOf(n.id) < 0; });
-    A.state.ui.mmSel = "root"; A.save(); A.render();
+    A.state.ui.mmSel = root; A.save(); A.render();
   };
 
   /* ------------------------------------------------------------ Vision board */
