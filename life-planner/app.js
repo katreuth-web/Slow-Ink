@@ -2957,11 +2957,93 @@
     });
   }
 
+  /* ---- Type pages: rich text (titles, bold, lists, links). Saved as a small, safe subset of HTML, so a restored backup can't run code. ---- */
+  var RT_KEEP = { P: 1, DIV: 1, BR: 1, H1: 1, H2: 1, H3: 1, STRONG: 1, B: 1, EM: 1, I: 1, U: 1, UL: 1, OL: 1, LI: 1, A: 1, HR: 1 };
+  var RT_DROP = { SCRIPT: 1, STYLE: 1, IFRAME: 1, OBJECT: 1, EMBED: 1, TEMPLATE: 1, NOSCRIPT: 1, SVG: 1, MATH: 1, TEXTAREA: 1, SELECT: 1, INPUT: 1, BUTTON: 1, FORM: 1, LINK: 1, META: 1, TITLE: 1, HEAD: 1, IMG: 1, VIDEO: 1, AUDIO: 1, CANVAS: 1 };
+  function rtClean(node, out) {
+    Array.prototype.forEach.call(node.childNodes, function (ch) {
+      if (ch.nodeType === 3) { out.appendChild(document.createTextNode(ch.nodeValue)); return; }
+      if (ch.nodeType !== 1 || RT_DROP[ch.tagName]) return;
+      if (!RT_KEEP[ch.tagName]) { rtClean(ch, out); return; }
+      var el = document.createElement(ch.tagName.toLowerCase());
+      if (ch.tagName === "A") {
+        var href = safeUrl(ch.getAttribute("href"));
+        if (!href) { rtClean(ch, out); return; }
+        el.setAttribute("href", href); el.setAttribute("target", "_blank"); el.setAttribute("rel", "noopener noreferrer");
+      }
+      if (ch.tagName !== "BR" && ch.tagName !== "HR") rtClean(ch, el);
+      out.appendChild(el);
+    });
+  }
+  function sanitizeHtml(html) {
+    var doc = new DOMParser().parseFromString("<!doctype html><body>" + String(html == null ? "" : html).slice(0, 600000), "text/html");
+    var box = document.createElement("div");
+    rtClean(doc.body, box);
+    return box.innerHTML;
+  }
+  function textToHtml(text) {
+    return String(text || "").split("\n").map(function (line) { return line ? "<p>" + esc(line) + "</p>" : "<p><br></p>"; }).join("");
+  }
+  function htmlToText(html) {
+    var doc = new DOMParser().parseFromString("<!doctype html><body>" + String(html || ""), "text/html");
+    Array.prototype.forEach.call(doc.body.querySelectorAll("br"), function (b) { b.replaceWith(doc.createTextNode("\n")); });
+    Array.prototype.forEach.call(doc.body.querySelectorAll("p,div,h1,h2,h3,li,hr"), function (b) { b.appendChild(doc.createTextNode("\n")); });
+    return doc.body.textContent.replace(/\n{3,}/g, "\n\n").trim();
+  }
+  var RT_TOOLS = [["h1", "Title", "Title"], ["h2", "Heading", "Heading"], ["h3", "Subhead", "Subhead"], ["|"], ["bold", "B", "Bold"], ["italic", "I", "Italic"], ["underline", "U", "Underline"], ["|"], ["ul", "• List", "Bulleted list"], ["ol", "1. List", "Numbered list"], ["rule", "—", "Divider line"], ["link", "Link", "Add or remove a link"]];
+  function rtToolbar() {
+    return '<div class="rt-tools" role="toolbar" aria-label="Text formatting">' + RT_TOOLS.map(function (t) {
+      if (t[0] === "|") return '<span class="rt-sep" aria-hidden="true"></span>';
+      return '<button class="btn xs ghost rt-btn rt-' + t[0] + '" data-act="nb-fmt" data-cmd="' + t[0] + '" title="' + esc(t[2]) + '" aria-label="' + esc(t[2]) + '">' + esc(t[1]) + "</button>";
+    }).join("") + "</div>";
+  }
+  function rtSync(ed) {
+    var pg = state.notebook[ed.getAttribute("data-nb")];
+    if (!pg) return;
+    pg.html = sanitizeHtml(ed.innerHTML);
+    pg.text = htmlToText(pg.html);
+    ed.classList.toggle("is-empty", !pg.text);
+    save();
+  }
+  function rtFormat(cmd) {
+    var ed = document.querySelector(".nb-editor");
+    if (!ed) return;
+    ed.focus();
+    function exec(c, v) { try { document.execCommand(c, false, v); } catch (e) { /* ignore */ } }
+    if (cmd === "h1" || cmd === "h2" || cmd === "h3") {
+      var sel = window.getSelection(), n = sel && sel.anchorNode, el = n ? (n.nodeType === 3 ? n.parentElement : n) : null, blk = el && el.closest ? el.closest("h1,h2,h3") : null;
+      exec("formatBlock", blk && blk.tagName.toLowerCase() === cmd ? "<p>" : "<" + cmd + ">");
+    } else if (cmd === "bold" || cmd === "italic" || cmd === "underline") exec(cmd);
+    else if (cmd === "ul") exec("insertUnorderedList");
+    else if (cmd === "ol") exec("insertOrderedList");
+    else if (cmd === "rule") exec("insertHorizontalRule");
+    else if (cmd === "link") {
+      var s0 = window.getSelection(), range = s0 && s0.rangeCount ? s0.getRangeAt(0).cloneRange() : null;
+      askName("Link address (for example example.com)", "", "Add link").then(function (val) {
+        if (!val) return;
+        var url = safeUrl(val);
+        if (!url) { toast("That doesn’t look like a web address."); return; }
+        ed.focus();
+        if (range) { var s1 = window.getSelection(); s1.removeAllRanges(); s1.addRange(range); }
+        exec("createLink", url);
+        rtSync(ed);
+      });
+      return;
+    }
+    rtSync(ed);
+  }
+  document.addEventListener("input", function (e) {
+    var t = e.target;
+    if (t && t.classList && t.classList.contains("nb-editor")) rtSync(t);
+  });
+
   function pageBody(p, id) {
-    var base = "notebook." + id, inner = "";
+    var base = "notebook." + id, inner = "", pre = "";
     var cls = "paper paper-" + (["cornell", "two", "three"].indexOf(p.paper) >= 0 ? "lined" : p.paper === "mindmap" ? "dot" : p.paper);
     if (["blank", "lined", "grid", "dot"].indexOf(p.paper) >= 0) {
-      inner = '<textarea class="write" data-bind="' + base + '.text" placeholder="' + (p.date ? "Dear diary…" : "Start writing…") + '" aria-label="Page text">' + esc(p.text) + "</textarea>";
+      var rich = sanitizeHtml(typeof p.html === "string" ? p.html : textToHtml(p.text));
+      inner = '<div class="nb-editor' + (htmlToText(rich) ? "" : " is-empty") + '" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Page text" data-nb="' + esc(id) + '" data-placeholder="' + esc(p.date ? "Dear diary…" : "Start writing…") + '">' + rich + "</div>";
+      pre = rtToolbar();
     } else if (p.paper === "cornell") {
       inner = '<div class="cornell"><div class="title-zone"><input type="text" data-bind="' + base + '.topic" value="' + esc(p.topic) + '" placeholder="Topic · lecture · date" style="background:transparent;box-shadow:none;font-family:var(--serif);font-size:1.3rem;font-weight:600;padding:4px 0" aria-label="Topic"></div>' +
         '<div class="zone cue"><span class="tiny">Cues &amp; questions</span><textarea data-bind="' + base + '.cues" aria-label="Cues">' + esc(p.cues) + '</textarea></div><div class="zone"><span class="tiny">Notes</span><textarea data-bind="' + base + '.text" aria-label="Notes">' + esc(p.text) + '</textarea></div><div class="zone summary"><span class="tiny">Summary</span><textarea data-bind="' + base + '.summary" aria-label="Summary">' + esc(p.summary) + "</textarea></div></div>";
@@ -2981,7 +3063,7 @@
           '<textarea data-item="' + base + ".tiles|" + t.id + '|text" rows="2" placeholder="Affirmation or dream…" aria-label="Caption">' + esc(t.text) + "</textarea></div>";
       }).join("") + '<button class="v-add" data-act="vb-add" data-id="' + id + '">' + ic("plus") + " Add tile</button></div>";
     }
-    return { inner: inner, cls: cls };
+    return { inner: inner, cls: cls, pre: pre };
   }
 
   function pageLabel(p) { return p.title || (p.date ? shortDay(parseD(p.date)) : "Untitled page"); }
@@ -3028,7 +3110,7 @@
       }
       sheetCol = '<div class="book-sheet-col"><div class="sheet-bar"><input class="sheet-title" type="text" data-bind="notebook.' + page.id + '.title" value="' + esc(page.title) + '" placeholder="' + esc(page.date ? prettyDay(parseD(page.date)) : "Page title") + '" aria-label="Page title" maxlength="80">' +
         bar + '<button class="icon-btn" data-act="nb-print" aria-label="Print this page" title="Print this page">' + ic("print") + "</button></div>" +
-        '<div class="sheet-page ' + b.cls + (mode === "markup" ? " drawing" + (pen.tool === "eraser" ? " eraser" : "") : "") + '" data-page="' + page.id + '">' + b.inner +
+        (mode === "markup" ? "" : (b.pre || "")) + '<div class="sheet-page ' + b.cls + (mode === "markup" ? " drawing" + (pen.tool === "eraser" ? " eraser" : "") : "") + '" data-page="' + page.id + '">' + b.inner +
         (canDraw ? (page.ink ? '<img class="legacy-ink" alt="" src="' + page.ink + '">' : "") + '<canvas class="ink-layer" aria-label="Drawing layer"></canvas>' : "") + "</div>" +
         '<p class="small muted sheet-foot">' + paperLabel(page.paper) + " · created " + shortDay(new Date(page.created)) + (page.date ? ' · <a href="' + hrefDay(parseD(page.date)) + '">linked to ' + shortDay(parseD(page.date)) + "</a>" : "") + "</p></div>";
     } else {
@@ -4024,6 +4106,7 @@
         setTimeout(function () { var t = $(".sheet-title"); if (t) { t.focus(); t.select(); } }, 40);
         return;
       }
+      case "nb-fmt": rtFormat(d.cmd); return;
       case "nb-paper": { var pp = state.notebook[state.nbCurrent]; if (pp) { changePaper(pp, d.val); render(); } return; }
       case "nb-del": {
         if (!confirm("Delete this page? This can't be undone.")) return;
@@ -4337,6 +4420,7 @@
     Object.keys(data.notebook && typeof data.notebook === "object" ? data.notebook : {}).forEach(function (k) {
       var pg = data.notebook[k];
       if (pg && Array.isArray(pg.tiles)) pg.tiles.forEach(function (t) { if (t && typeof t === "object") t.color = safeColor(t.color); });
+      if (pg && typeof pg.html === "string") pg.html = sanitizeHtml(pg.html);
     });
     /* Goals: rebuilt from known fields only. */
     var DKEY = /^\d{4}-\d{2}-\d{2}$/, gin = data.goals && typeof data.goals === "object" && !Array.isArray(data.goals) ? data.goals : {}, gout = {};
