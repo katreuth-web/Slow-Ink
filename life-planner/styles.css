@@ -1321,3 +1321,31 @@ body.markup-on .book { margin-bottom: 90px; }
 .hours .h.half { font-size: 10px; opacity: 0.7; }
 .card-head:has(.sched-tools) { flex-wrap: wrap; }
 .sched-tools[open] { flex: 1 1 100%; }
+
+/* photos and stickers on text pages (positions are fractions of the page width) */
+.sheet-page { container-type: inline-size; }
+.obj-layer { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.sheet-page.drawing .obj-layer { pointer-events: none; }
+.obj { position: absolute; pointer-events: auto; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; outline: none; }
+.obj:active { cursor: grabbing; }
+.obj-body { display: block; }
+.obj-sticker svg { display: block; width: 100%; height: auto; overflow: visible; pointer-events: none; }
+.obj-photo img { display: block; width: 100%; height: auto; pointer-events: none; outline: 7px solid #fff; box-shadow: 0 5px 16px rgba(0, 0, 0, 0.22); background: var(--line); min-height: 40px; }
+.obj-photo.missing img { height: 90px; }
+.obj.sel { outline: 1.5px dashed var(--pink-deep); outline-offset: 5px; }
+.obj:focus-visible { outline: 2px solid var(--pink-deep); outline-offset: 5px; }
+.obj-h { position: absolute; display: none; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--paper); border: 1.5px solid var(--pink-deep); color: var(--ink); font-size: 15px; line-height: 1; }
+.obj.sel .obj-h { display: flex; }
+.obj-del { top: -20px; right: -20px; cursor: pointer; }
+.obj-res { bottom: -20px; right: -20px; cursor: nwse-resize; }
+.obj-rot { top: -34px; left: 50%; margin-left: -14px; cursor: grab; }
+.rt-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.rt-objtools { margin-top: 6px; }
+.rt-objtools[hidden] { display: none; }
+.nb-tray { margin-top: 8px; padding: 8px; border-radius: 12px; background: var(--paper); box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12); }
+.nb-tray-cats { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.nb-tray-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); gap: 8px; max-height: 220px; overflow-y: auto; }
+.nb-stk { border: 0; background: transparent; padding: 4px; border-radius: 10px; cursor: pointer; }
+.nb-stk:hover, .nb-stk:focus-visible { background: var(--line); outline: none; }
+.nb-stk svg { display: block; width: 100%; height: auto; }
+@media print { .rt-tools, .obj-h { display: none !important; } .obj.sel { outline: none; } }

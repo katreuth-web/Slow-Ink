@@ -2991,11 +2991,107 @@
     return doc.body.textContent.replace(/\n{3,}/g, "\n\n").trim();
   }
   var RT_TOOLS = [["h1", "Title", "Title"], ["h2", "Heading", "Heading"], ["h3", "Subhead", "Subhead"], ["|"], ["bold", "B", "Bold"], ["italic", "I", "Italic"], ["underline", "U", "Underline"], ["|"], ["ul", "• List", "Bulleted list"], ["ol", "1. List", "Numbered list"], ["rule", "—", "Divider line"], ["link", "Link", "Add or remove a link"]];
+  function nz(v, lo, hi, d) { v = Number(v); return isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d; }
   function rtToolbar() {
-    return '<div class="rt-tools" role="toolbar" aria-label="Text formatting">' + RT_TOOLS.map(function (t) {
+    var stickers = window.SlowStickers, cat = nbTray.cat || (stickers && stickers.STICKER_CATS[0] ? stickers.STICKER_CATS[0][0] : "");
+    var tools = RT_TOOLS.map(function (t) {
       if (t[0] === "|") return '<span class="rt-sep" aria-hidden="true"></span>';
       return '<button class="btn xs ghost rt-btn rt-' + t[0] + '" data-act="nb-fmt" data-cmd="' + t[0] + '" title="' + esc(t[2]) + '" aria-label="' + esc(t[2]) + '">' + esc(t[1]) + "</button>";
-    }).join("") + "</div>";
+    }).join("");
+    var tray = nbTray.open && stickers ? '<div class="nb-tray" role="group" aria-label="Stickers"><div class="nb-tray-cats">' + stickers.STICKER_CATS.map(function (c) {
+      return '<button class="btn xs ' + (c[0] === cat ? "" : "ghost") + '" data-act="nb-tray-cat" data-val="' + esc(c[0]) + '">' + esc(c[1]) + "</button>";
+    }).join("") + '</div><div class="nb-tray-grid">' + stickers.STICKERS.filter(function (x) { return x.c === cat; }).map(function (x) {
+      return '<button class="nb-stk" data-act="nb-add-sticker" data-key="' + esc(x.k) + '" title="' + esc(x.n) + '" aria-label="Add sticker: ' + esc(x.n) + '">' + stickers.stickerSvg(x.k) + "</button>";
+    }).join("") + "</div></div>" : "";
+    return '<div class="rt-tools" role="toolbar" aria-label="Text formatting and pictures">' +
+      '<div class="rt-row">' + tools + '<span class="rt-sep" aria-hidden="true"></span>' +
+      '<button class="btn xs rt-btn" data-act="nb-photo">Photo</button>' +
+      '<button class="btn xs rt-btn' + (nbTray.open ? "" : " ghost") + '" data-act="nb-stickers" aria-expanded="' + nbTray.open + '">Stickers</button>' +
+      '<input type="file" accept="image/*" multiple hidden id="nb-photo-file"></div>' +
+      '<div class="rt-row rt-objtools" id="nb-objtools" hidden><span class="small muted">Picture selected</span>' +
+      '<button class="btn xs ghost" data-act="nb-obj-front">Bring forward</button><button class="btn xs ghost" data-act="nb-obj-back">Send back</button>' +
+      '<button class="btn xs ghost" data-act="nb-obj-dup">Duplicate</button><button class="btn xs ghost" data-act="nb-obj-del">Delete</button>' +
+      '<button class="btn xs" data-act="nb-obj-done">Done</button></div>' + tray + "</div>";
+  }
+  /* photos and stickers: floating pictures you can move, turn and resize. Positions are fractions of the page width. */
+  var nbTray = { open: false, cat: "" }, nbSel = { page: "", id: "" }, objDrag = null;
+  function pageObjects(p) { if (!Array.isArray(p.objects)) p.objects = []; return p.objects; }
+  function objAspect(o) {
+    if (o.type === "img") return o.ar || 0.75;
+    var st = window.SlowStickers && SlowStickers.sticker(o.key);
+    return st ? st.h / st.w : 1;
+  }
+  function objStyle(o, i) {
+    return "left:calc(" + nz(o.x, -0.2, 1.2, 0.1) + " * 100cqw);top:calc(" + nz(o.y, -0.2, 3, 0.1) + " * 100cqw);width:calc(" + nz(o.w, 0.04, 1.2, 0.2) + " * 100cqw);transform:rotate(" + nz(o.rot, -180, 180, 0) + "deg);z-index:" + (i + 1);
+  }
+  function objHTML(o, i) {
+    var inner = "", sel = nbSel.id === o.id;
+    if (o.type === "img") inner = '<img alt="" draggable="false" src="' + esc(imgs.url(o.imgId)) + '">';
+    else if (window.SlowStickers && SlowStickers.sticker(o.key)) inner = SlowStickers.stickerSvg(o.key);
+    return '<div class="obj obj-' + (o.type === "img" ? "photo" : "sticker") + (sel ? " sel" : "") + (o.type === "img" && !imgs.url(o.imgId) ? " missing" : "") + '" data-oid="' + esc(o.id) + '" tabindex="0" role="img" aria-label="' + (o.type === "img" ? "Photo" : "Sticker") + '" style="' + objStyle(o, i) + '">' +
+      '<div class="obj-body">' + inner + "</div>" +
+      '<span class="obj-h obj-del" data-h="del" title="Delete" aria-label="Delete">×</span><span class="obj-h obj-rot" data-h="rot" title="Turn" aria-label="Turn">↻</span><span class="obj-h obj-res" data-h="res" title="Resize" aria-label="Resize">⤡</span></div>';
+  }
+  function objLayerHTML(p) {
+    return '<div class="obj-layer">' + pageObjects(p).filter(function (o) { return o && o.id && (o.type === "img" || (window.SlowStickers && SlowStickers.sticker(o.key))); }).map(objHTML).join("") + "</div>";
+  }
+  function selectObj(pid, id) {
+    nbSel = { page: pid || "", id: id || "" };
+    Array.prototype.forEach.call(document.querySelectorAll(".obj.sel"), function (el) { el.classList.remove("sel"); });
+    if (id) { var el = document.querySelector('[data-oid="' + id + '"]'); if (el) el.classList.add("sel"); }
+    var tools = document.getElementById("nb-objtools"); if (tools) tools.hidden = !id;
+    var a = document.activeElement;
+    if (id && a && a.classList && a.classList.contains("nb-editor")) a.blur();
+  }
+  function imgUsed(imgId) {
+    return Object.keys(state.notebook).some(function (k) { return (state.notebook[k].objects || []).some(function (x) { return x && x.type === "img" && x.imgId === imgId; }); });
+  }
+  function removeObj(p, o) {
+    p.objects = pageObjects(p).filter(function (x) { return x !== o; });
+    if (o.type === "img" && !imgUsed(o.imgId)) imgs.remove(o.imgId);
+    selectObj("", "");
+    save(); render();
+  }
+  function addSticker(p, key) {
+    var st = window.SlowStickers && SlowStickers.sticker(key); if (!st) return;
+    pageObjects(p).push({ id: uid(), type: "sticker", key: key, x: 0.35 + Math.random() * 0.1, y: 0.3 + Math.random() * 0.1, w: st.w / st.h > 2 ? 0.3 : 0.17, rot: 0 });
+    save(); render();
+  }
+  function aspectOf(url) {
+    return new Promise(function (res) {
+      var im = new Image();
+      im.onload = function () { res(im.naturalWidth && im.naturalHeight ? im.naturalHeight / im.naturalWidth : 0.75); };
+      im.onerror = function () { res(0.75); };
+      im.src = url;
+    });
+  }
+  function addPagePhotos(p, files) {
+    var list = Array.prototype.slice.call(files || []).filter(function (f) { return /^image\//.test(f.type); }).slice(0, 10);
+    if (!list.length) { toast("Those files aren't pictures."); return; }
+    list.forEach(function (f) {
+      shrinkToBlob(f, 1200, function (blob) {
+        var id = "img_" + uid();
+        imgs.put(id, blob).then(function () {
+          return aspectOf(imgs.url(id)).then(function (ar) {
+            pageObjects(p).push({ id: uid(), type: "img", imgId: id, ar: ar, x: 0.12 + Math.random() * 0.1, y: 0.12 + Math.random() * 0.1, w: Math.min(0.42, 0.46 / ar), rot: 0 });
+            save(); render();
+          });
+        });
+      });
+    });
+  }
+  /* sanitize pictures and stickers from a backup file: ids, numbers and sticker names only */
+  function cleanNbObjects(list) {
+    if (!Array.isArray(list)) return [];
+    return list.slice(0, 60).filter(function (o) {
+      if (!o || typeof o !== "object" || !/^[A-Za-z0-9_-]{1,60}$/.test(String(o.id))) return false;
+      if (o.type === "img") return /^img_[A-Za-z0-9_-]{1,60}$/.test(String(o.imgId));
+      return o.type === "sticker" && !!(window.SlowStickers && SlowStickers.sticker(o.key));
+    }).map(function (o) {
+      var c = { id: String(o.id), type: o.type, x: nz(o.x, -0.2, 1.2, 0.1), y: nz(o.y, -0.2, 3, 0.1), w: nz(o.w, 0.04, 1.2, 0.2), rot: nz(o.rot, -180, 180, 0) };
+      if (o.type === "img") { c.imgId = String(o.imgId); c.ar = nz(o.ar, 0.1, 10, 0.75); } else c.key = String(o.key);
+      return c;
+    });
   }
   function rtSync(ed) {
     var pg = state.notebook[ed.getAttribute("data-nb")];
@@ -3036,6 +3132,55 @@
     var t = e.target;
     if (t && t.classList && t.classList.contains("nb-editor")) rtSync(t);
   });
+  document.addEventListener("change", function (e) {
+    if (e.target && e.target.id === "nb-photo-file") {
+      var p = state.notebook[state.nbCurrent];
+      if (p) addPagePhotos(p, e.target.files);
+      e.target.value = "";
+    }
+  });
+  document.addEventListener("pointerdown", function (e) {
+    var t = e.target, sheetEl = t && t.closest ? t.closest(".sheet-page[data-page]") : null;
+    if (!sheetEl || sheetEl.classList.contains("drawing")) return;
+    var p = state.notebook[sheetEl.getAttribute("data-page")];
+    if (!p) return;
+    var el = t.closest(".obj");
+    if (!el) { if (nbSel.id) selectObj("", ""); return; }
+    var o = pageObjects(p).filter(function (x) { return x.id === el.getAttribute("data-oid"); })[0];
+    if (!o) return;
+    var handle = t.closest("[data-h]"), kind = handle ? handle.getAttribute("data-h") : "move";
+    if (kind === "del") { e.preventDefault(); removeObj(p, o); return; }
+    e.preventDefault();
+    selectObj(p.id, o.id);
+    try { el.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+    var r = el.getBoundingClientRect();
+    objDrag = { p: p, o: o, el: el, sheet: sheetEl, kind: kind, px: e.clientX, py: e.clientY, x: o.x, y: o.y, cx: (r.left + r.right) / 2, cy: (r.top + r.bottom) / 2, w: o.w, moved: false };
+  });
+  document.addEventListener("pointermove", function (e) {
+    if (!objDrag) return;
+    var d = objDrag, o = d.o, ar = objAspect(o), W = d.sheet.clientWidth || 1, H = d.sheet.clientHeight / W;
+    d.moved = true;
+    if (d.kind === "move") {
+      var nx = d.x + (e.clientX - d.px) / W, ny = d.y + (e.clientY - d.py) / W;
+      var cxo = Math.max(0, Math.min(1, nx + o.w / 2)), cyo = Math.max(0, Math.min(H, ny + o.w * ar / 2));
+      o.x = cxo - o.w / 2; o.y = cyo - o.w * ar / 2;
+    } else if (d.kind === "rot") {
+      var a = Math.atan2(e.clientY - d.cy, e.clientX - d.cx) * 180 / Math.PI + 90;
+      a = ((a + 540) % 360) - 180;
+      [-180, -90, 0, 90, 180].forEach(function (s0) { if (Math.abs(a - s0) < 4) a = s0; });
+      o.rot = Math.round(a * 10) / 10;
+    } else {
+      var th = o.rot * Math.PI / 180, vx = e.clientX - d.cx, vy = e.clientY - d.cy;
+      var lx = vx * Math.cos(th) + vy * Math.sin(th), ly = -vx * Math.sin(th) + vy * Math.cos(th);
+      var nw = Math.max(0.04, Math.min(1.2, 2 * (lx + ar * ly) / (1 + ar * ar) / W));
+      var cx0 = o.x + o.w / 2, cy0 = o.y + o.w * ar / 2;
+      o.w = nw; o.x = cx0 - nw / 2; o.y = cy0 - nw * ar / 2;
+    }
+    d.el.style.cssText = objStyle(o, pageObjects(d.p).indexOf(o));
+  });
+  function endObjDrag() { if (objDrag) { if (objDrag.moved) save(); objDrag = null; } }
+  document.addEventListener("pointerup", endObjDrag);
+  document.addEventListener("pointercancel", endObjDrag);
 
   function pageBody(p, id) {
     var base = "notebook." + id, inner = "", pre = "";
@@ -3044,6 +3189,7 @@
       var rich = sanitizeHtml(typeof p.html === "string" ? p.html : textToHtml(p.text));
       inner = '<div class="nb-editor' + (htmlToText(rich) ? "" : " is-empty") + '" contenteditable="true" role="textbox" aria-multiline="true" aria-label="Page text" data-nb="' + esc(id) + '" data-placeholder="' + esc(p.date ? "Dear diary…" : "Start writing…") + '">' + rich + "</div>";
       pre = rtToolbar();
+      inner += objLayerHTML(p);
     } else if (p.paper === "cornell") {
       inner = '<div class="cornell"><div class="title-zone"><input type="text" data-bind="' + base + '.topic" value="' + esc(p.topic) + '" placeholder="Topic · lecture · date" style="background:transparent;box-shadow:none;font-family:var(--serif);font-size:1.3rem;font-weight:600;padding:4px 0" aria-label="Topic"></div>' +
         '<div class="zone cue"><span class="tiny">Cues &amp; questions</span><textarea data-bind="' + base + '.cues" aria-label="Cues">' + esc(p.cues) + '</textarea></div><div class="zone"><span class="tiny">Notes</span><textarea data-bind="' + base + '.text" aria-label="Notes">' + esc(p.text) + '</textarea></div><div class="zone summary"><span class="tiny">Summary</span><textarea data-bind="' + base + '.summary" aria-label="Summary">' + esc(p.summary) + "</textarea></div></div>";
@@ -4107,6 +4253,21 @@
         return;
       }
       case "nb-fmt": rtFormat(d.cmd); return;
+      case "nb-photo": { var fi = document.getElementById("nb-photo-file"); if (fi) fi.click(); return; }
+      case "nb-stickers": nbTray.open = !nbTray.open; render(); return;
+      case "nb-tray-cat": nbTray.cat = d.val; render(); return;
+      case "nb-add-sticker": { var sp = state.notebook[state.nbCurrent]; if (sp) addSticker(sp, d.key); return; }
+      case "nb-obj-done": selectObj("", ""); return;
+      case "nb-obj-del": case "nb-obj-front": case "nb-obj-back": case "nb-obj-dup": {
+        var op = state.notebook[nbSel.page], oo = op && pageObjects(op).filter(function (x) { return x.id === nbSel.id; })[0];
+        if (!oo) return;
+        var list = pageObjects(op), i0 = list.indexOf(oo);
+        if (name === "nb-obj-del") { removeObj(op, oo); return; }
+        if (name === "nb-obj-front") { list.splice(i0, 1); list.push(oo); }
+        else if (name === "nb-obj-back") { list.splice(i0, 1); list.unshift(oo); }
+        else { var cp = JSON.parse(JSON.stringify(oo)); cp.id = uid(); cp.x += 0.03; cp.y += 0.03; list.push(cp); selectObj(op.id, cp.id); }
+        save(); render(); return;
+      }
       case "nb-paper": { var pp = state.notebook[state.nbCurrent]; if (pp) { changePaper(pp, d.val); render(); } return; }
       case "nb-del": {
         if (!confirm("Delete this page? This can't be undone.")) return;
@@ -4421,6 +4582,7 @@
       var pg = data.notebook[k];
       if (pg && Array.isArray(pg.tiles)) pg.tiles.forEach(function (t) { if (t && typeof t === "object") t.color = safeColor(t.color); });
       if (pg && typeof pg.html === "string") pg.html = sanitizeHtml(pg.html);
+      if (pg && Array.isArray(pg.objects)) pg.objects = cleanNbObjects(pg.objects);
     });
     /* Goals: rebuilt from known fields only. */
     var DKEY = /^\d{4}-\d{2}-\d{2}$/, gin = data.goals && typeof data.goals === "object" && !Array.isArray(data.goals) ? data.goals : {}, gout = {};
