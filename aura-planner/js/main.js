@@ -9,7 +9,9 @@
     A.openDrawer(
       '<div class="card-head"><h2 class="card-title"><span class="ico">' + ic("gear") + '</span>Settings</h2><button class="icon-btn sm" data-act="close-drawer" aria-label="Close">' + ic("x") + "</button></div>" +
       '<label class="lbl">Your name</label>' + A.input("name", 'placeholder="For your greeting" maxlength="40" autocomplete="given-name" aria-label="Your name"') +
-      '<p class="small muted" style="margin:6px 0 14px">Your name is used for your greeting. You can also change it under the palette button, Personalise.</p>' +
+      '<p class="small muted" style="margin:6px 0 10px">Your name is used for your greeting.</p>' +
+      '<button class="btn ghost" data-act="open-look">' + ic("palette") + "Colours, fonts and appearance</button>" +
+      '<div style="height:14px"></div>' +
       '<p class="small muted">Everything is saved automatically in this browser — planner data in local storage (' + Math.round(used / 1024) + " KB), photos in IndexedDB.</p>" +
       '<label class="lbl">Backup</label><div class="stack" style="gap:8px">' +
       '<button class="btn" data-act="export">' + ic("download") + "Export backup (.json)</button>" +
