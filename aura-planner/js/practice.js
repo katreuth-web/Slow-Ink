@@ -205,8 +205,22 @@
     A.save(); A.render();
   };
 
+  /* a stable number from a note's id, so each note keeps the same spot in the jar */
+  function spotHash(str) {
+    var h = 0;
+    for (var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) >>> 0;
+    return h;
+  }
+  function jarHTML() {
+    var notes = (A.state.rituals.jar || []).slice(0, 40).map(function (n) {
+      var h = spotHash(n.id), x = 20 + (h % 50), y = 40 + (Math.floor(h / 50) % 40), tilt = (Math.floor(h / 2000) % 11) - 5;
+      return '<button class="jar-note" data-act="jar-del" data-id="' + esc(n.id) + '" title="Tap to take this note out" style="left:' + x + "%;top:" + y + "%;transform:rotate(" + tilt + 'deg)">' + esc(n.text) + "</button>";
+    }).join("");
+    return '<div class="jar-stage"><img src="img/gratitude-jar.png" alt="A glass jar where your notes of gratitude collect" width="600" height="815">' + notes + "</div>";
+  }
+
   function tabGratitude() {
-    var tk = A.todayKey(), day = A.day(tk), entries = [], total = 0;
+    var tk = A.todayKey(), day = A.day(tk), entries = [], total = 0, jar = A.state.rituals.jar || [];
     Object.keys(A.state.days).sort().reverse().forEach(function (k) {
       var d = A.peekDay(k), items = d.gratitude.filter(Boolean);
       total += items.length;
@@ -217,10 +231,30 @@
     }).join("");
     return '<div class="grid">' +
       '<div class="c6">' + A.card("Today’s gratitude", intro("Try this:", "name three things, then feel the thanks in your body for a few breaths. Small and specific works best.") + inputs, { icon: "heart", tint: "pink" }) + "</div>" +
-      '<div class="c6">' + A.card("Gratitude jar", '<div class="jar-embed"><div class="jar-frame"><iframe loading="lazy" title="Gratitude jar picture" src="https://www.canva.com/design/DAHXqNxsb8k/amx7WwBJ-7Fi7yOBdGJMfA/view?embed" allowfullscreen="allowfullscreen" allow="fullscreen"></iframe></div><p class="small muted" style="margin:6px 0 0;text-align:center"><a href="https://www.canva.com/design/DAHXqNxsb8k/amx7WwBJ-7Fi7yOBdGJMfA/view?utm_content=DAHXqNxsb8k&amp;utm_campaign=designshare&amp;utm_medium=embeds&amp;utm_source=link" target="_blank" rel="noopener">Pink Gratitude Jar</a> by Kimberly Treuth</p></div>' + '<p class="small muted" style="margin:0 0 10px">' + total + " thank-yous so far.</p>" + (entries.length ? '<ul class="list">' + entries.slice(0, 14).map(function (e) {
-        return '<li class="li"><span class="badge grey">' + esc(A.fmtDay(A.parseD(e[0]), { month: "short", day: "numeric" })) + '</span><span class="li-text">' + esc(e[1]) + "</span></li>";
-      }).join("") + "</ul>" : '<div class="empty">Past entries collect here.</div>'), { icon: "star", tone: "butter" }) + "</div></div>";
+      '<div class="c6">' + A.card("Gratitude jar", jarHTML() +
+        '<label class="lbl" for="jar-input">Write a note and drop it in the jar</label>' +
+        '<input class="field" id="jar-input" maxlength="160" placeholder="I’m grateful for… then press Enter" autocomplete="off">' +
+        '<p class="small muted" style="margin:10px 0 0">' + jar.length + " " + (jar.length === 1 ? "note" : "notes") + " in your jar · " + total + " thank-yous so far. Tap a note to take it out.</p>" +
+        (entries.length ? '<ul class="list" style="margin-top:12px">' + entries.slice(0, 10).map(function (e) {
+          return '<li class="li"><span class="badge grey">' + esc(A.fmtDay(A.parseD(e[0]), { month: "short", day: "numeric" })) + '</span><span class="li-text">' + esc(e[1]) + "</span></li>";
+        }).join("") + "</ul>" : ""), { icon: "star", tone: "butter" }) + "</div></div>";
   }
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" || !e.target || e.target.id !== "jar-input") return;
+    e.preventDefault();
+    var text = e.target.value.trim();
+    if (!text) return;
+    A.state.rituals.jar = [{ id: A.uid(), text: text.slice(0, 160), date: A.todayKey() }].concat(A.state.rituals.jar || []);
+    A.markPractice(A.todayKey(), "gratitude");
+    A.save(); A.render();
+    var box = document.getElementById("jar-input"); if (box) box.focus();
+  });
+  A.acts["jar-del"] = function (el) {
+    if (!window.confirm("Take this note out of the jar?")) return;
+    var id = el.getAttribute("data-id");
+    A.state.rituals.jar = (A.state.rituals.jar || []).filter(function (n) { return n.id !== id; });
+    A.save(); A.render();
+  };
   A.acts["gratitude-live"] = function () { A.markPractice(A.todayKey(), "gratitude"); };
 
   function tabSigns() {

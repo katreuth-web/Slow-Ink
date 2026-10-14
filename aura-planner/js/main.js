@@ -173,6 +173,7 @@
       out.rituals.r555.lines = {}; out.rituals.r555.mood = {};
       if (isObj(r5.lines)) Object.keys(r5.lines).slice(0, 400).forEach(function (k) { if (DKEY.test(k)) out.rituals.r555.lines[k] = arr(r5.lines[k], 55).map(function (x) { return str(x, 300); }); });
       if (isObj(r5.mood)) Object.keys(r5.mood).slice(0, 400).forEach(function (k) { if (DKEY.test(k) && [1, 2, 3, 4, 5].indexOf(+r5.mood[k]) >= 0) out.rituals.r555.mood[k] = +r5.mood[k]; });
+      out.rituals.jar = arr(r.jar, 500).filter(isObj).map(function (n) { return { id: ID.test(n.id) ? n.id : A.uid(), text: str(n.text, 160), date: dkey(n.date) }; }).filter(function (n) { return n.text; });
       if (isObj(r5.days)) Object.keys(r5.days).slice(0, 10).forEach(function (k) { if (DKEY.test(k) && r5.days[k]) out.rituals.r555.days[k] = true; });
       if (isObj(r.moon)) Object.keys(r.moon).slice(0, 300).forEach(function (k) { if (DKEY.test(k) && isObj(r.moon[k])) out.rituals.moon[k] = { intentions: str(r.moon[k].intentions, 6000), release: str(r.moon[k].release, 6000) }; });
     }

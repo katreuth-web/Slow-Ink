@@ -77,7 +77,7 @@
       scripts: [],
       viz: { sessions: [], sound: true, minutes: 5 },
       affirm: { favs: [], custom: [], counts: {}, cat: "all" },
-      rituals: { tab: "369", r369: { text: "" }, r555: { text: "", start: "", days: {} }, signs: [], moon: {} },
+      rituals: { tab: "369", r369: { text: "" }, r555: { text: "", start: "", days: {} }, signs: [], moon: {}, jar: [] },
       notebook: {
         pages: [], current: "", section: "s-journal",
         sections: [{ id: "s-journal", name: "Journal", tone: "lav" }, { id: "s-notes", name: "Notes", tone: "pink" }, { id: "s-ideas", name: "Ideas", tone: "mint" }]
