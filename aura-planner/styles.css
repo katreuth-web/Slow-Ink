@@ -607,6 +607,7 @@ textarea.mm-node { display: block; width: 150px; resize: none; overflow: hidden;
 textarea.mm-node.root { width: 170px; background: var(--grad); color: var(--on-grad); font-weight: 600; font-size: 14px; }
 textarea.mm-node:focus { cursor: text; box-shadow: 0 0 0 3px rgba(var(--ac-l), 0.45), 0 6px 18px rgba(var(--ac-d), 0.2); }
 .mm-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 12px; }
+.mm-colors { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 12px; }
 .mm-tools .field { width: 220px; max-width: 100%; }
 
 .vision-board { columns: 4 220px; column-gap: 14px; }

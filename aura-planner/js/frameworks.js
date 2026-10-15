@@ -106,8 +106,12 @@
     var nodes = mm.nodes.map(function (n, i) {
       return '<textarea class="mm-node' + (n.id === root ? " root" : "") + (n.id === sel ? " sel" : "") + '" rows="1" data-node="' + esc(n.id) + '" data-bind="mindmap.nodes.' + i + '.text" aria-label="Idea" placeholder="Type an idea…" style="left:' + n.x + "%;top:" + n.y + "%;--c:" + n.color + '">' + esc(n.text) + "</textarea>";
     }).join("");
+    var selNode = mm.nodes.filter(function (n) { return n.id === sel; })[0] || mm.nodes[0];
     var tools = '<div class="mm-tools"><button class="btn sm pink" data-act="mm-add">' + ic("plus") + " Add branch</button>" +
-      '<button class="btn sm" data-act="mm-del"' + (sel === root ? " disabled" : "") + ">" + ic("trash") + " Remove selected</button></div>";
+      '<button class="btn sm" data-act="mm-del"' + (sel === root ? " disabled" : "") + ">" + ic("trash") + " Remove selected</button></div>" +
+      '<div class="mm-colors" role="group" aria-label="Colour of the selected bubble">' + A.PALETTE.slice(0, 6).map(function (c) {
+        return '<button class="swatch' + (selNode.color === c ? " on" : "") + '" style="background:' + c + '" data-act="mm-color" data-c="' + c + '" aria-label="Colour" aria-pressed="' + (selNode.color === c) + '"></button>';
+      }).join("") + "</div>";
     A.afterRender = function () {
       var box = document.getElementById("mm"), svg = document.getElementById("mm-svg");
       if (!box || !svg) return;
@@ -161,6 +165,12 @@
     A.state.ui.mmSel = n.id;
     A.save(); A.render();
     var t = document.querySelector('.mm-node[data-node="' + n.id + '"]'); if (t) t.focus();
+  };
+  A.acts["mm-color"] = function (el) {
+    var sel = A.state.ui.mmSel || A.state.mindmap.nodes[0].id, n = A.state.mindmap.nodes.filter(function (x) { return x.id === sel; })[0];
+    if (!n) return;
+    n.color = el.getAttribute("data-c"); A.save(); A.render();
+    var t = document.querySelector('.mm-node[data-node="' + sel + '"]'); if (t) t.focus();
   };
   A.acts["mm-del"] = function () {
     var mm = A.state.mindmap, root = mm.nodes[0].id, sel = A.state.ui.mmSel;
