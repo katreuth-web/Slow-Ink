@@ -1349,3 +1349,9 @@ body.markup-on .book { margin-bottom: 90px; }
 .nb-stk:hover, .nb-stk:focus-visible { background: var(--line); outline: none; }
 .nb-stk svg { display: block; width: 100%; height: auto; }
 @media print { .rt-tools, .obj-h { display: none !important; } .obj.sel { outline: none; } }
+
+/* yearly view: week numbers beside each month, and ringed month numbers */
+.mini-cal.wk { grid-template-columns: 24px repeat(7, 1fr); }
+.mini-cal .wk-n { font-size: 9.5px; font-weight: 600; color: var(--butter-deep); text-decoration: none; padding: 3px 0; border-radius: 7px; }
+.mini-cal .wk-n:hover, .mini-cal .wk-n:focus-visible { background: var(--butter-soft); outline: none; }
+.mnum { display: inline-grid; place-items: center; min-width: 30px; height: 26px; padding: 0 7px; border-radius: 999px; border: 2px solid var(--butter); background: var(--butter-soft); color: var(--butter-deep); font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; }

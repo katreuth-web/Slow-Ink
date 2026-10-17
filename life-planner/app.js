@@ -1203,15 +1203,21 @@
     var minis = "";
     for (var m = 0; m < 12; m++) {
       var first = new Date(y, m, 1), lead = dowIdx(first), dim = daysInMonth(y, m);
-      var cells = DOW1.map(function (x) { return '<span class="dow">' + x + "</span>"; }).join("");
-      for (var i = 0; i < lead; i++) cells += "<span></span>";
+      var cells = '<span class="dow">wk</span>' + DOW1.map(function (x) { return '<span class="dow">' + x + "</span>"; }).join("");
+      var slots = [];
+      for (var i = 0; i < lead; i++) slots.push("<span></span>");
       for (var d = 1; d <= dim; d++) {
         var k = y + "-" + pad(m + 1) + "-" + pad(d), day = peekDay(k);
         var has = day && ((day.tasks && day.tasks.length) || day.mood || day.notes);
-        cells += '<span class="d ' + (k === tk ? "today" : has ? "has" : "") + '">' + d + "</span>";
+        slots.push('<span class="d ' + (k === tk ? "today" : has ? "has" : "") + '">' + d + "</span>");
+      }
+      while (slots.length % 7) slots.push("<span></span>");
+      for (var r = 0; r < slots.length / 7; r++) {
+        var monday = addDays(first, -lead + r * 7);
+        cells += '<a class="wk-n" href="' + hrefWeek(monday) + '" title="Open week ' + isoWeek(monday) + '">' + isoWeek(monday) + "</a>" + slots.slice(r * 7, r * 7 + 7).join("");
       }
       var mo = state.months[y + "-" + pad(m + 1)];
-      minis += '<a class="mini ' + (y === t.getFullYear() && m === t.getMonth() ? "current" : "") + '" href="#/month/' + y + "-" + pad(m + 1) + '"><div class="mini-head"><h3>' + MONTHS[m] + '</h3><span class="tiny">' + pad(m + 1) + '</span></div><div class="mini-cal">' + cells + '</div><div class="mini-foot">' + (mo && mo.intention ? "“" + esc(mo.intention) + "”" : "&nbsp;") + "</div></a>";
+      minis += '<a class="mini ' + (y === t.getFullYear() && m === t.getMonth() ? "current" : "") + '" href="#/month/' + y + "-" + pad(m + 1) + '"><div class="mini-head"><h3>' + MONTHS[m] + '</h3><span class="mnum">' + pad(m + 1) + '</span></div><div class="mini-cal wk">' + cells + '</div><div class="mini-foot">' + (mo && mo.intention ? "“" + esc(mo.intention) + "”" : "&nbsp;") + "</div></a>";
     }
     var s = periodStats(new Date(y, 0, 1), new Date(y, 11, 31));
     return head("Yearly spread", y + ' <span class="em">at a glance</span>', '<a class="btn pink" href="#/year/' + y + '/review">' + ic("spark") + " Yearly review</a>") +
