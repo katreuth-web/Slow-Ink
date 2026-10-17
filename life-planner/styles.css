@@ -1351,7 +1351,13 @@ body.markup-on .book { margin-bottom: 90px; }
 @media print { .rt-tools, .obj-h { display: none !important; } .obj.sel { outline: none; } }
 
 /* yearly view: week numbers beside each month, and ringed month numbers */
+.mini { position: relative; }
+.mini-link { color: inherit; text-decoration: none; }
+/* the month title link covers the whole card, so the card stays one big tap target */
+.mini-link::after { content: ""; position: absolute; inset: 0; border-radius: inherit; }
+.mini:focus-within { outline: 2px solid var(--butter-deep); outline-offset: 3px; }
 .mini-cal.wk { grid-template-columns: 24px repeat(7, 1fr); }
-.mini-cal .wk-n { font-size: 9.5px; font-weight: 600; color: var(--butter-deep); text-decoration: none; padding: 3px 0; border-radius: 7px; }
+/* week numbers sit above that overlay so they stay tappable in their own right */
+.mini-cal .wk-n { position: relative; z-index: 1; font-size: 9.5px; font-weight: 600; color: var(--butter-deep); text-decoration: none; padding: 3px 0; border-radius: 7px; }
 .mini-cal .wk-n:hover, .mini-cal .wk-n:focus-visible { background: var(--butter-soft); outline: none; }
 .mnum { display: inline-grid; place-items: center; min-width: 30px; height: 26px; padding: 0 7px; border-radius: 999px; border: 2px solid var(--butter); background: var(--butter-soft); color: var(--butter-deep); font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; }

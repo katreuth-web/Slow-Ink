@@ -1217,7 +1217,7 @@
         cells += '<a class="wk-n" href="' + hrefWeek(monday) + '" title="Open week ' + isoWeek(monday) + '">' + isoWeek(monday) + "</a>" + slots.slice(r * 7, r * 7 + 7).join("");
       }
       var mo = state.months[y + "-" + pad(m + 1)];
-      minis += '<a class="mini ' + (y === t.getFullYear() && m === t.getMonth() ? "current" : "") + '" href="#/month/' + y + "-" + pad(m + 1) + '"><div class="mini-head"><h3>' + MONTHS[m] + '</h3><span class="mnum">' + pad(m + 1) + '</span></div><div class="mini-cal wk">' + cells + '</div><div class="mini-foot">' + (mo && mo.intention ? "“" + esc(mo.intention) + "”" : "&nbsp;") + "</div></a>";
+      minis += '<div class="mini ' + (y === t.getFullYear() && m === t.getMonth() ? "current" : "") + '"><div class="mini-head"><h3><a class="mini-link" href="#/month/' + y + "-" + pad(m + 1) + '">' + MONTHS[m] + '</a></h3><span class="mnum">' + pad(m + 1) + '</span></div><div class="mini-cal wk">' + cells + '</div><div class="mini-foot">' + (mo && mo.intention ? "“" + esc(mo.intention) + "”" : "&nbsp;") + "</div></div>";
     }
     var s = periodStats(new Date(y, 0, 1), new Date(y, 11, 31));
     return head("Yearly spread", y + ' <span class="em">at a glance</span>', '<a class="btn pink" href="#/year/' + y + '/review">' + ic("spark") + " Yearly review</a>") +
