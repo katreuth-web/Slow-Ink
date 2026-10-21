@@ -610,13 +610,15 @@ textarea.mm-node:focus { cursor: text; box-shadow: 0 0 0 3px rgba(var(--ac-l), 0
 .mm-colors { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 0 0 12px; }
 .mm-tools .field { width: 220px; max-width: 100%; }
 
-.vision-board { columns: 4 220px; column-gap: 14px; }
-.v-tile { break-inside: avoid; margin-bottom: 14px; border-radius: 18px; overflow: hidden; position: relative; background: var(--paper); border: 1px solid var(--paper); box-shadow: var(--shadow); }
+/* grid, not multi-column: columns fragment tiles and leave big gaps, and WebKit
+   clips rounded overflow:hidden items inside them after a reflow such as a rotation */
+.vision-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; align-items: start; }
+.v-tile { border-radius: 18px; overflow: hidden; position: relative; background: var(--paper); border: 1px solid var(--paper); box-shadow: var(--shadow); }
 .v-tile img { width: 100%; height: auto; }
 .v-tile .cap { padding: 8px 10px; }
 .v-tile .cap .field { font-size: 12.5px; }
 .v-tile.quote { padding: 22px 18px; background: var(--grad-soft), var(--paper); }
-.v-tile.quote .ta { font-family: var(--hand); font-size: 24px; line-height: 1.2; text-align: center; border: 0; background: transparent; min-height: 70px; resize: none; }
+.v-tile.quote .ta { font-family: var(--hand); font-size: 24px; line-height: 1.2; text-align: center; border: 0; background: transparent; min-height: 70px; resize: none; overflow: hidden; }
 .v-tile .tile-x { position: absolute; top: 8px; right: 8px; background: rgba(var(--w), 0.9); border-radius: 9px; width: 28px; height: 28px; opacity: 0; transition: opacity 0.2s; }
 .v-tile:hover .tile-x, .v-tile:focus-within .tile-x { opacity: 1; }
 @media (hover: none) { .v-tile .tile-x { opacity: 1; } }

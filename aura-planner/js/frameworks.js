@@ -194,11 +194,29 @@
       return '<div class="v-tile">' + (url ? '<img src="' + url + '" alt="' + esc(t.caption || "Vision board image") + '" loading="lazy" />' : '<div class="empty" style="margin:10px">Image missing</div>') +
         '<div class="cap">' + A.input("vision.tiles." + i + ".caption", 'placeholder="Add a caption"', "bare") + "</div>" + x + "</div>";
     }).join("");
+    A.afterRender = fitQuotes;
     return A.head("Align", 'Vision <span class="soft">board</span>', "Collect images and words that feel like the life you’re calling in. Look at it often and let yourself feel it.", '<a class="btn ghost sm" href="#/visualize">' + ic("eye") + 'Visualize</a><button class="btn ghost sm" data-act="vision-quote">' + ic("quote") + "Add quote</button>") +
       '<div class="grid" style="margin-bottom:16px"><div class="c8">' + A.card("", A.input("vision.title", 'placeholder="Board title"', "bare hand") + '<p class="small muted" style="margin:4px 6px 0">Photos are resized and stored privately in this browser.</p>', { tint: "grad" }) + "</div>" +
       '<div class="c4">' + A.card("", A.dropzone("vision", "Upload images", true), {}) + "</div></div>" +
       (tiles ? '<div class="vision-board">' + tiles + "</div>" : A.card("", '<div class="empty">Your board is empty — upload a few photos or add a quote to begin.</div>'));
   };
+  /* Quote tiles grow to fit their text. A height measured once goes stale as soon as
+     the width changes, so refit on render, on typing, on rotation and once the
+     handwriting font has loaded (it wraps differently from the fallback). */
+  function fitQuotes() {
+    Array.prototype.forEach.call(document.querySelectorAll(".v-tile.quote textarea"), function (t) {
+      t.style.height = "auto"; t.style.height = t.scrollHeight + "px";
+    });
+  }
+  A.fitQuotes = fitQuotes;
+  document.addEventListener("input", function (e) {
+    if (e.target && e.target.closest && e.target.closest(".v-tile.quote")) {
+      e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px";
+    }
+  });
+  window.addEventListener("resize", fitQuotes);
+  window.addEventListener("orientationchange", fitQuotes);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitQuotes);
   A.uploads.vision = function (files) {
     A.toast("Adding " + files.length + " image" + (files.length > 1 ? "s" : "") + "…");
     Promise.all(files.map(function (f) { return A.images.add(f).catch(function (e) { A.toast(e.message); return null; }); })).then(function (ids) {
