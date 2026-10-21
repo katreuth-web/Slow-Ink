@@ -30,7 +30,7 @@
   --lsoft: 239, 232, 255; --psoft: 255, 232, 244; --ink-rgb: 45, 40, 57;
   --line: rgba(155, 123, 255, 0.16); --line-strong: rgba(155, 123, 255, 0.3);
   --accent-text: #6b46e0; --accent2-text: #b02c7e;
-  --aur-bg: linear-gradient(180deg, #fbfaff 0%, #f5f1ff 60%, #fff5fb 100%);
+  --aur-bg: linear-gradient(180deg, #f1ecfe 0%, #e7dffd 60%, #fbe4f1 100%);
   --aur-1: #ddcfff; --aur-2: #ffd4ec; --aur-3: #e7ddfd; --aur-4: #ffe0f2;
   --desk: linear-gradient(160deg, #432d76 0%, #6045a1 50%, #9e4c7b 100%);
   --desk-1: #b69cff; --desk-2: #ff9ed2; --desk-3: #9b7bff; --desk-4: #ff9ed2; --desk-solid: #412b73;
@@ -68,7 +68,7 @@ html[data-theme="rose"] {
   --lsoft: 255, 238, 242; --psoft: 255, 240, 230; --ink-rgb: 57, 40, 44;
   --line: rgba(238, 127, 159, 0.16); --line-strong: rgba(238, 127, 159, 0.3);
   --accent-text: #b3335b; --accent2-text: #a8480f;
-  --aur-bg: linear-gradient(180deg, #fffafb 0%, #fff1f5 60%, #fff9f5 100%);
+  --aur-bg: linear-gradient(180deg, #fff1f4 0%, #ffd8e3 60%, #ffeee3 100%);
   --aur-1: #ffcfdb; --aur-2: #ffe4d4; --aur-3: #fddde5; --aur-4: #ffece0;
   --desk: linear-gradient(160deg, #762d3f 0%, #a1455c 50%, #9e6a4c 100%);
   --desk-1: #f7a1b8; --desk-2: #ffc19a; --desk-3: #ee7f9f; --desk-4: #ffc19a; --desk-solid: #732b3d;
@@ -94,7 +94,7 @@ html[data-theme="ocean"] {
   --lsoft: 232, 241, 255; --psoft: 226, 248, 244; --ink-rgb: 40, 47, 57;
   --line: rgba(91, 156, 245, 0.16); --line-strong: rgba(91, 156, 245, 0.3);
   --accent-text: #1a58b5; --accent2-text: #0b7468;
-  --aur-bg: linear-gradient(180deg, #fafcff 0%, #f1f7ff 60%, #f5fffe 100%);
+  --aur-bg: linear-gradient(180deg, #f1f7ff 0%, #d8e9ff 60%, #e3fffc 100%);
   --aur-1: #cfe4ff; --aur-2: #d4fffb; --aur-3: #ddebfd; --aur-4: #e0fffc;
   --desk: linear-gradient(160deg, #2d4d76 0%, #456da1 50%, #4c9e96 100%);
   --desk-1: #8cbcff; --desk-2: #7fdccf; --desk-3: #5b9cf5; --desk-4: #7fdccf; --desk-solid: #2b4a73;
@@ -120,7 +120,7 @@ html[data-theme="meadow"] {
   --lsoft: 230, 247, 236; --psoft: 255, 246, 220; --ink-rgb: 40, 57, 48;
   --line: rgba(95, 191, 136, 0.16); --line-strong: rgba(95, 191, 136, 0.3);
   --accent-text: #17703f; --accent2-text: #7d5200;
-  --aur-bg: linear-gradient(180deg, #fafffc 0%, #f1fff8 60%, #fffcf5 100%);
+  --aur-bg: linear-gradient(180deg, #f1fff7 0%, #d8ffeb 60%, #fff7e3 100%);
   --aur-1: #cfffe7; --aur-2: #fff3d4; --aur-3: #ddfded; --aur-4: #fff7e0;
   --desk: linear-gradient(160deg, #2d7652 0%, #45a173 50%, #9e884c 100%);
   --desk-1: #98d9b1; --desk-2: #ffd98a; --desk-3: #5fbf88; --desk-4: #ffd98a; --desk-solid: #2b734f;
