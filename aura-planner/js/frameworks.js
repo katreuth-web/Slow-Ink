@@ -194,7 +194,7 @@
       return '<div class="v-tile">' + (url ? '<img src="' + url + '" alt="' + esc(t.caption || "Vision board image") + '" loading="lazy" />' : '<div class="empty" style="margin:10px">Image missing</div>') +
         '<div class="cap">' + A.input("vision.tiles." + i + ".caption", 'placeholder="Add a caption"', "bare") + "</div>" + x + "</div>";
     }).join("");
-    A.afterRender = fitQuotes;
+    A.afterRender = refreshBoard;
     return A.head("Align", 'Vision <span class="soft">board</span>', "Collect images and words that feel like the life you’re calling in. Look at it often and let yourself feel it.", '<a class="btn ghost sm" href="#/visualize">' + ic("eye") + 'Visualize</a><button class="btn ghost sm" data-act="vision-quote">' + ic("quote") + "Add quote</button>") +
       '<div class="grid" style="margin-bottom:16px"><div class="c8">' + A.card("", A.input("vision.title", 'placeholder="Board title"', "bare hand") + '<p class="small muted" style="margin:4px 6px 0">Photos are resized and stored privately in this browser.</p>', { tint: "grad" }) + "</div>" +
       '<div class="c4">' + A.card("", A.dropzone("vision", "Upload images", true), {}) + "</div></div>" +
@@ -208,15 +208,38 @@
       t.style.height = "auto"; t.style.height = t.scrollHeight + "px";
     });
   }
+  /* Pack the tiles so a short one does not hold open the whole row. Each tile is
+     spanned over as many of the board's short rows as its own height needs. The
+     row size and gap are read back from the CSS so it stays the one source. */
+  function packBoard() {
+    var board = document.querySelector(".vision-board");
+    if (!board || !board.children.length) return;
+    board.classList.add("packed");
+    var row = parseFloat(getComputedStyle(board).gridAutoRows) || 4;
+    Array.prototype.forEach.call(board.children, function (t) {
+      t.style.gridRowEnd = "";
+      var r = t.getBoundingClientRect();
+      var mb = parseFloat(getComputedStyle(t).marginBottom) || 0;
+      t.style.gridRowEnd = "span " + Math.max(1, Math.ceil((r.height + mb) / row));
+    });
+  }
+  /* Quote heights must settle before the tiles are measured. */
+  function refreshBoard() { fitQuotes(); packBoard(); }
   A.fitQuotes = fitQuotes;
+  A.refreshBoard = refreshBoard;
   document.addEventListener("input", function (e) {
     if (e.target && e.target.closest && e.target.closest(".v-tile.quote")) {
       e.target.style.height = "auto"; e.target.style.height = e.target.scrollHeight + "px";
+      packBoard();
     }
   });
-  window.addEventListener("resize", fitQuotes);
-  window.addEventListener("orientationchange", fitQuotes);
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitQuotes);
+  /* A photo has no height until it decodes, so re-pack as each one arrives. */
+  document.addEventListener("load", function (e) {
+    if (e.target && e.target.tagName === "IMG" && e.target.closest(".vision-board")) packBoard();
+  }, true);
+  window.addEventListener("resize", refreshBoard);
+  window.addEventListener("orientationchange", refreshBoard);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refreshBoard);
   A.uploads.vision = function (files) {
     A.toast("Adding " + files.length + " image" + (files.length > 1 ? "s" : "") + "…");
     Promise.all(files.map(function (f) { return A.images.add(f).catch(function (e) { A.toast(e.message); return null; }); })).then(function (ids) {

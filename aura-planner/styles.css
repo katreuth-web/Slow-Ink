@@ -613,6 +613,13 @@ textarea.mm-node:focus { cursor: text; box-shadow: 0 0 0 3px rgba(var(--ac-l), 0
 /* grid, not multi-column: columns fragment tiles and leave big gaps, and WebKit
    clips rounded overflow:hidden items inside them after a reflow such as a rotation */
 .vision-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; align-items: start; }
+/* packed: JS measures each tile and spans it over these short rows, so a tile sits
+   directly under the one above instead of waiting for the row to clear. The row gap
+   moves onto the tile as a margin: a gap between every 4px row would round the span
+   up by as much as a whole gap. Without JS the plain grid above still works, just
+   with gaps under the shorter tiles. */
+.vision-board.packed { grid-auto-rows: 4px; row-gap: 0; }
+.vision-board.packed .v-tile { margin-bottom: 14px; }
 .v-tile { border-radius: 18px; overflow: hidden; position: relative; background: var(--paper); border: 1px solid var(--paper); box-shadow: var(--shadow); }
 .v-tile img { width: 100%; height: auto; }
 .v-tile .cap { padding: 8px 10px; }
