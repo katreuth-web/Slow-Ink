@@ -1367,11 +1367,13 @@ body.markup-on .book { margin-bottom: 90px; }
 .mini:focus-within { outline: 2px solid var(--butter-deep); outline-offset: 3px; }
 .mini-cal.wk { grid-template-columns: 24px repeat(7, 1fr); }
 /* week numbers sit above that overlay so they stay tappable in their own right */
-.mini-cal .wk-n { position: relative; z-index: 1; font-size: 9.5px; font-weight: 600; color: var(--butter-deep); text-decoration: none; padding: 3px 0; border-radius: 7px; }
-.mini-cal .wk-n:hover, .mini-cal .wk-n:focus-visible { background: var(--butter-soft); outline: none; }
+.mini-cal .wk-n { position: relative; z-index: 1; font-size: 9.5px; font-weight: 600; color: var(--pink-deep); text-decoration: none; padding: 3px 0; border-radius: 7px; }
+.mini-cal .wk-n:hover, .mini-cal .wk-n:focus-visible { background: var(--pink-soft); outline: none; }
 .mnum { display: inline-grid; place-items: center; min-width: 30px; height: 26px; padding: 0 7px; border-radius: 999px; background: var(--pink-soft); color: var(--pink-deep); font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; }
 /* Blush's accent pink is the lightest of the four, so the month number needs a
    deeper ink than --pink-deep to stay readable on the soft fill. The other
    palettes and dark mode already clear 4.5:1 on their own. */
 :root[data-theme="blush"]:not([data-mode="dark"]) .mnum,
-:root:not([data-theme]):not([data-mode="dark"]) .mnum { color: #8c4a5a; }
+:root[data-theme="blush"]:not([data-mode="dark"]) .mini-cal .wk-n,
+:root:not([data-theme]):not([data-mode="dark"]) .mnum,
+:root:not([data-theme]):not([data-mode="dark"]) .mini-cal .wk-n { color: #8c4a5a; }
