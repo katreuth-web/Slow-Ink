@@ -43,10 +43,13 @@
   --butter-soft: #fbf0cc;
   --butter-deep: #846819;
   --sage: #cfe3d2;
+  --sage-soft: #e5f0e6;
   --sage-deep: #4c8559;
   --sky: #cfe0ee;
+  --sky-soft: #e5eef6;
   --sky-deep: #4a76a0;
   --lilac: #ddd3ee;
+  --lilac-soft: #ece7f6;
   --glass: rgba(247, 244, 241, 0.62);
   --glass-edge: rgba(255, 255, 255, 0.7);
   --paper: #fbf9f6;
@@ -83,10 +86,13 @@
   --butter-soft: #443d2c;
   --butter-deep: #f2d57e;
   --sage: #3d5242;
+  --sage-soft: #313431;
   --sage-deep: #93cda0;
   --sky: #34495a;
+  --sky-soft: #2e3238;
   --sky-deep: #9cc3e6;
   --lilac: #40394d;
+  --lilac-soft: #322d34;
   --glass: rgba(50, 45, 48, 0.62);
   --glass-edge: rgba(255, 255, 255, 0.07);
   --paper: #332e31;
@@ -280,6 +286,9 @@ input[type="range"]::-moz-range-thumb { width: 20px; height: 20px; border-radius
 }
 .card.tint-pink { background: linear-gradient(160deg, var(--pink-soft), var(--surface) 70%); }
 .card.tint-butter { background: linear-gradient(160deg, var(--butter-soft), var(--surface) 70%); }
+.card.tint-sage { background: linear-gradient(160deg, var(--sage-soft), var(--surface) 70%); }
+.card.tint-sky { background: linear-gradient(160deg, var(--sky-soft), var(--surface) 70%); }
+.card.tint-lilac { background: linear-gradient(160deg, var(--lilac-soft), var(--surface) 70%); }
 .card.flat { box-shadow: var(--press); }
 .card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
 .card-head h3 { display: flex; align-items: center; gap: 10px; }

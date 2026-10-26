@@ -1176,7 +1176,7 @@
       card("Life hubs", '<div class="tile-links">' + hubs.map(function (h) { return '<a class="tile-link" href="#/' + h[0] + '">' + ic(h[2]) + "<span>" + esc(h[1]) + "</span></a>"; }).join("") + "</div>", { dot: "s" });
     var right =
       card("How are you feeling?", moodPicker("days." + k + ".mood") + '<div class="spacer"></div><label class="lbl">Hydration</label>' + waterPicker("days." + k + ".water"), { cls: "tint-pink", dot: "p" }) +
-      card("Habits today", habitChecks(k), { dot: "l", right: '<a class="btn sm ghost" href="#/habits">Tracker</a>' }) +
+      card("Habits today", habitChecks(k), { cls: "tint-lilac", dot: "l", right: '<a class="btn sm ghost" href="#/habits">Tracker</a>' }) +
       healthCard() + dumpCard() + goalsCard() + projectsCard() +
       card("Coming up", upcoming(), { dot: "k" }) +
       card(MONTHS[t.getMonth()] + " intention", bindArea("months." + mk + ".intention", "One sentence to steer the month…", 'style="min-height:64px"') + '<div class="spacer"></div><p class="quote">“' + esc(quote) + "”</p>", { cls: "tint-butter", dot: "b" });
@@ -1224,7 +1224,7 @@
       '<div class="grid"><div class="c4">' + card("Word of the year", bindInput("years." + yk + ".word", 'placeholder="e.g. Bloom" style="font-family:var(--serif);font-size:1.5rem;font-weight:600"'), { cls: "tint-pink", dot: "p" }) + "</div>" +
       '<div class="c8">' + card("Year so far", statsRow(s, [[money(s.spent), "Spent"]]), { dot: "b" }) + "</div>" +
       '<div class="c12"><div class="year-grid">' + minis + "</div></div>" +
-      '<div class="c6">' + card("Big goals for " + y, listEd("years." + yk + ".goals", { placeholder: "Add a yearly goal…", empty: "Name three things that would make this year meaningful." }), { dot: "s" }) + "</div>" +
+      '<div class="c6">' + card("Big goals for " + y, listEd("years." + yk + ".goals", { placeholder: "Add a yearly goal…", empty: "Name three things that would make this year meaningful." }), { cls: "tint-sage", dot: "s" }) + "</div>" +
       '<div class="c6">' + card("Vision", bindArea("years." + yk + ".vision", "Describe the year you want to look back on…", 'style="min-height:170px"'), { dot: "l" }) + "</div></div>";
   }
 
@@ -1254,7 +1254,7 @@
       '<div class="grid"><div class="c12">' + card("", html) + "</div>" +
       '<div class="c4">' + card("Intention", bindArea("months." + mk + ".intention", "How do you want this month to feel?"), { cls: "tint-pink", dot: "p" }) + "</div>" +
       '<div class="c4">' + card("Monthly goals", listEd("months." + mk + ".goals", { placeholder: "Add a goal…" }), { dot: "s" }) + "</div>" +
-      '<div class="c4">' + card("Key dates", listEd("months." + mk + ".dates", { noCheck: true, placeholder: "e.g. 14 — Mum's birthday" }), { dot: "b" }) + "</div>" +
+      '<div class="c4">' + card("Key dates", listEd("months." + mk + ".dates", { noCheck: true, placeholder: "e.g. 14 — Mum's birthday" }), { cls: "tint-butter", dot: "b" }) + "</div>" +
       '<div class="c8">' + card("Month so far", statsRow(s, [[money(s.spent), "Spent"]]), { dot: "k" }) + "</div>" +
       '<div class="c4">' + card("Notes", bindArea("months." + mk + ".notes", "Anything to remember…"), { dot: "l" }) + "</div></div>";
   }
@@ -1291,7 +1291,7 @@
     return head("Weekly spread · Week " + isoWeek(mon) + " · " + mon.getFullYear(), title, '<a class="btn" href="' + hrefMonth(mon) + '">' + ic("month") + " Month</a>" + '<a class="btn pink" href="#/week/' + wk + '/review">' + ic("spark") + " Weekly review</a>") +
       '<div class="week-grid">' + cols + '<div class="week-day focus">' + '<div class="week-day-head"><span class="n" style="font-size:1.35rem">Weekly focus</span></div>' + bindArea("weeks." + wk + ".focus", "The one thing that matters most this week…", 'style="min-height:64px"') + '<div class="spacer"></div><label class="lbl">Priorities</label>' + listEd("weeks." + wk + ".priorities", { placeholder: "Add a priority…" }) + "</div></div><div class=\"spacer\"></div>" +
       '<div class="grid">' +
-      '<div class="c5">' + card("Habit tracker", state.habits.length ? '<div class="scroll-x"><table class="habit-table" style="width:auto"><tr><th></th>' + DOW1.map(function (x) { return "<th>" + x + "</th>"; }).join("") + "</tr>" + habitRows + "</table></div>" : '<div class="empty">No habits yet.</div>', { dot: "l", right: '<a class="btn sm ghost" href="#/habits">Manage</a>' }) + "</div>" +
+      '<div class="c5">' + card("Habit tracker", state.habits.length ? '<div class="scroll-x"><table class="habit-table" style="width:auto"><tr><th></th>' + DOW1.map(function (x) { return "<th>" + x + "</th>"; }).join("") + "</tr>" + habitRows + "</table></div>" : '<div class="empty">No habits yet.</div>', { cls: "tint-lilac", dot: "l", right: '<a class="btn sm ghost" href="#/habits">Manage</a>' }) + "</div>" +
       '<div class="c7">' + card("Meals this week", '<div class="scroll-x"><table class="habit-table"><tr><th></th>' + DOW3.map(function (x) { return "<th>" + x + "</th>"; }).join("") + "</tr>" + mealRows + "</table></div>", { dot: "b", right: '<a class="btn sm ghost" data-act="meal-week" data-val="' + wk + '">Plan meals</a>' }) + "</div>" +
       '<div class="c8">' + card("Week at a glance", statsRow(s), { dot: "k" }) + "</div>" +
       '<div class="c4">' + card("Notes", bindArea("weeks." + wk + ".notes", "Reminders, ideas, loose ends…"), { dot: "s" }) + "</div></div>";
@@ -1367,7 +1367,7 @@
       card("Notes", bindArea("days." + k + ".notes", "Thoughts, ideas, things to remember…", 'style="min-height:150px"'), { dot: "l" });
     var right =
       card("Mood & energy", moodPicker("days." + k + ".mood") + '<div class="spacer"></div>' + bindInput("days." + k + ".moodNote", 'placeholder="A word for how you feel…"'), { dot: "p" }) +
-      card("Hydration", waterPicker("days." + k + ".water"), { dot: "k" }) +
+      card("Hydration", waterPicker("days." + k + ".water"), { cls: "tint-sky", dot: "k" }) +
       card("Habits", habitChecks(k), { dot: "l" }) +
       card("Meals", meals, { dot: "b", right: '<button class="btn sm ghost" data-act="meal-week" data-val="' + wk + '">Planner</button>' }) +
       card("Movement", workouts.length ? '<ul class="list">' + workouts.map(function (w) { return "<li><span class=\"badge sage\">" + esc(w.type) + '</span><span class="grow">' + esc(w.notes || "") + '</span><span class="meta">' + esc(w.minutes || 0) + " min</span></li>"; }).join("") + "</ul>" : '<div class="empty">No workout logged.</div>', { dot: "s", right: '<a class="btn sm ghost" href="#/habits" data-act="tab-go" data-key="habits" data-val="fitness">Log</a>' }) +
@@ -1404,7 +1404,7 @@
       card(c.next, listEd(base + ".next", { placeholder: "Add a next step…" }) + (carry ? '<div class="spacer"></div>' + carry : ""), { dot: "s" }) +
       (extra || "");
     return head(c.title + " review · " + label, c.title + ' <span class="em">reflection</span>', '<a class="btn" href="' + back + '">' + ic("left") + " Back to spread</a>") +
-      '<div class="grid"><div class="c12">' + card("Progress audit", statsRow(s, extraStats), { dot: "k" }) + '</div><div class="c7 stack">' + left + '</div><div class="c5 stack">' + right + "</div></div>";
+      '<div class="grid"><div class="c12">' + card("Progress audit", statsRow(s, extraStats), { cls: "tint-sky", dot: "k" }) + '</div><div class="c7 stack">' + left + '</div><div class="c5 stack">' + right + "</div></div>";
   }
 
   /* ------------------------------------------------------------ views: habits & fitness */
@@ -1577,7 +1577,7 @@
     return '<div class="grid"><div class="c5">' + card("Your measurements", bodyFigure() + '<p class="small muted" style="margin:6px 0 0;text-align:center">Latest readings (' + esc(u) + ")</p>", { cls: "tint-pink", dot: "p", right: unitChips }) + "</div>" +
       '<div class="c7 stack">' + card("Start &amp; goal", setup + '<div class="spacer"></div><label class="lbl" for="bm-h">Height (' + esc(u) + ", optional)</label>" + bindNum("body.height", 'id="bm-h" step="0.1" style="max-width:140px" data-rerender'), { dot: "b" }) +
       card("Progress so far", prog, { dot: "s" }) + "</div>" +
-      '<div class="c12">' + card("Check-in log", logCard, { dot: "l" }) + "</div>" +
+      '<div class="c12">' + card("Check-in log", logCard, { cls: "tint-lilac", dot: "l" }) + "</div>" +
       '<div class="c12">' + card("Notes", bindArea("body.notes", "How you feel, what's working, how clothes fit…", 'style="min-height:84px"'), { cls: "tint-butter", dot: "b" }) + "</div></div>";
   }
 
@@ -1847,7 +1847,7 @@
       var names = state.recipes.map(function (r) { return '<button class="chip" data-act="copy-text" data-val="' + esc(r.text) + '">' + esc(r.text) + "</button>"; }).join("");
       body = card("Week of " + mon.getDate() + " " + MONTHS[mon.getMonth()], '<div class="scroll-x">' + g + "</div>", {
         dot: "p", right: '<div class="row"><button class="icon-btn sm" data-act="meal-week-step" data-val="-7" aria-label="Previous week">' + ic("left") + '</button><button class="icon-btn sm" data-act="meal-week-step" data-val="7" aria-label="Next week">' + ic("right") + '</button><button class="btn sm butter" data-act="meal-grocery">Build grocery list</button></div>'
-      }) + '<div class="spacer"></div>' + card("Your recipes", '<p class="small muted" style="margin-top:0">Type a recipe name exactly into a meal slot and “Build grocery list” pulls its ingredients in. Tap to copy a name.</p><div class="chips">' + (names || '<span class="empty">No recipes yet.</span>') + "</div>", { dot: "b" });
+      }) + '<div class="spacer"></div>' + card("Your recipes", '<p class="small muted" style="margin-top:0">Type a recipe name exactly into a meal slot and “Build grocery list” pulls its ingredients in. Tap to copy a name.</p><div class="chips">' + (names || '<span class="empty">No recipes yet.</span>') + "</div>", { cls: "tint-butter", dot: "b" });
     } else if (tb.cur === "recipes") {
       body = viewRecipes();
     } else if (tb.cur === "convert") {
@@ -2084,7 +2084,7 @@
         return '<tr><td style="min-width:150px">' + itemInput("finance.debts", d, "text", 'aria-label="Debt"') + '</td><td style="width:120px">' + itemInput("finance.debts", d, "start", "data-rerender", "number") + '</td><td style="width:120px">' + itemInput("finance.debts", d, "balance", "data-rerender", "number") + '</td><td style="width:90px">' + itemInput("finance.debts", d, "rate", 'placeholder="%" data-rerender', "number") + '</td><td style="width:110px">' + itemInput("finance.debts", d, "min", 'placeholder="Min" aria-label="Minimum payment a month" data-rerender', "number") + '</td><td style="min-width:120px">' + progress(paid, "sage") + '<span class="small muted">' + Math.round(clamp(paid, 0, 100)) + '% paid</span></td><td><button class="del" data-act="list-del" data-path="finance.debts" data-id="' + d.id + '" aria-label="Delete">' + ic("x") + "</button></td></tr>";
       }).join("");
       body = card("Savings pots", '<div class="pots">' + pots + '<button class="pot v-add" style="min-height:150px" data-act="pot-add">' + ic("plus") + "<span>New savings pot</span></button></div>", { dot: "b", right: '<span class="badge">' + money(saved) + " saved</span>" }) +
-        '<div class="spacer"></div>' + card("Debt paydown", (debts ? '<div class="scroll-x"><table class="table" style="min-width:640px"><tr><th>Debt</th><th>Started at</th><th>Balance now</th><th>Rate %</th><th>Min / month</th><th>Progress</th><th></th></tr>' + debts + "</table></div>" : '<div class="empty">Debt-free, or not tracking any yet.</div>') + '<div class="spacer"></div><button class="btn sm" data-act="debt-add">' + ic("plus") + " Add debt</button>", { dot: "s", right: '<span class="badge sage">' + money(sum(state.finance.debts, function (d) { return d.balance; })) + " remaining</span>" }) + '<div class="spacer"></div>' + payoffCard();
+        '<div class="spacer"></div>' + card("Debt paydown", (debts ? '<div class="scroll-x"><table class="table" style="min-width:640px"><tr><th>Debt</th><th>Started at</th><th>Balance now</th><th>Rate %</th><th>Min / month</th><th>Progress</th><th></th></tr>' + debts + "</table></div>" : '<div class="empty">Debt-free, or not tracking any yet.</div>') + '<div class="spacer"></div><button class="btn sm" data-act="debt-add">' + ic("plus") + " Add debt</button>", { cls: "tint-sage", dot: "s", right: '<span class="badge sage">' + money(sum(state.finance.debts, function (d) { return d.balance; })) + " remaining</span>" }) + '<div class="spacer"></div>' + payoffCard();
     } else if (tb.cur === "wish") {
       body = wishTab();
     } else if (tb.cur === "pkg") {
@@ -2154,7 +2154,7 @@
       }
       var dist = MOODS.map(function (mm) { return '<div class="row"><span style="width:26px">' + mm.e + '</span><span class="grow">' + progress(((counts[mm.v] || 0) / Math.max(1, sum(Object.keys(counts).map(function (c) { return counts[c]; })))) * 100) + '</span><span class="small muted" style="width:26px;text-align:right">' + (counts[mm.v] || 0) + "</span></div>"; }).join('<div style="height:8px"></div>');
       body = '<div class="grid"><div class="c7">' + card(MONTHS[m] + " " + y, '<div class="mood-cal">' + cells + "</div>", { dot: "p", right: '<div class="nav-arrows"><button class="icon-btn sm" data-act="mood-month" data-val="-1" aria-label="Previous month">' + ic("left") + '</button><button class="icon-btn sm" data-act="mood-month" data-val="1" aria-label="Next month">' + ic("right") + "</button></div>" }) + "</div>" +
-        '<div class="c5 stack">' + card("Today", moodPicker("days." + todayKey() + ".mood") + '<div class="spacer"></div>' + bindArea("days." + todayKey() + ".moodNote", "What's behind the feeling?", 'style="min-height:70px"'), { cls: "tint-pink", dot: "p" }) + card("This month's moods", dist, { dot: "b" }) + "</div></div>";
+        '<div class="c5 stack">' + card("Today", moodPicker("days." + todayKey() + ".mood") + '<div class="spacer"></div>' + bindArea("days." + todayKey() + ".moodNote", "What's behind the feeling?", 'style="min-height:70px"'), { cls: "tint-pink", dot: "p" }) + card("This month's moods", dist, { cls: "tint-butter", dot: "b" }) + "</div></div>";
     return head("Productivity", 'Mood <span class="em">log</span>') + body;
   }
 
@@ -2234,7 +2234,7 @@
     if (tt.cur === "plan") {
       var smart = [["s", "S", "Specific", "What exactly will you do?"], ["m", "M", "Measurable", "How will you know it worked?"], ["a", "A", "Achievable", "What makes it doable?"], ["r", "R", "Relevant", "Why does it matter to you?"], ["t", "T", "Time-bound", "By when?"]];
       inner = '<div class="grid"><div class="c6 stack">' + card("Why this matters", bindArea(p + ".why", "What will change when you reach it? Why now?", 'style="min-height:120px"'), { dot: "p" }) +
-        card("My plan", bindArea(p + ".plan", "How will you get there? Routines, resources, who can help, what could get in the way…", 'style="min-height:190px"'), { dot: "s" }) + "</div>" +
+        card("My plan", bindArea(p + ".plan", "How will you get there? Routines, resources, who can help, what could get in the way…", 'style="min-height:190px"'), { cls: "tint-sage", dot: "s" }) + "</div>" +
         '<div class="c6">' + card("SMART check (optional)", '<p class="small muted" style="margin-top:0">A quick way to test the goal. Fill in what helps.</p><div class="stack">' + smart.map(function (f) {
           return '<div><label class="lbl smart-l"><span style="font-family:var(--serif);font-size:1.3rem;font-weight:700;color:var(--pink-deep)">' + f[1] + "</span> " + f[2] + "</label>" + bindArea(p + ".smart." + f[0], f[3], 'style="min-height:56px"') + "</div>";
         }).join("") + "</div>", { dot: "b" }) + "</div></div>";
@@ -2297,7 +2297,7 @@
           progress(ppc) + '<div class="spacer"></div>' + listEd(sp, { placeholder: "Add a step…", empty: "No steps in this phase yet.", meta: function (it) { return '<input type="date" data-item="' + sp + "|" + it.id + '|due" value="' + esc(it.due || "") + '" style="max-width:150px;padding:5px 8px;font-size:12px" aria-label="Step date">'; } }), { cls: "goal-steps phase" });
       }).join('<div class="spacer"></div>');
       inner = (phases.length ? cards : card("", '<div class="empty">No phases yet. A phase is a stage of the project, like Plan, Prepare, Do, Finish.</div><div style="margin-top:12px"><button class="btn" data-act="proj-template" data-id="' + cur.id + '">' + ic("spark") + " Use a starter outline</button></div>")) +
-        '<div class="spacer"></div>' + card("Add a phase", '<div class="adder"><input type="text" id="phase-new" placeholder="e.g. Research, Design, Launch…" maxlength="80" aria-label="New phase name"><button class="icon-btn sm" data-act="proj-phase-add" data-id="' + cur.id + '" aria-label="Add phase">' + ic("plus") + "</button></div>", { dot: "s" });
+        '<div class="spacer"></div>' + card("Add a phase", '<div class="adder"><input type="text" id="phase-new" placeholder="e.g. Research, Design, Launch…" maxlength="80" aria-label="New phase name"><button class="icon-btn sm" data-act="proj-phase-add" data-id="' + cur.id + '" aria-label="Add phase">' + ic("plus") + "</button></div>", { cls: "tint-sage", dot: "s" });
     } else {
       var ins = projectInsights(cur), warn = ins.filter(function (x) { return x.k === "warn"; }).length;
       var verdict = cur.status === "done" || (projectSteps(cur).length && pc >= 100) ? "Complete" : warn ? "Needs a look" : "Looking good";
@@ -2358,7 +2358,7 @@
   function routinesTab() {
     var rs = Object.keys(state.routines).map(function (id) { return state.routines[id]; }).sort(function (a, b) { return (a.created || 0) - (b.created || 0); });
     var starters = '<div class="row wrap"><button class="btn pink" data-act="rt-add" data-val="">' + ic("plus") + " New routine</button>" + Object.keys(RT_TEMPLATES).map(function (k) { return '<button class="btn sm" data-act="rt-add" data-val="' + k + '">' + esc(RT_TEMPLATES[k].title) + "</button>"; }).join("") + "</div>";
-    if (!rs.length) return card("Routines", '<p class="muted" style="margin-top:0">A routine is a short list of steps you repeat, every day or every week. Tick the steps as you go; the list resets by itself each day or week and keeps your streak.</p>' + starters, { dot: "s" });
+    if (!rs.length) return card("Routines", '<p class="muted" style="margin-top:0">A routine is a short list of steps you repeat, every day or every week. Tick the steps as you go; the list resets by itself each day or week and keeps your streak.</p>' + starters, { cls: "tint-sage", dot: "s" });
     var cards = rs.map(function (r) {
       var p = "routines." + r.id, key = rtKey(r.freq), n = (r.steps || []).length, tk = rtTicked(r, key), log = (r.log || {})[key] || {}, per = r.freq === "weekly" ? "this week" : "today";
       var steps = (r.steps || []).map(function (s) {
@@ -2521,7 +2521,7 @@
     var warn = ins.filter(function (x) { return x.k === "warn"; }).length;
     return '<div class="grid"><div class="c7 stack">' + card("Where the time went", bars + '<p class="small muted" style="margin:10px 0 0">Planned time from your blocks' + (prev.planned ? ", with the change since last week." : ".") + "</p>", { dot: "s", right: nav }) +
       card("The week at a glance", dayRows, { dot: "b" }) + "</div>" +
-      '<div class="c5">' + card("What stands out", '<p class="small muted" style="margin:0 0 8px">' + esc(label) + (isNow ? " (this week)" : "") + '</p><p class="review-verdict ' + (warn ? "warn" : "good") + '">' + (!cur.planned ? "Nothing planned yet" : warn ? "A few things to look at" : "Looking balanced") + '</p><ul class="insights">' + ins.map(function (x) { return '<li class="k-' + x.k + '"><span class="i-dot" aria-hidden="true"></span><span>' + esc(x.t) + "</span></li>"; }).join("") + "</ul>", { dot: "k" }) + "</div></div>";
+      '<div class="c5">' + card("What stands out", '<p class="small muted" style="margin:0 0 8px">' + esc(label) + (isNow ? " (this week)" : "") + '</p><p class="review-verdict ' + (warn ? "warn" : "good") + '">' + (!cur.planned ? "Nothing planned yet" : warn ? "A few things to look at" : "Looking balanced") + '</p><ul class="insights">' + ins.map(function (x) { return '<li class="k-' + x.k + '"><span class="i-dot" aria-hidden="true"></span><span>' + esc(x.t) + "</span></li>"; }).join("") + "</ul>", { cls: "tint-sky", dot: "k" }) + "</div></div>";
   }
 
   /* ---- Prioritise (the Eisenhower matrix moved here from Mind & Ikigai) ---- */
@@ -2868,7 +2868,7 @@
     var form = '<div class="row wrap" data-form="chore"><input type="text" name="text" class="grow" placeholder="New ' + tb.cur + ' chore…" aria-label="Chore"><input type="text" name="room" list="room-list" placeholder="Room" style="max-width:170px" aria-label="Room"><datalist id="room-list">' + rooms.map(function (r) { return '<option value="' + esc(r) + '">'; }).join("") + '</datalist><button class="btn pink" data-act="chore-add" data-val="' + tb.cur + '">' + ic("plus") + " Add</button></div>";
     return head("Life · Home", 'Home care <span class="em">&amp; chores</span>') + tb.html +
       '<div class="grid"><div class="c8">' + card(per.label, progress(chores.length ? (done / chores.length) * 100 : 0, "sage") + '<div class="small muted" style="margin-top:8px">' + done + " of " + chores.length + " " + tb.cur + " chores done · resets automatically each " + (tb.cur === "seasonal" ? "season" : tb.cur.replace("ly", "").replace("dai", "day")) + "</div>", { cls: "tint-butter", dot: "b" }) + "</div>" +
-      '<div class="c4">' + card("Add a chore", form, { dot: "p" }) + "</div>" +
+      '<div class="c4">' + card("Add a chore", form, { cls: "tint-pink", dot: "p" }) + "</div>" +
       '<div class="c12"><div class="rooms">' + (cards || '<div class="empty">No ' + tb.cur + " chores yet.</div>") + "</div></div></div>";
   }
 
