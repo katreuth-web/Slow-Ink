@@ -1,0 +1,57 @@
+SLOW INK PEARL - START HERE
+===========================
+A soft, all-in-one life planner with a notebook of its own.
+Thank you for your purchase!
+
+HOW TO OPEN IT
+1. Unzip (extract) the folder first. Please don't open the planner from inside the zip file.
+2. Put the unzipped folder somewhere permanent, such as your Documents folder.
+3. Double-click the file named  index.html  - it opens in your web browser
+   (Chrome, Edge, Firefox or Safari all work).
+
+That's all. There is nothing to install, no account to make and no internet
+connection needed. Bookmark the page in your browser so it's easy to find.
+
+KEEP YOUR WORK SAFE  (please read - it's important)
+- Your planner saves automatically, inside your web browser on this device.
+  Nothing is sent anywhere and nobody else can see it.
+- Always open it in the SAME browser, from the SAME folder. Don't move, rename
+  or re-download the folder once you've started, or the planner may open empty.
+- Clearing your browser's "site data" or "cookies and site data" can erase the
+  planner. Make a backup before you clean your browser.
+- BACK UP REGULARLY:  open  Settings  (bottom of the left menu, or More > Settings on a small screen) and click "Export JSON".
+  It downloads one small file. Keep it somewhere safe (cloud drive, email to
+  yourself). To restore: open Settings and click "Import JSON", then choose your file.
+- Moving to a new computer or browser? Make a backup, open the planner there,
+  and restore the backup.
+- Best on a laptop or desktop. Opening local files on phones and tablets varies
+  by device and browser - if you'd like to use it on a tablet, get in touch.
+
+WHAT'S INSIDE
+- Yearly, Monthly, Weekly and Daily spreads, each with a matching Review page.
+- Fitness (workouts, weight and progress photos, body measurements, vitamins & supplements, medication tracker), Meals & Recipes (a Measures converter for cooking and baking, with quick conversions and a reference table; recipe cards in sections like Breakfast and Drinks, with cover photos and photos on each recipe), Finance (including shopping lists and wishlists with pictures and links, a package tracker for orders, returns and exchanges, a calculator with money shortcuts, and a debt payoff plan with a debt-free date), Mind & Ikigai, Travel (an interactive world map with pins that sync to your bucket list, trip cards with cover photos and heart ratings, a trip log (boarding pass, country facts, transport, stays, meals, activities and a review), itinerary, packing, outfit photos, budget and a photo album for each trip), Home & Chores.
+- PRODUCTIVITY: Habits, Mood Log, Goals (plan, action steps, target date, progress
+  and a review of how the plan is going), Projects (a planning framework, phases and steps
+  with progress and a review), Routines & To-Dos (to-do list, daily and weekly routines,
+  time blocking, a Pomodoro focus timer, a weekly time review and the Eisenhower matrix),
+  Brain Dump (jot everything down, then send each item to a to-do, project, goal, routine
+  or notebook page),
+  Vision Board and Mind Map (keep as many boards
+  and maps as you like).
+- NOTEBOOK (left menu > Journal > Notebook): a separate bound book with coloured
+  section tabs (Journal, Notes, Ideas - add your own with the + tab). Seven
+  papers: blank, lined, squared, dot grid, Cornell, and two and three columns.
+  Switch between Type and Markup to handwrite with a
+  pen, marker or pencil.
+- Four colour themes, light / dark / auto, and three fonts (Settings, or the moon/sun button for quick dark mode).
+- A Today dashboard with a getting-started checklist. Use "Look around with sample data" to explore, then "Start fresh" when you're ready.
+
+TERMS OF USE
+Personal use only. Please don't share, resell, redistribute or upload these
+files. The fonts included are free under the SIL Open Font License (the license
+files are in the "fonts" folder).
+
+QUESTIONS OR PROBLEMS?
+{{CONTACT}}
+
+Thank you so much for your support - happy planning!

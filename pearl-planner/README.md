@@ -1,0 +1,43 @@
+# Slow Ink Pearl — All-in-one Digital Planner
+
+A soft, neumorphic + glassmorphic life planner built with plain HTML5, CSS and JavaScript — no build step, no framework, no dependencies. It lives alongside the original Slow Ink planner in this repo as its own static app.
+
+## App flow
+
+- **Calendar spreads** — Yearly → Monthly → Weekly → Daily, linked by drill-downs, breadcrumbs and prev/next arrows.
+- **Period reviews** — every spread has a matching reflection page (`…/review`) with a progress audit (tasks, habit consistency, mood, workouts, water, spending, journal pages), wins, challenges, lessons, gratitude, a 1–10 rating and next steps. The daily review can move unfinished tasks to tomorrow; the weekly review copies open priorities to next week.
+- **Life hubs** — Fitness, Meals & Recipes, Finance, Mind & Ikigai, Travel, Home & Chores. **Productivity** — Habits, Mood Log, Goals, Projects, Routines & To-Dos, Brain Dump, Vision Board, Mind Map.
+- **Notebook** — opens as a bound book on its own desk: coloured section tabs (Journal, Notes, Ideas, plus your own), a contents page, and nine papers to write, draw or arrange on.
+
+Navigation is a floating glass sidebar on desktop and an iOS-style neumorphic dock (plus an "All sections" sheet) on mobile.
+
+## Features
+
+| Area | What's inside |
+| --- | --- |
+| Daily spread | Top three, prioritised tasks & deadlines, hour-by-hour schedule (6am–10pm by default; pick your own first and last hour or switch to half hours under "Hours"), mood, hydration, habits, meals, movement, gratitude, notes, and quick links to the trackers and a journal page for the day |
+| Fitness | Five tabs: **Workouts** (log, weekly minute target, milestones), **Body** (weight curve, **progress photos** with before/after compare, 14-day hydration chart), **Measure** (body outline, start & goal, dated check-ins in cm or inches, progress bars), **Vitamins** and **Meds** (weekly tick grids, dose and time, adherence, refill reminders; today's doses also show on the Today page) |
+| Productivity | **Habits** (monthly habit grid with colours and streaks), **Mood Log** (mood calendar and distribution), **Goals** (name, why, plan, start and target date or timeframe, action steps with dates, automatic progress, check-ins with a progress curve, a plain-language review of pace and plan, and an optional SMART check; SMART goals from older planners are brought across once), **Projects** (a one-page planning framework, phases with dated steps, progress per phase and overall, and a plain-language review of pace and plan), **Routines & To-Dos** (to-do list with priorities, dates and time estimates; daily and weekly routines with streaks; a time-blocking day planner with a timeline; a Pomodoro focus timer that keeps time while the page is closed and logs rounds; a weekly time review by category with plain-language observations; and the Eisenhower matrix), **Brain Dump** (type or paste anything, one item per line, then send each item to a to-do, new project, new goal, routine step or notebook page, with Undo; plus a quick-add box on the Today page), **Vision Board** and **Mind Map** (you can keep several of each; they are stored with the notebook pages but have their own pages) |
+| Notebook | Type pages have a formatting bar (titles, headings, bold, italic, underline, lists, dividers, links), photos you can move, turn and resize, and a sticker tray. Saved safely with the page. |
+| Meals & Recipes | Weekly breakfast/lunch/dinner/snack planner, recipe cards organised in photo sections (Breakfast, Lunch, Dinner, Snacks, Desserts, Drinks, plus any you add), each with its own cover photo · a **Measures** converter for cooking and baking (volume and weight, quick conversions, and a handy reference) and recipe photos, a grocery list that sorts items into aisles automatically, and "Build grocery list" from the week's planned recipes |
+| Finance | Monthly income & spending with a category donut, savings pots, debt paydown progress, subscriptions with renewal countdowns and "Paid" roll-forward. In **Savings & debt**, each debt now has a minimum payment, and a **Payoff plan** works out your debt-free date, total interest, the order debts are cleared, and how much sooner you finish than paying only the minimums, with an avalanche (highest interest first) or snowball (smallest balance first) choice and an optional extra amount each month. **Packages** tab: a package tracker with Orders (item, store, amount, order and expected delivery dates, shipped and delivered circles, optional tracking link with a Track button, "late by N days" badges), Returns and Exchanges, and a summary of what's on the way and what's waiting on refunds. **Calculator** tab: a keypad calculator (brackets, percent, keyboard support, copy result, recent calculations) with money shortcuts for tip & split, sale price, savings goal and loan payment. **Shopping** tab: shopping lists and wishlists for non-food items, in categories (Clothing, Accessories, Makeup, Skincare, Hair, Toiletries, Home goods, Cleaning supplies, Tech, Gifts, Other) as picture cards with price, a link that opens the shop, a 1–5 heart "how much I want it" rating, notes, a Bought tick and totals with an optional budget. Pictures are uploaded photos (stored on the device, in backups) or a pasted image address (shown from the shop's site, so needs internet; the planner can't fetch pictures from product links by itself because it has no server). |
+| Mind | Interactive Ikigai four-circle tool, Level 10 Life wheel (colour-coded, one wedge per area) |
+| Travel | Trips with itinerary, packing list (with an essentials preset), daily outfits (with a photo of each look) and a budget, plus a photo album for each trip; and a bucket list. An interactive **world map** sits at the top: tap anywhere to drop a labelled pin (the country name is suggested), zoom in for detail, and every pin joins the bucket list — ticking a bucket-list place turns its pin green. The outlines are bundled in `world.js` (generated by `tools/build_world_map.mjs` from public-domain Natural Earth data), so the map works offline. Under the map, **My trips** shows a numbered card per trip with a cover photo (the first photo from its Album or Outfits), a 1–5 heart rating you tap to set, dates and a status badge. Each trip also has a **Log** tab: a boarding-pass box, "good to know" country facts (language, time difference, currency, exchange rate, travellers), tables for transportation, accommodation, meals & restaurants and activities, and a review with a heart rating. Photos are stored in IndexedDB and included in backups |
+| Home & Chores | Daily / weekly / monthly / seasonal chore charts by room, with an assignee field; check-offs reset automatically each period |
+| Notebook | A bound book with section tabs and a contents page. Blank, lined, square grid, dot grid, Cornell notes, two-column and three-column papers. (Mind maps and vision boards have their own pages under Productivity.) A **Type / Markup** toggle switches lined/grid/dot/Cornell/column pages between typing and drawing with a floating palette: pen, marker, pencil, eraser, seven inks, stroke width, undo/redo. Drawings are saved as strokes, and older drawings still show underneath. Journal pages linked from a day live in the Journal section. Print any page. |
+
+Four colour themes (Blush, Sage, Sky, Lilac), light / dark / auto, three font pairings (Settings → Personalise); a Today dashboard with number tiles, a year ring, a getting-started checklist and a one-click sample planner; everything is saved to `localStorage`, with JSON export/import and reset under **Settings**.
+
+## Running locally
+
+Static site, no build step:
+
+```
+python3 -m http.server 8000
+```
+
+Then open `http://localhost:8000/life-planner/` in your browser.
+
+## Photos on recipes
+
+Recipe photos, section covers, travel photos and fitness progress photos are stored in the browser's image storage (IndexedDB), not in the main save, so many photos won't fill the planner's storage. They are included in backups. Vision board images still use the older storage and are a candidate to move across later.
