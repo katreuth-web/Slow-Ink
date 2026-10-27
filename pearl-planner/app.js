@@ -1143,6 +1143,23 @@
     return '<div class="yring" role="img" aria-label="' + esc(big + " " + small) + '"><svg viewBox="0 0 110 110" aria-hidden="true"><circle class="yr-track" cx="55" cy="55" r="' + r + '"/><circle class="yr-arc" cx="55" cy="55" r="' + r +
       '" stroke-dasharray="' + (c * frac).toFixed(1) + " " + c.toFixed(1) + '" transform="rotate(-90 55 55)"/></svg><div class="yr-text"><b>' + big + "</b><span>" + esc(small) + "</span></div></div>";
   }
+  /* A small donut for the dashboard tiles. Same geometry as the year ring, sized
+     down, with the figure in the middle rather than beside it. */
+  function dashRing(frac, mid, label, sub, href) {
+    var r = 26, c = 2 * Math.PI * r, f = clamp(frac * 100, 0, 100) / 100;
+    return '<a class="dring" href="' + href + '">' +
+      '<div class="dring-chart" role="img" aria-label="' + esc(label + " " + mid) + '">' +
+      '<svg viewBox="0 0 64 64" aria-hidden="true"><circle class="yr-track" cx="32" cy="32" r="' + r + '"/>' +
+      '<circle class="yr-arc" cx="32" cy="32" r="' + r + '" stroke-dasharray="' + (c * f).toFixed(1) + " " + c.toFixed(1) +
+      '" transform="rotate(-90 32 32)"/></svg><b>' + mid + "</b></div>" +
+      '<div class="dring-txt"><span class="dring-label">' + esc(label) + '</span><span class="dring-sub">' + esc(sub) + "</span></div></a>";
+  }
+  /* The row of jump-off cards across the top of the dashboard. */
+  function quickTile(href, icon, title, sub) {
+    return '<a class="qtile" href="' + href + '">' + '<span class="qtile-ic">' + ic(icon) + "</span>" +
+      '<span class="qtile-t">' + esc(title) + '</span><span class="qtile-s">' + esc(sub) + "</span></a>";
+  }
+
   function kpi(num, label, href, frac) {
     return '<a class="kpi" href="' + href + '"><span class="kpi-num">' + num + '</span><span class="kpi-label">' + esc(label) + "</span>" + (frac == null ? "" : progress(frac * 100)) + "</a>";
   }
@@ -1194,10 +1211,54 @@
       kpi(wk.minutes + "<small> min</small>", "moved this week", "#/fitness") +
       kpi(money(mo.spent), "spent in " + MONTHS[t.getMonth()], "#/finance") + "</div>";
     var banner = state.sample ? '<div class="sample-banner" role="status"><span>You’re looking at a <b>sample planner</b>. Everything here is made up.</span><button class="btn sm pink" data-act="start-fresh">Start fresh</button></div>' : "";
-    return banner + '<div class="home-top">' + head(greeting(), prettyDay(t).replace(/, (.*)$/, ', <span class="em">$1</span>'), '<a class="btn pink" href="' + hrefDay(t) + '/review">' + ic("spark") + ' Reflect on today</a><a class="btn" href="' + hrefMonth(t) + '">' + ic("month") + " Month</a>") +
-      yearRing(doy / ylen, ypct + "%", "of " + y + " done") + "</div>" +
-      '<div class="yline">' + ypct + "% of " + y + " done" + progress(ypct) + "</div>" + kpis + gettingStarted() +
-      '<div class="grid"><div class="c7 stack">' + left + '</div><div class="c5 stack">' + right + "</div></div>";
+    /* ---------- the dashboard ---------- */
+    var openTasks = tk.tasks - tk.done;
+    var hero = '<section class="dash-hero">' +
+      '<div class="dash-hero-l">' +
+        '<div class="kicker">' + greeting() + "</div>" +
+        '<h1>' + prettyDay(t).replace(/, (.*)$/, ', <span class="em">$1</span>') + "</h1>" +
+        '<p class="dash-line">' + esc(openTasks > 0
+            ? openTasks + (openTasks === 1 ? " thing" : " things") + " still on today's list."
+            : tk.tasks ? "Everything on today's list is done." : "Nothing planned yet — today is yours to shape.") + "</p>" +
+        '<div class="row wrap dash-cta"><a class="btn pink" href="' + hrefDay(t) + '/review">' + ic("spark") + ' Reflect on today</a>' +
+        '<a class="btn" href="' + hrefDay(t) + '">' + ic("sun") + " Today's spread</a>" +
+        '<a class="btn" href="' + hrefMonth(t) + '">' + ic("month") + " Month</a></div>" +
+      "</div>" +
+      '<div class="dash-hero-r">' + yearRing(doy / ylen, ypct + "%", "of " + y + " done") + "</div>" +
+      "</section>";
+
+    var quick = '<div class="quick-row">' +
+      quickTile(hrefDay(t), "plus", "Plan today", "Set your top three") +
+      quickTile("#/notebook", "book", "Journal page", "Write it down") +
+      quickTile("#/dump", "spark", "Brain dump", "Clear your head") +
+      quickTile("#/habits", "check", "Habits", "Tick today off") +
+      "</div>";
+
+    var moveGoal = 150;
+    var rings = '<div class="ring-row">' +
+      dashRing(tk.tasks ? tk.done / tk.tasks : 0, (tk.tasks ? Math.round(tk.done / tk.tasks * 100) : 0) + "%", "Today's tasks", tk.done + " of " + tk.tasks + " done", hrefDay(t)) +
+      dashRing(state.habits.length ? hDone / state.habits.length : 0, (state.habits.length ? Math.round(hDone / state.habits.length * 100) : 0) + "%", "Habits", hDone + " of " + state.habits.length + " ticked", "#/habits") +
+      dashRing(Math.min(1, wk.minutes / moveGoal), wk.minutes + "m", "Movement", "this week", "#/fitness") +
+      dashRing(doy / ylen, ypct + "%", "The year", "day " + doy + " of " + ylen, hrefYear(t)) +
+      "</div>";
+
+    /* one accent panel among the white cards, as in the references */
+    var feature = '<section class="card feature-card">' +
+      '<div class="feat-ic">' + ic("lotus") + "</div>" +
+      "<h3>" + esc(MONTHS[t.getMonth()]) + " intention</h3>" +
+      bindArea("months." + mk + ".intention", "One sentence to steer the month…", 'style="min-height:60px"') +
+      '<p class="quote">“' + esc(quote) + "”</p>" +
+      '<a class="btn sm" href="' + hrefMonth(t) + '">' + ic("month") + " Open the month</a>" +
+      "</section>";
+
+    var rightNoIntention =
+      card("How are you feeling?", moodPicker("days." + k + ".mood") + '<div class="spacer"></div><label class="lbl">Hydration</label>' + waterPicker("days." + k + ".water"), { cls: "tint-pink", dot: "p" }) +
+      card("Habits today", habitChecks(k), { cls: "tint-lilac", dot: "l", right: '<a class="btn sm ghost" href="#/habits">Tracker</a>' }) +
+      healthCard() + dumpCard() + goalsCard() + projectsCard() +
+      card("Coming up", upcoming(), { dot: "k" });
+
+    return banner + hero + quick + rings + gettingStarted() +
+      '<div class="grid"><div class="c7 stack">' + left + '</div><div class="c5 stack">' + feature + rightNoIntention + "</div></div>";
   }
 
   /* ------------------------------------------------------------ views: year */

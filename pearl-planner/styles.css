@@ -1467,3 +1467,69 @@ body::before {
   .dock-btn.active { background: var(--surface); box-shadow: 0 4px 12px -6px var(--sd); }
   .dock-btn.center { background: linear-gradient(145deg, var(--pink), var(--lilac)); box-shadow: 0 10px 22px -10px var(--sd); }
 }
+
+/* ============================================================
+   PEARL — the dashboard front page
+   ============================================================ */
+
+/* ---- hero: the greeting block the references all open with ---- */
+.dash-hero {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px 28px;
+  align-items: center; margin: 2px 0 20px;
+}
+.dash-hero h1 { font-family: var(--serif); font-style: var(--hstyle); font-size: clamp(1.9rem, 4vw, 3rem); line-height: 1.05; margin: 2px 0 0; font-weight: 600; }
+.dash-hero h1 .em { color: var(--pink-deep); }
+.dash-line { color: var(--ink-soft); font-size: 14.5px; margin: 10px 0 0; max-width: 46ch; }
+.dash-cta { margin-top: 14px; }
+
+/* ---- quick jump-off cards ---- */
+.quick-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 16px; }
+.qtile {
+  display: flex; flex-direction: column; gap: 3px; padding: 15px 16px 14px;
+  border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line);
+  box-shadow: var(--raise-sm); text-decoration: none; color: var(--ink);
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.qtile:hover { transform: translateY(-2px); box-shadow: var(--raise); }
+.qtile-ic { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; margin-bottom: 6px; background: var(--pink-soft); color: var(--pink-deep); }
+.qtile-ic svg { width: 18px; height: 18px; }
+.qtile-t { font-weight: 600; font-size: 14px; }
+.qtile-s { font-size: 12px; color: var(--muted); }
+/* give the row a little colour variety, the way the references do */
+.quick-row .qtile:nth-child(2) .qtile-ic { background: var(--lilac-soft); color: var(--pink-deep); }
+.quick-row .qtile:nth-child(3) .qtile-ic { background: var(--sage-soft); color: var(--sage-deep); }
+.quick-row .qtile:nth-child(4) .qtile-ic { background: var(--sky-soft); color: var(--sky-deep); }
+
+/* ---- the ring tiles ---- */
+.ring-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; margin-bottom: 18px; }
+.dring {
+  display: flex; align-items: center; gap: 13px; padding: 13px 15px;
+  border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line);
+  box-shadow: var(--raise-sm); text-decoration: none; color: var(--ink);
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.dring:hover { transform: translateY(-2px); box-shadow: var(--raise); }
+.dring-chart { position: relative; width: 56px; height: 56px; flex: none; display: grid; place-items: center; }
+.dring-chart svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.dring-chart b { position: relative; font-size: 12.5px; font-weight: 600; letter-spacing: -0.01em; }
+.dring-txt { display: flex; flex-direction: column; min-width: 0; }
+.dring-label { font-weight: 600; font-size: 13.5px; }
+.dring-sub { font-size: 11.5px; color: var(--muted); }
+
+/* ---- the one accent panel among the white cards ---- */
+.feature-card {
+  background: linear-gradient(155deg, var(--pink-soft) 0%, var(--lilac-soft) 55%, var(--surface) 100%);
+  border: 1px solid var(--glass-edge);
+}
+.feature-card h3 { font-family: var(--serif); font-style: var(--hstyle); font-size: 1.3rem; margin: 10px 0 8px; }
+.feat-ic { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 14px; background: var(--surface); color: var(--pink-deep); box-shadow: var(--raise-sm); }
+.feat-ic svg { width: 20px; height: 20px; }
+.feature-card .quote { font-family: var(--serif); font-style: italic; color: var(--ink-soft); font-size: 14px; margin: 12px 0 14px; }
+
+@media (max-width: 760px) {
+  .dash-hero { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .dash-hero-r { justify-self: start; }
+  .quick-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .ring-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .dring { flex-direction: column; align-items: flex-start; gap: 8px; }
+}
