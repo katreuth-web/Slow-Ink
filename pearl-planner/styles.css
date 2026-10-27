@@ -24,42 +24,42 @@
    =================================================================== */
 
 :root {
-  --bg: #efebe7;
-  --surface: #faf9f8;
-  --surface-2: #fdfdfc;
-  --ink: #3b3431;
-  --ink-soft: #5e5450;
-  --muted: #74685f;
-  --line: rgba(59, 52, 49, 0.09);
+  --bg: #f2edf4;
+  --surface: #fffdfe;
+  --surface-2: #ffffff;
+  --ink: #3a3240;
+  --ink-soft: #5b5265;
+  --muted: #786f82;
+  --line: rgba(58, 50, 64, 0.08);
   --rule: rgba(160, 138, 128, 0.28);
   --rule-strong: rgba(140, 118, 108, 0.45);
-  --sd: rgba(170, 152, 140, 0.42);
-  --sl: rgba(255, 255, 255, 0.5);
+  --sd: rgba(120, 95, 140, 0.16);
+  --sl: rgba(255, 255, 255, 0.6);
   --wash: rgba(255, 255, 255, 0.3);
-  --pink: #f2c4ce;
-  --pink-soft: #f8dde3;
-  --pink-deep: #b35f74;
-  --butter: #f7e3a1;
-  --butter-soft: #fbf0cc;
-  --butter-deep: #846819;
-  --sage: #cfe3d2;
-  --sage-soft: #e5f0e6;
-  --sage-deep: #4c8559;
-  --sky: #cfe0ee;
-  --sky-soft: #e5eef6;
-  --sky-deep: #4a76a0;
-  --lilac: #ddd3ee;
-  --lilac-soft: #ece7f6;
-  --glass: rgba(247, 244, 241, 0.62);
-  --glass-edge: rgba(255, 255, 255, 0.7);
-  --paper: #fbf9f6;
+  --pink: #f0c6d9;
+  --pink-soft: #fbeaf3;
+  --pink-deep: #a4517a;
+  --butter: #f7e3b4;
+  --butter-soft: #fdf3dd;
+  --butter-deep: #8a6a24;
+  --sage: #c7e6d8;
+  --sage-soft: #e6f5ee;
+  --sage-deep: #2f7a5c;
+  --sky: #cadcf2;
+  --sky-soft: #e8f0fb;
+  --sky-deep: #3d6aa6;
+  --lilac: #d9cdf0;
+  --lilac-soft: #efe8fa;
+  --glass: rgba(255, 253, 254, 0.72);
+  --glass-edge: rgba(255, 255, 255, 0.85);
+  --paper: #fffdfe;
   --danger: #b2433d;
   --radius: 22px;
   --radius-sm: 14px;
-  --raise: 7px 7px 16px var(--sd), -7px -7px 16px var(--sl);
-  --raise-sm: 4px 4px 9px var(--sd), -4px -4px 9px var(--sl);
-  --press: inset 4px 4px 9px var(--sd), inset -4px -4px 9px var(--sl);
-  --press-sm: inset 2px 2px 5px var(--sd), inset -2px -2px 5px var(--sl);
+  --raise: 0 10px 30px -12px var(--sd), 0 2px 6px -2px var(--sd);
+  --raise-sm: 0 5px 16px -8px var(--sd), 0 1px 3px -1px var(--sd);
+  --press: inset 0 1px 3px var(--sd);
+  --press-sm: inset 0 1px 2px var(--sd);
   --serif: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   --sans: "Poppins", -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
   color-scheme: light;
@@ -68,44 +68,44 @@
 :root[data-mode="dark"] {
   --wash: rgba(255, 255, 255, 0.07);
   --danger: #ee9a94;
-  --bg: #2b2729;
-  --surface: #444143;
-  --surface-2: #332e31;
-  --ink: #f1e9e6;
-  --ink-soft: #d4c8c4;
-  --muted: #b7aca8;
-  --line: rgba(255, 240, 235, 0.08);
+  --bg: #201c28;
+  --surface: #2e2938;
+  --surface-2: #282434;
+  --ink: #efe9f4;
+  --ink-soft: #cfc6d8;
+  --muted: #a99fb5;
+  --line: rgba(239, 233, 244, 0.1);
   --rule: rgba(240, 200, 210, 0.14);
   --rule-strong: rgba(240, 200, 210, 0.28);
-  --sd: rgba(0, 0, 0, 0.5);
-  --sl: rgba(255, 255, 255, 0.045);
-  --pink: #8f5568;
-  --pink-soft: #4a383e;
-  --pink-deep: #f0a9ba;
-  --butter: #7a6830;
-  --butter-soft: #443d2c;
-  --butter-deep: #f2d57e;
-  --sage: #3d5242;
-  --sage-soft: #313431;
-  --sage-deep: #93cda0;
-  --sky: #34495a;
-  --sky-soft: #2e3238;
-  --sky-deep: #9cc3e6;
-  --lilac: #40394d;
-  --lilac-soft: #322d34;
-  --glass: rgba(50, 45, 48, 0.62);
-  --glass-edge: rgba(255, 255, 255, 0.07);
-  --paper: #332e31;
+  --sd: rgba(0, 0, 0, 0.55);
+  --sl: rgba(255, 255, 255, 0.05);
+  --pink: #9c5a79;
+  --pink-soft: #45303c;
+  --pink-deep: #f2abc9;
+  --butter: #7d6a3a;
+  --butter-soft: #403827;
+  --butter-deep: #f0d79a;
+  --sage: #3b5a4c;
+  --sage-soft: #2b3832;
+  --sage-deep: #92d7b6;
+  --sky: #37506e;
+  --sky-soft: #2a3340;
+  --sky-deep: #a4c6ef;
+  --lilac: #473f5e;
+  --lilac-soft: #322c40;
+  --glass: rgba(46, 41, 56, 0.72);
+  --glass-edge: rgba(255, 255, 255, 0.08);
+  --paper: #2e2938;
   color-scheme: dark;
 }
 
-/* ---- colour themes: the accent family (the "pink" variables) and a faint tint on the page. Blush is the default. ---- */
-:root[data-theme="sage"] { --bg: #ebeee9; --surface: #f9faf8; --surface-2: #fdfdfc; --paper: #f8faf6; --sd: rgba(150, 165, 150, 0.42); --pink: #c7dfcb; --pink-soft: #deede1; --pink-deep: #36704a; --glass: rgba(242, 245, 240, 0.62); }
-:root[data-theme="sky"] { --bg: #e9eef2; --surface: #f8fafb; --surface-2: #fcfdfd; --paper: #f7fafc; --sd: rgba(145, 160, 175, 0.42); --pink: #c6dcee; --pink-soft: #dde9f4; --pink-deep: #33648f; --glass: rgba(240, 245, 248, 0.62); }
-:root[data-theme="lilac"] { --bg: #eeebf2; --surface: #faf9fb; --surface-2: #fdfdfd; --paper: #faf8fc; --sd: rgba(165, 155, 180, 0.42); --pink: #d9ceee; --pink-soft: #e9e2f5; --pink-deep: #5f4596; --glass: rgba(244, 241, 247, 0.62); }
-:root[data-theme="sage"][data-mode="dark"] { --bg: #222823; --surface: #3d423d; --surface-2: #2a312b; --paper: #2a312b; --pink: #4a7355; --pink-soft: #334238; --pink-deep: #a9d6b3; --glass: rgba(40, 48, 42, 0.62); }
-:root[data-theme="sky"][data-mode="dark"] { --bg: #212830; --surface: #3c4249; --surface-2: #29313b; --paper: #29313b; --pink: #43698c; --pink-soft: #303e4d; --pink-deep: #a3c9ea; --glass: rgba(38, 46, 56, 0.62); }
-:root[data-theme="lilac"][data-mode="dark"] { --bg: #25222d; --surface: #3f3d46; --surface-2: #2d2a36; --paper: #2d2a36; --pink: #6c5a98; --pink-soft: #3a3447; --pink-deep: #cbb8f0; --glass: rgba(44, 40, 54, 0.62); }
+/* ---- pearl variants: the accent family shifts hue, the mother-of-pearl base stays ---- */
+:root[data-theme="sage"] { --bg: #ecf3ef; --surface: #fcfffd; --surface-2: #ffffff; --paper: #fcfffd; --sd: rgba(90, 135, 115, 0.16); --pink: #bfe3d2; --pink-soft: #e4f4ec; --pink-deep: #2d7356; --glass: rgba(252, 255, 253, 0.72); }
+:root[data-theme="sky"] { --bg: #ebf1f8; --surface: #fcfdff; --surface-2: #ffffff; --paper: #fcfdff; --sd: rgba(95, 125, 170, 0.16); --pink: #c3d9f2; --pink-soft: #e6eefb; --pink-deep: #35629c; --glass: rgba(252, 253, 255, 0.72); }
+:root[data-theme="lilac"] { --bg: #f0ecf8; --surface: #fdfcff; --surface-2: #ffffff; --paper: #fdfcff; --sd: rgba(120, 100, 165, 0.16); --pink: #d3c5ef; --pink-soft: #ece5fa; --pink-deep: #5b4196; --glass: rgba(253, 252, 255, 0.72); }
+:root[data-theme="sage"][data-mode="dark"] { --bg: #1b231f; --surface: #28332d; --surface-2: #232d28; --paper: #28332d; --pink: #44705c; --pink-soft: #2c3a33; --pink-deep: #9ad7b8; --glass: rgba(40, 51, 45, 0.72); }
+:root[data-theme="sky"][data-mode="dark"] { --bg: #1a2029; --surface: #272f3b; --surface-2: #222935; --paper: #272f3b; --pink: #3d5c84; --pink-soft: #2a3341; --pink-deep: #a6c8f0; --glass: rgba(39, 47, 59, 0.72); }
+:root[data-theme="lilac"][data-mode="dark"] { --bg: #211d2b; --surface: #2f2a3d; --surface-2: #292438; --paper: #2f2a3d; --pink: #5e4c91; --pink-soft: #352e47; --pink-deep: #c9b6f5; --glass: rgba(47, 42, 61, 0.72); }
 
 /* ---- fonts and page backgrounds ---- */
 :root { --hstyle: italic; }
@@ -1377,3 +1377,93 @@ body.markup-on .book { margin-bottom: 90px; }
 :root[data-theme="blush"]:not([data-mode="dark"]) .mini-cal .wk-n,
 :root:not([data-theme]):not([data-mode="dark"]) .mnum,
 :root:not([data-theme]):not([data-mode="dark"]) .mini-cal .wk-n { color: #8c4a5a; }
+
+/* ============================================================
+   PEARL — the shell: a floating window, an icon rail, and a
+   mother-of-pearl sheen on the page behind it.
+   ============================================================ */
+
+/* The sheen. Several wide, low-opacity washes that drift across each other,
+   the way light moves over the inside of a shell. Kept on the page only:
+   text never sits directly on it. */
+body::before {
+  background:
+    radial-gradient(46vw 40vw at 88% -10%, var(--pink-soft), transparent 68%),
+    radial-gradient(40vw 36vw at -8% 8%, var(--lilac-soft), transparent 70%),
+    radial-gradient(44vw 38vw at 108% 72%, var(--sage-soft), transparent 70%),
+    radial-gradient(38vw 34vw at -4% 104%, var(--butter-soft), transparent 70%);
+  opacity: 0.9;
+}
+
+/* ---- the floating window (wide screens only) ---- */
+@media (min-width: 901px) {
+  .app {
+    max-width: 1440px;
+    margin: 34px auto 40px;
+    padding: 0;
+    gap: 0;
+    grid-template-columns: 92px minmax(0, 1fr);
+    background: var(--surface);
+    border-radius: 34px;
+    border: 1px solid var(--glass-edge);
+    box-shadow: 0 34px 90px -44px var(--sd), 0 3px 12px -6px var(--sd);
+    min-height: calc(100vh - 74px);
+  }
+  .main { padding: 24px 30px 34px; min-width: 0; }
+
+  /* ---- the icon rail ---- */
+  .sidebar {
+    top: 0;
+    height: auto;
+    min-height: 100%;
+    padding: 18px 0 14px;
+    border: 0;
+    border-radius: 34px 0 0 34px;
+    box-shadow: none;
+    background: linear-gradient(170deg, var(--pink) 0%, var(--pink) 26%, var(--pink-soft) 72%, var(--surface) 100%);
+    align-items: center;
+    gap: 2px;
+    overflow: visible;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .sidebar .brand { padding: 0 0 14px; justify-content: center; }
+  .sidebar .brand-mark { width: 38px; height: 38px; border-radius: 13px; }
+  /* the name stays in the DOM for screen readers, it just isn't drawn */
+  .sidebar .brand > span, .sidebar .nav-label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0; }
+  .nav-group { margin-top: 6px; width: 100%; display: flex; flex-direction: column; align-items: center; }
+  .nav-link {
+    width: 52px; height: 46px; padding: 0; margin: 2px 0;
+    justify-content: center; gap: 0; border-radius: 16px;
+    color: var(--pink-deep); position: relative;
+  }
+  .nav-link > span, .nav-link > div { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+  .nav-link svg { width: 21px; height: 21px; opacity: 0.9; }
+  .nav-link:hover { background: rgba(255, 255, 255, 0.55); color: var(--pink-deep); }
+  .nav-link.active { background: var(--surface); box-shadow: 0 6px 16px -8px var(--sd); color: var(--pink-deep); }
+  .nav-link.active svg { opacity: 1; }
+  .sidebar-foot { padding: 10px 0 0; justify-content: center; }
+
+  /* In dark mode the accent sits mid-tone and the icons are a light pink, so the
+     rail is built from the deeper end of the family instead to keep them legible. */
+  :root[data-mode="dark"] .sidebar {
+    background: linear-gradient(170deg, var(--pink-soft) 0%, var(--pink-soft) 34%, var(--surface-2) 100%);
+  }
+}
+
+/* ---- cards: flat with a soft drop shadow, and sized to their content so the
+   page reads as a mosaic rather than a stack of equal rows ---- */
+.card { border: 1px solid var(--line); }
+.grid { align-items: start; }
+
+/* ---- the phone: the window and the rail are gone, so the dock carries the
+   identity instead ---- */
+@media (max-width: 900px) {
+  .dock {
+    background: linear-gradient(120deg, var(--pink-soft), var(--surface) 62%, var(--lilac-soft));
+    border: 1px solid var(--glass-edge);
+    box-shadow: 0 14px 38px -18px var(--sd);
+  }
+  .dock-btn.active { background: var(--surface); box-shadow: 0 4px 12px -6px var(--sd); }
+  .dock-btn.center { background: linear-gradient(145deg, var(--pink), var(--lilac)); box-shadow: 0 10px 22px -10px var(--sd); }
+}
