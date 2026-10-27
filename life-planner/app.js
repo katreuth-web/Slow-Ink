@@ -588,6 +588,11 @@
     if (!state.ui) state.ui = { tabs: {}, nbMode: "type" };
     if (state.ui.recipeSec && !state.recipeSections.some(function (x) { return x.id === state.ui.recipeSec; })) state.ui.recipeSec = "";
   }
+  /* Declared up here on purpose: ensureRecipes() below runs at load time and reaches
+     wishCatNames(), so this array has to hold its value before that call, not 1300
+     lines further down where the rest of the wishlist code lives. */
+  var WISH_CATS = [["Clothing", "👗"], ["Accessories", "👜"], ["Makeup", "💄"], ["Skincare", "🧴"], ["Hair", "💇"], ["Toiletries", "🧼"], ["Home goods", "🏠"], ["Cleaning supplies", "🧽"], ["Tech", "🔌"], ["Gifts", "🎁"], ["Other", "🛍️"]];
+
   var state = load();
   ensureRecipes();
   var saveTimer = null;
@@ -1881,7 +1886,6 @@
 
 
   /* ---- shopping lists & wishlists: picture cards with a link to the shop ---- */
-  var WISH_CATS = [["Clothing", "👗"], ["Accessories", "👜"], ["Makeup", "💄"], ["Skincare", "🧴"], ["Hair", "💇"], ["Toiletries", "🧼"], ["Home goods", "🏠"], ["Cleaning supplies", "🧽"], ["Tech", "🔌"], ["Gifts", "🎁"], ["Other", "🛍️"]];
   function wishCatNames() { return WISH_CATS.map(function (c) { return c[0]; }); }
   function wishEmoji(cat) { var c = WISH_CATS.filter(function (x) { return x[0] === cat; })[0]; return c ? c[1] : "🛍️"; }
   /* only ordinary web addresses are ever used as links or pictures */
