@@ -1533,3 +1533,40 @@ body::before {
   .ring-row { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .dring { flex-direction: column; align-items: flex-start; gap: 8px; }
 }
+
+/* ============================================================
+   PEARL — the active rail tab is cut into the page rather than
+   floating on the rail. The tab reaches the rail's right edge and
+   two small pseudo-elements fake the concave sweeps above and
+   below it, since CSS has no inverted border-radius.
+   ============================================================ */
+@media (min-width: 901px) {
+  /* let the tabs reach the rail's right edge instead of sitting centred in it */
+  .nav-group { align-items: stretch; }
+  .nav-link {
+    width: auto; margin: 2px 0 2px 14px; padding-right: 14px;
+    border-radius: 16px 0 0 16px;
+  }
+  .nav-link:hover { border-radius: 16px 0 0 16px; }
+
+  .nav-link.active {
+    background: var(--surface);
+    border-radius: 18px 0 0 18px;
+    box-shadow: none;
+  }
+  /* the two fillets: a square of page colour with a quarter-disc cut out of it,
+     so the rail appears to curve in to meet the tab */
+  .nav-link.active::before,
+  .nav-link.active::after {
+    content: ""; position: absolute; right: 0;
+    width: 16px; height: 16px; pointer-events: none;
+  }
+  .nav-link.active::before {
+    top: -16px;
+    background: radial-gradient(circle at 0 0, transparent 0 16px, var(--surface) 16px);
+  }
+  .nav-link.active::after {
+    bottom: -16px;
+    background: radial-gradient(circle at 0 100%, transparent 0 16px, var(--surface) 16px);
+  }
+}
