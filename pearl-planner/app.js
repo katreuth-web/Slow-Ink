@@ -233,7 +233,7 @@
       nbSections: defaultNbSections(),
       nbSection: "s-journal",
       nbCurrent: "",
-      ui: { tabs: {}, nbMode: "type", folded: {} }
+      ui: { tabs: {}, nbMode: "type", folded: {}, recent: [] }
     };
   }
 
@@ -526,6 +526,9 @@
     });
     if (!state.ui) state.ui = { tabs: {}, nbMode: "type", folded: {} };
     if (!state.ui.folded || typeof state.ui.folded !== "object" || Array.isArray(state.ui.folded)) state.ui.folded = {};
+    state.ui.recent = (Array.isArray(state.ui.recent) ? state.ui.recent : []).filter(function (x) {
+      return x && typeof x.h === "string" && x.h.length < 120 && typeof x.at === "number" && isFinite(x.at);
+    }).slice(0, 8);
     state.ui.hwOff = Math.max(-520, Math.min(0, parseInt(state.ui.hwOff, 10) || 0));
     state.ui.cmpA = typeof state.ui.cmpA === "string" ? state.ui.cmpA : "";
     state.ui.cmpB = typeof state.ui.cmpB === "string" ? state.ui.cmpB : "";
@@ -542,6 +545,9 @@
     });
     if (!state.ui) state.ui = { tabs: {}, nbMode: "type", folded: {} };
     if (!state.ui.folded || typeof state.ui.folded !== "object" || Array.isArray(state.ui.folded)) state.ui.folded = {};
+    state.ui.recent = (Array.isArray(state.ui.recent) ? state.ui.recent : []).filter(function (x) {
+      return x && typeof x.h === "string" && x.h.length < 120 && typeof x.at === "number" && isFinite(x.at);
+    }).slice(0, 8);
     state.ui.mapZoom = Math.max(1, Math.min(4, parseInt(state.ui.mapZoom, 10) || 1));
     state.ui.pinSel = typeof state.ui.pinSel === "string" ? state.ui.pinSel : "";
     state.ui.pinPlace = "";
@@ -567,6 +573,9 @@
     });
     if (!state.ui) state.ui = { tabs: {}, nbMode: "type", folded: {} };
     if (!state.ui.folded || typeof state.ui.folded !== "object" || Array.isArray(state.ui.folded)) state.ui.folded = {};
+    state.ui.recent = (Array.isArray(state.ui.recent) ? state.ui.recent : []).filter(function (x) {
+      return x && typeof x.h === "string" && x.h.length < 120 && typeof x.at === "number" && isFinite(x.at);
+    }).slice(0, 8);
     if (["shop", "wish", "bought"].indexOf(state.ui.wishMode) < 0) state.ui.wishMode = "shop";
     if (typeof state.ui.wishCat !== "string" || (state.ui.wishCat && wishCatNames().indexOf(state.ui.wishCat) < 0)) state.ui.wishCat = "";
   }
@@ -590,6 +599,9 @@
     });
     if (!state.ui) state.ui = { tabs: {}, nbMode: "type", folded: {} };
     if (!state.ui.folded || typeof state.ui.folded !== "object" || Array.isArray(state.ui.folded)) state.ui.folded = {};
+    state.ui.recent = (Array.isArray(state.ui.recent) ? state.ui.recent : []).filter(function (x) {
+      return x && typeof x.h === "string" && x.h.length < 120 && typeof x.at === "number" && isFinite(x.at);
+    }).slice(0, 8);
     if (state.ui.recipeSec && !state.recipeSections.some(function (x) { return x.id === state.ui.recipeSec; })) state.ui.recipeSec = "";
   }
   /* Declared up here on purpose: ensureRecipes() below runs at load time and reaches
@@ -970,6 +982,74 @@
     return '<nav class="crumbs" aria-label="Breadcrumb">' + crumbs + '</nav><div class="topbar-actions">' + right + "</div>";
   }
 
+  /* ---------- pick up where you left off ----------
+     Only notebook pages carry an edited timestamp, so the trail of pages visited
+     is recorded as well. Each entry stores the hash, never a label, so a renamed
+     or deleted page resolves correctly (or drops out) when the card is drawn. */
+  function recentPush(hash) {
+    if (!hash || hash === "#/" ) return;
+    if (!Array.isArray(state.ui.recent)) state.ui.recent = [];
+    var list = state.ui.recent.filter(function (x) { return x && x.h !== hash; });
+    list.unshift({ h: hash, at: Date.now() });
+    state.ui.recent = list.slice(0, 8);
+  }
+  /* Resolve a stored hash into something to show, or null if it no longer exists. */
+  function recentLabel(hash) {
+    var parts = String(hash).replace(/^#\/?/, "").split("/").filter(Boolean);
+    var n = parts[0], a = parts[1], b = parts[2];
+    if (!n || n === "home") return null;
+    if (n === "year")  { var y = parseInt(a, 10); return y ? { label: String(y), sub: "Yearly spread", icon: "year" } : null; }
+    if (n === "month") { var dm = parseD(a + "-01"); return dm ? { label: MONTHS[dm.getMonth()] + " " + dm.getFullYear(), sub: "Monthly spread", icon: "month" } : null; }
+    if (n === "week")  { var dw = parseD(a); return dw ? { label: "Week " + isoWeek(dw), sub: prettyDay(dw).replace(/,.*$/, "") + " onwards", icon: "week" } : null; }
+    if (n === "day")   { var dd = parseD(a); return dd ? { label: shortDay(dd), sub: b === "review" ? "Daily review" : "Daily spread", icon: "sun" } : null; }
+    if (n === "notebook" && a) {
+      var pg = state.notebook[a];
+      if (!pg) return null;   /* the page was deleted */
+      return { label: pg.title || "Untitled page", sub: "Journal page", icon: "book" };
+    }
+    var hit = null;
+    NAV.forEach(function (g) { g.items.forEach(function (it) { if (it[0] === n) hit = { label: it[1], sub: g.group, icon: it[2] }; }); });
+    return hit;
+  }
+  function timeAgo(ms) {
+    var s = Math.max(0, Date.now() - ms), m = Math.round(s / 60000);
+    if (m < 1) return "just now";
+    if (m < 60) return m + (m === 1 ? " minute ago" : " minutes ago");
+    var h = Math.round(m / 60);
+    if (h < 24) return h + (h === 1 ? " hour ago" : " hours ago");
+    var d = Math.round(h / 24);
+    if (d === 1) return "yesterday";
+    if (d < 30) return d + " days ago";
+    return "a while ago";
+  }
+  function recentCard() {
+    var hereNow = location.hash, rows = [];
+    /* the most recently edited journal page first, since that is the one thing
+       with a real edited time rather than just a visit */
+    var pages = Object.keys(state.notebook).map(function (id) { return state.notebook[id]; })
+      .filter(function (x) { return x && x.updated; })
+      .sort(function (x, y) { return y.updated - x.updated; });
+    if (pages.length) {
+      var pg = pages[0];
+      rows.push({ href: "#/notebook/" + pg.id, label: pg.title || "Untitled page", sub: "Journal page", icon: "book", at: pg.updated, edited: true });
+    }
+    (Array.isArray(state.ui.recent) ? state.ui.recent : []).forEach(function (x) {
+      if (!x || !x.h || x.h === hereNow) return;
+      if (rows.some(function (r) { return r.href === x.h; })) return;
+      var info = recentLabel(x.h);
+      if (info) rows.push({ href: x.h, label: info.label, sub: info.sub, icon: info.icon, at: x.at });
+    });
+    rows = rows.slice(0, 4);
+    if (!rows.length) return "";
+    var body = '<ul class="recent-list">' + rows.map(function (r) {
+      return '<li><a class="recent-row" href="' + r.href + '"><span class="recent-ic">' + ic(r.icon) + "</span>" +
+        '<span class="recent-txt"><span class="recent-label">' + esc(r.label) + '</span>' +
+        '<span class="recent-sub">' + esc(r.sub) + " · " + (r.edited ? "edited " : "") + timeAgo(r.at) + "</span></span>" +
+        '<span class="recent-go">' + ic("arrow") + "</span></a></li>";
+    }).join("") + "</ul>";
+    return card("Pick up where you left off", body, { dot: "k" });
+  }
+
   /* ------------------------------------------------------------ views: home */
 
   function greeting() {
@@ -1277,7 +1357,7 @@
       card("Coming up", upcoming(), { dot: "k" });
 
     return banner + hero + quick + rings + gettingStarted() +
-      '<div class="grid"><div class="c7 stack">' + left + '</div><div class="c5 stack">' + feature + rightNoIntention + "</div></div>";
+      '<div class="grid"><div class="c7 stack">' + left + '</div><div class="c5 stack">' + feature + recentCard() + rightNoIntention + "</div></div>";
   }
 
   /* ------------------------------------------------------------ views: year */
@@ -3747,6 +3827,7 @@
     foldRoute = r.name;
     var key = r.name + "/" + (r.a || "") + "/" + (r.b || "");
     var routeChanged = key !== lastRouteKey;
+    if (routeChanged && lastRouteKey) { recentPush(location.hash); save(); }
     lastRouteKey = key;
 
     var active = document.activeElement, focusSel = null, ss = null, se = null;

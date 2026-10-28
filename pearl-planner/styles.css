@@ -1605,3 +1605,21 @@ body::before {
 }
 
 @media print { .fold-chev { display: none; } }
+
+/* ---- pick up where you left off ---- */
+.recent-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.recent-row {
+  display: flex; align-items: center; gap: 11px; padding: 9px 10px;
+  border-radius: 14px; text-decoration: none; color: var(--ink);
+  transition: background 0.18s;
+}
+.recent-row:hover { background: var(--sky-soft); }
+.recent-ic { display: grid; place-items: center; flex: none; width: 32px; height: 32px; border-radius: 11px; background: var(--sky-soft); color: var(--sky-deep); }
+.recent-ic svg { width: 16px; height: 16px; }
+.recent-txt { display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto; }
+.recent-label { font-weight: 600; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent-sub { font-size: 11.5px; color: var(--muted); }
+.recent-go { flex: none; color: var(--muted); display: grid; place-items: center; opacity: 0; transition: opacity 0.18s, transform 0.18s; transform: translateX(-3px); }
+.recent-go svg { width: 15px; height: 15px; }
+.recent-row:hover .recent-go, .recent-row:focus-visible .recent-go { opacity: 1; transform: none; }
+@media (hover: none) { .recent-go { opacity: 1; transform: none; } }
