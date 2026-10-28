@@ -1082,6 +1082,42 @@
     }).join("") + "</ul>";
   }
 
+  /* The shape of the week: one bar per day, counting the things actually ticked
+     off that day. Tasks and habits are both checkboxes the person ticked, so they
+     add into one honest unit rather than mixing two different measures. Each bar
+     is a link to that day, so this carries the old strip's navigation too. */
+  function weekShape(center) {
+    var mon = mondayOf(center), tk = todayKey(), t = today(), days = [], max = 0;
+    for (var i = 0; i < 7; i++) {
+      var d = addDays(mon, i), k = ymd(d), day = peekDay(k);
+      var done = day ? (day.tasks || []).filter(function (x) { return x.done; }).length : 0;
+      var log = state.habitLog[k] || {};
+      var hab = state.habits.filter(function (h) { return log[h.id]; }).length;
+      var open = day ? (day.tasks || []).filter(function (x) { return !x.done; }).length : 0;
+      var n = done + hab;
+      if (n > max) max = n;
+      days.push({ d: d, k: k, n: n, done: done, hab: hab, open: open,
+                  mood: day && day.mood ? day.mood : 0, ahead: d > t });
+    }
+    var bars = days.map(function (x, i) {
+      /* a hair of height for an empty day, so the axis still reads as seven days */
+      var pct = max ? Math.round(x.n / max * 100) : 0;
+      var label = DOW[i] + " " + x.d.getDate() + ": " + (x.n ? x.n + (x.n === 1 ? " thing ticked" : " things ticked") : "nothing ticked yet") +
+        (x.open ? ", " + x.open + " still open" : "");
+      return '<a class="wsh-col' + (x.k === tk ? " today" : "") + (x.ahead ? " ahead" : "") + '" href="' + hrefDay(x.d) +
+        '" title="' + esc(label) + '" aria-label="' + esc(label) + '">' +
+        '<span class="wsh-n">' + (x.n || "") + "</span>" +
+        '<span class="wsh-track"><span class="wsh-bar" style="height:' + (x.n ? Math.max(6, pct) : 0) + '%"></span></span>' +
+        '<span class="wsh-d">' + DOW3[i] + "</span>" +
+        '<span class="wsh-date">' + x.d.getDate() + "</span>" +
+        '<span class="wsh-mood">' + (x.mood ? moodEmoji(x.mood) : "") + "</span></a>";
+    }).join("");
+    var total = days.reduce(function (a, x) { return a + x.n; }, 0);
+    var foot = total
+      ? total + (total === 1 ? " thing" : " things") + " ticked off this week"
+      : "Nothing ticked off yet this week.";
+    return '<div class="wshape">' + bars + '</div><p class="wsh-foot">' + esc(foot) + "</p>";
+  }
   function weekStrip(center) {
     var mon = mondayOf(center), tk = todayKey(), html = '<div class="week-strip">';
     for (var i = 0; i < 7; i++) {
@@ -1293,7 +1329,7 @@
     var hubs = [].concat.apply([], NAV.filter(function (g) { return g.group === "Life" || g.group === "Productivity" || g.group === "Journal"; }).map(function (g) { return g.items; }));
     var left =
       card("Today's intentions", listEd("days." + k + ".tasks", { prio: true, placeholder: "Add a task for today…", empty: "Nothing planned yet — what would make today feel good?" }), { dot: "p", right: '<a class="btn sm ghost" href="' + hrefDay(t) + '">Open spread ' + ic("arrow") + "</a>" }) +
-      card("This week", weekStrip(t), { dot: "b", right: '<a class="btn sm ghost" href="' + hrefWeek(t) + '">Week ' + isoWeek(t) + " " + ic("arrow") + "</a>" }) +
+      card("This week's shape", weekShape(t), { dot: "b", right: '<a class="btn sm ghost" href="' + hrefWeek(t) + '">Week ' + isoWeek(t) + " " + ic("arrow") + "</a>" }) +
       card("Life hubs", '<div class="tile-links">' + hubs.map(function (h) { return '<a class="tile-link" href="#/' + h[0] + '">' + ic(h[2]) + "<span>" + esc(h[1]) + "</span></a>"; }).join("") + "</div>", { dot: "s" });
     var right =
       card("How are you feeling?", moodPicker("days." + k + ".mood") + '<div class="spacer"></div><label class="lbl">Hydration</label>' + waterPicker("days." + k + ".water"), { cls: "tint-pink", dot: "p" }) +
