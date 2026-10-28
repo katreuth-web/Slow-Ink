@@ -1570,3 +1570,38 @@ body::before {
     background: radial-gradient(circle at 0 100%, transparent 0 16px, var(--surface) 16px);
   }
 }
+
+/* ============================================================
+   PEARL — collapsible sections. Every titled card folds away to
+   just its heading, the way a Notion toggle does, and remembers
+   that per page.
+   ============================================================ */
+.card-fold {
+  display: flex; align-items: center; gap: 8px;
+  margin: 0; padding: 0; border: 0; background: transparent;
+  font: inherit; color: inherit; text-align: left; cursor: pointer;
+  min-width: 0; flex: 1 1 auto; border-radius: 10px;
+}
+.card-fold h3 { margin: 0; min-width: 0; }
+.card-fold:hover .fold-chev { color: var(--pink-deep); background: var(--pink-soft); }
+.card-fold:focus-visible { outline: 2px solid var(--pink-deep); outline-offset: 3px; }
+.fold-chev {
+  display: grid; place-items: center; flex: none;
+  width: 22px; height: 22px; border-radius: 7px;
+  color: var(--muted); transition: transform 0.18s ease, background 0.18s, color 0.18s;
+}
+.fold-chev svg { width: 15px; height: 15px; display: block; }
+/* shut: the arrow points at the title instead of down, and the head loses its
+   bottom margin so a folded card is a tidy single row */
+.card.folded .fold-chev { transform: rotate(-90deg); }
+.card.folded .card-head { margin-bottom: 0; }
+.card.folded { padding-bottom: 14px; }
+
+/* On a phone the heading row is only about 25px tall, which is a fiddly thing to
+   hit. Pad the button out to a comfortable target and pull the padding back with
+   a negative margin so nothing moves. */
+@media (max-width: 900px), (hover: none) {
+  .card-fold { padding: 10px 6px 10px 0; margin: -10px -6px -10px 0; }
+}
+
+@media print { .fold-chev { display: none; } }

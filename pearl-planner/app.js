@@ -233,7 +233,7 @@
       nbSections: defaultNbSections(),
       nbSection: "s-journal",
       nbCurrent: "",
-      ui: { tabs: {}, nbMode: "type" }
+      ui: { tabs: {}, nbMode: "type", folded: {} }
     };
   }
 
@@ -524,7 +524,8 @@
       if (!Array.isArray(state[k].items)) state[k].items = [];
       if (!isObj(state[k].log)) state[k].log = {};
     });
-    if (!state.ui) state.ui = { tabs: {}, nbMode: "type" };
+    if (!state.ui) state.ui = { tabs: {}, nbMode: "type", folded: {} };
+    if (!state.ui.folded || typeof state.ui.folded !== "object" || Array.isArray(state.ui.folded)) state.ui.folded = {};
     state.ui.hwOff = Math.max(-520, Math.min(0, parseInt(state.ui.hwOff, 10) || 0));
     state.ui.cmpA = typeof state.ui.cmpA === "string" ? state.ui.cmpA : "";
     state.ui.cmpB = typeof state.ui.cmpB === "string" ? state.ui.cmpB : "";
@@ -539,7 +540,8 @@
     t.bucket.forEach(function (b) {
       if (typeof b.x !== "number" || typeof b.y !== "number" || !isFinite(b.x) || !isFinite(b.y)) { delete b.x; delete b.y; }
     });
-    if (!state.ui) state.ui = { tabs: {}, nbMode: "type" };
+    if (!state.ui) state.ui = { tabs: {}, nbMode: "type", folded: {} };
+    if (!state.ui.folded || typeof state.ui.folded !== "object" || Array.isArray(state.ui.folded)) state.ui.folded = {};
     state.ui.mapZoom = Math.max(1, Math.min(4, parseInt(state.ui.mapZoom, 10) || 1));
     state.ui.pinSel = typeof state.ui.pinSel === "string" ? state.ui.pinSel : "";
     state.ui.pinPlace = "";
@@ -563,7 +565,8 @@
       if (wishCatNames().indexOf(x.cat) < 0) x.cat = "Other";
       ["text", "link", "imgUrl", "note", "imgId"].forEach(function (k) { if (typeof x[k] !== "string") x[k] = ""; });
     });
-    if (!state.ui) state.ui = { tabs: {}, nbMode: "type" };
+    if (!state.ui) state.ui = { tabs: {}, nbMode: "type", folded: {} };
+    if (!state.ui.folded || typeof state.ui.folded !== "object" || Array.isArray(state.ui.folded)) state.ui.folded = {};
     if (["shop", "wish", "bought"].indexOf(state.ui.wishMode) < 0) state.ui.wishMode = "shop";
     if (typeof state.ui.wishCat !== "string" || (state.ui.wishCat && wishCatNames().indexOf(state.ui.wishCat) < 0)) state.ui.wishCat = "";
   }
@@ -585,7 +588,8 @@
       if (!hit) { hit = { id: uid(), name: String(r.cat || "Other").slice(0, 40), color: COLORS[state.recipeSections.length % COLORS.length], imgId: "" }; state.recipeSections.push(hit); }
       r.sec = hit.id;
     });
-    if (!state.ui) state.ui = { tabs: {}, nbMode: "type" };
+    if (!state.ui) state.ui = { tabs: {}, nbMode: "type", folded: {} };
+    if (!state.ui.folded || typeof state.ui.folded !== "object" || Array.isArray(state.ui.folded)) state.ui.folded = {};
     if (state.ui.recipeSec && !state.recipeSections.some(function (x) { return x.id === state.ui.recipeSec; })) state.ui.recipeSec = "";
   }
   /* Declared up here on purpose: ensureRecipes() below runs at load time and reaches
@@ -690,11 +694,26 @@
     }).join("") + "</select>";
   }
 
+  /* A stable key for a card's folded state: the page it is on plus a slug of its
+     title. Titles repeat across pages ("Notes" is on several) but not within one. */
+  function foldKey(title) {
+    return foldRoute + "/" + String(title).replace(/<[^>]*>/g, "").replace(/&[a-z]+;/gi, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
+  }
   function card(title, body, opts) {
     opts = opts || {};
-    return '<section class="card ' + (opts.cls || "") + '"' + (opts.attrs ? " " + opts.attrs : "") + ">" +
-      (title ? '<div class="card-head"><h3>' + (opts.dot ? '<span class="dotmark ' + opts.dot + '"></span>' : "") + title + "</h3>" + (opts.right || "") + "</div>" : "") +
-      body + "</section>";
+    var dot = opts.dot ? '<span class="dotmark ' + opts.dot + '"></span>' : "";
+    /* Every titled card folds, unless it opts out. The body leaves the DOM when
+       folded rather than being hidden, so nothing focusable hides behind it. */
+    var canFold = !!title && opts.fold !== false;
+    var fk = canFold ? foldKey(title) : "";
+    var shut = canFold && !!(state.ui.folded && state.ui.folded[fk]);
+    var headInner = canFold
+      ? '<button class="card-fold" data-act="fold" data-k="' + esc(fk) + '" aria-expanded="' + (!shut) +
+        '"><span class="fold-chev">' + ic("down") + "</span><h3>" + dot + title + "</h3></button>"
+      : "<h3>" + dot + title + "</h3>";
+    return '<section class="card ' + (opts.cls || "") + (shut ? " folded" : "") + '"' + (opts.attrs ? " " + opts.attrs : "") + ">" +
+      (title ? '<div class="card-head">' + headInner + (opts.right || "") + "</div>" : "") +
+      (shut ? "" : body) + "</section>";
   }
   function head(kicker, title, right) {
     return '<div class="page-head"><div><div class="kicker">' + kicker + "</div><h1>" + title + "</h1></div>" + (right ? '<div class="row wrap">' + right + "</div>" : "") + "</div>";
@@ -3721,9 +3740,11 @@
 
   var view = $("#view");
   var lastRouteKey = "";
+  var foldRoute = "";   /* the current page, so each card's fold key is stable per page */
 
   function render() {
     var r = parseRoute();
+    foldRoute = r.name;
     var key = r.name + "/" + (r.a || "") + "/" + (r.b || "");
     var routeChanged = key !== lastRouteKey;
     lastRouteKey = key;
@@ -3995,6 +4016,10 @@
         if (d.path.indexOf("mood") > -1 && getP(d.path) === v) v = 0;
         setP(d.path, v); save(); render(); return;
       }
+      case "fold":
+        if (!state.ui.folded) state.ui.folded = {};
+        if (state.ui.folded[d.k]) delete state.ui.folded[d.k]; else state.ui.folded[d.k] = 1;
+        save(); render(); return;
       case "tab": state.ui.tabs[d.key] = d.val; save(); render(); return;
       case "tab-go": state.ui.tabs[d.key] = d.val; save(); return;
       case "theme": setLook("mode", isDark() ? "light" : "dark"); return;
