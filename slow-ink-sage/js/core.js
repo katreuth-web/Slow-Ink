@@ -167,6 +167,7 @@
         { id: "h-read", name: "Read a little" }
       ],
       habitLog: {},
+      todos: [],
       goals: [],
       reflections: {},
       debt: { items: [], method: "avalanche", extra: "", cur: "$" },
@@ -196,6 +197,18 @@
     if (!s.notebook.sections || !s.notebook.sections.length) s.notebook.sections = d.notebook.sections;
     if (!Array.isArray(s.notebook.pages)) s.notebook.pages = [];
     if (!s.ui) s.ui = d.ui;
+    /* A restored backup could carry anything in here, so keep only well-formed to-dos. */
+    if (!Array.isArray(s.todos)) s.todos = [];
+    s.todos = s.todos.filter(function (it) {
+      return it && typeof it === "object" && typeof it.t === "string";
+    }).map(function (it) {
+      return {
+        id: typeof it.id === "string" && it.id ? it.id : SI.uid(),
+        t: it.t.slice(0, 300),
+        done: !!it.done,
+        due: /^\d{4}-\d{2}-\d{2}$/.test(it.due) ? it.due : ""
+      };
+    }).slice(0, 2000);
     return s;
   }
 

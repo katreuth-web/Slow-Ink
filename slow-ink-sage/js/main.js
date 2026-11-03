@@ -5,7 +5,7 @@
   var view = document.getElementById("view");
 
   var TABS = [
-    ["today", "Today"], ["year", "Year"], ["month", "Month"], ["week", "Week"], ["day", "Day"],
+    ["today", "Today"], ["todo", "To-Do"], ["year", "Year"], ["month", "Month"], ["week", "Week"], ["day", "Day"],
     ["habits", "Habits"], ["goals", "Goals"], ["money", "Money"], ["reflect", "Reflect"], ["notebook", "Notebook"]
   ];
 
@@ -59,7 +59,7 @@
 
   /* The left-hand menu (wide screens). The same pages as the top tabs, grouped. */
   var SIDE = [
-    ["Plan", [["today", "Today", "sun"], ["year", "Year", "grid"], ["month", "Month", "calendar"], ["week", "Week", "columns"], ["day", "Day", "clock"]]],
+    ["Plan", [["today", "Today", "sun"], ["todo", "To-Do", "check"], ["year", "Year", "grid"], ["month", "Month", "calendar"], ["week", "Week", "columns"], ["day", "Day", "clock"]]],
     ["Track", [["habits", "Habits", "loop"], ["goals", "Goals", "target"], ["money", "Money", "wallet"], ["reflect", "Reflect", "moon"]]],
     ["Journal", [["notebook", "Notebook", "book"]]]
   ];

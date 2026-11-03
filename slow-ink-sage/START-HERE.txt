@@ -34,6 +34,8 @@ WHAT'S INSIDE
 - PERSONALISE (the palette button at the top right): type your name for the greeting, pick a colour (Sage, Clay, Dusk or Rose), Light, Dark or Auto mode and a font. Your choice is saved with your planner.
 - Want to see how a lived-in planner looks? Press "Look around with sample data" on the Today page. A banner lets you clear it and start fresh.
 - Star a task to make it a KEY DATE: it is highlighted in the Year and Month pages.
+- A To-Do page: one list for everything not tied to a day yet. Give a thing a date or leave it
+  undated, and the list sorts itself into Overdue, Today, The next few days, Later and Someday.
 - Habits, Goals, Reflect (monthly and yearly prompts) and Money: an income and savings tracker (what came in, what you set aside, savings goals), a debt payoff planner (list what you owe, choose a snowball or avalanche plan, see your debt-free date and the interest you'd save, log payments, and use the built-in calculator with tip, sale, savings and loan shortcuts).
 - NOTEBOOK (dark green button, top right): a separate bound book with coloured
   section tabs (Journal, Notes, Ideas - add your own with the + tab) and lined,

@@ -191,6 +191,18 @@
     var soon = upcomingKeys(5);
     var soonCard = card("Coming up", keyDateList(soon, "Star a task on any day and it appears here."));
 
+    /* Anything on the to-do list that is due today or has slipped past its date. */
+    var tdk = SI.todayKey();
+    var pressing = s.todos.filter(function (x) { return !x.done && x.due && x.due <= tdk; })
+      .sort(function (a2, b2) { return a2.due < b2.due ? -1 : a2.due > b2.due ? 1 : 0; });
+    var openCount = s.todos.filter(function (x) { return !x.done; }).length;
+    var todoCard = card("From your list", pressing.length
+      ? '<ul class="keylist">' + pressing.slice(0, 5).map(function (x) {
+        var late = x.due < tdk;
+        return '<li><a href="#/todo"><span class="kl-date' + (late ? " late" : "") + '">' + esc(dueLabel(x.due)) + '</span><span class="kl-text">' + esc(x.t) + "</span></a></li>";
+      }).join("") + "</ul>" + (pressing.length > 5 ? '<p class="small"><a href="#/todo">See all ' + pressing.length + " due</a></p>" : "")
+      : '<p class="empty">' + (openCount ? "Nothing due today. " + openCount + (openCount === 1 ? " thing is" : " things are") + ' waiting on <a href="#/todo">the list</a>.' : 'Your list is clear. <a href="#/todo">Add something</a> you don\u2019t want to forget.') + "</p>");
+
     var banner = s.sample ? '<div class="sample-banner" role="status"><span>You’re looking at a <b>sample planner</b>. Everything here is made up.</span><button class="btn sm" data-act="start-fresh">Start fresh</button></div>' : "";
 
     return banner + '<div class="hero"><div class="hero-text">' + head(hello, esc(SI.longDate(t)), '<span class="prompt">' + esc(PROMPTS[doy % PROMPTS.length]) + "</span>") +
@@ -205,7 +217,7 @@
       card("This week", '<div class="wstrip">' + week + '</div><p class="small"><a href="' + href.week(t) + '">Open the week</a></p>') +
       nbCard +
       '</div><div class="stack">' +
-      habitsCard + goalsCard + soonCard +
+      habitsCard + todoCard + goalsCard + soonCard +
       card("How are you feeling?", moodPicker(key)) + "</div></div>";
   };
 
@@ -417,6 +429,88 @@
       (gs.length ? '<div class="goal-grid">' + cards + "</div>" : '<p class="empty center">Start with one goal that feels light to carry.</p>');
   };
 
+  /* ------------------------------------------------------------ TO-DO LIST */
+  /* One list for everything that isn't tied to a particular day yet. Instead of filter
+     buttons, the list sorts itself into when-ish groups, so the top of the page is
+     always the part that actually needs you. */
+  var TODO_GROUPS = [
+    ["over", "Overdue", "Gone past its date. Move it or let it go."],
+    ["today", "Today", ""],
+    ["soon", "The next few days", ""],
+    ["later", "Later", ""],
+    ["some", "Someday", "No date yet, and that's allowed."]
+  ];
+  function todoBuckets() {
+    var tk = SI.todayKey(), week = SI.key(SI.addDays(SI.today(), 7));
+    var g = { over: [], today: [], soon: [], later: [], some: [], done: [] };
+    S().todos.forEach(function (it) {
+      if (it.done) g.done.push(it);
+      else if (!it.due) g.some.push(it);
+      else if (it.due < tk) g.over.push(it);
+      else if (it.due === tk) g.today.push(it);
+      else if (it.due <= week) g.soon.push(it);
+      else g.later.push(it);
+    });
+    ["over", "today", "soon", "later"].forEach(function (k) {
+      g[k].sort(function (a, b) { return a.due < b.due ? -1 : a.due > b.due ? 1 : 0; });
+    });
+    return g;
+  }
+  /* "Tuesday", "3 days ago", "12 Mar" — whichever reads most naturally from here. */
+  function dueLabel(due) {
+    var d = SI.parseKey(due);
+    if (!d) return "";
+    var t = SI.today(), days = Math.round((d - t) / 86400000);
+    if (days === 0) return "today";
+    if (days === 1) return "tomorrow";
+    if (days === -1) return "yesterday";
+    if (days < 0) return -days + " days ago";
+    if (days < 7) return SI.DOW_LONG[SI.dowIndex(d)];
+    return d.getDate() + " " + SI.MONTHS_SHORT[d.getMonth()];
+  }
+  function todoRow(it) {
+    var p = "todos.@" + it.id, late = !it.done && it.due && it.due < SI.todayKey();
+    return '<li class="task todo' + (it.done ? " done" : "") + '">' +
+      '<button class="chk' + (it.done ? " on" : "") + '" data-act="toggle-todo" data-id="' + it.id + '" aria-pressed="' + !!it.done + '" aria-label="Mark done">' + ic("check") + "</button>" +
+      '<input class="task-text" data-bind="' + p + '.t" value="' + esc(it.t) + '" aria-label="To-do" maxlength="140" />' +
+      '<span class="todo-when' + (late ? " late" : "") + '">' +
+        '<input id="due-' + it.id + '" class="todo-due' + (it.due ? "" : " empty") + '" type="date" value="' + esc(it.due || "") + '" data-act-input="set-due" data-id="' + it.id + '" aria-label="Due date" />' +
+        (it.due && !it.done ? '<span class="todo-due-label" aria-hidden="true">' + esc(dueLabel(it.due)) + "</span>" : "") + "</span>" +
+      '<button class="icon-btn del" data-act="del-todo" data-id="' + it.id + '" aria-label="Delete to-do" title="Delete">' + ic("trash") + "</button></li>";
+  }
+
+  SI.views.todo = function () {
+    var g = todoBuckets(), open = S().todos.filter(function (x) { return !x.done; }).length;
+    var sub = open
+      ? open + (open === 1 ? " thing" : " things") + " on the list" + (g.over.length ? ", " + g.over.length + " past its date" : "")
+      : "Nothing on the list.";
+
+    var groups = TODO_GROUPS.map(function (grp) {
+      var items = g[grp[0]];
+      if (!items.length) return "";
+      return '<section class="todo-group' + (grp[0] === "over" ? " is-late" : "") + '">' +
+        '<h2 class="todo-group-title">' + esc(grp[1]) + '<span class="todo-count">' + items.length + "</span></h2>" +
+        (grp[2] ? '<p class="small hint">' + esc(grp[2]) + "</p>" : "") +
+        '<ul class="tasks">' + items.map(todoRow).join("") + "</ul></section>";
+    }).join("");
+
+    var doneCard = g.done.length
+      ? '<section class="todo-group todo-done-group"><h2 class="todo-group-title">Done' +
+        '<span class="todo-count">' + g.done.length + "</span>" +
+        '<button class="btn sm ghost todo-clear" data-act="clear-done">Clear done</button></h2>' +
+        '<ul class="tasks">' + g.done.map(todoRow).join("") + "</ul></section>"
+      : "";
+
+    return head("To-Do", "The list", "Everything you don’t want to keep in your head. Give a thing a date and it moves itself up the page.") +
+      '<div class="card todo-add">' +
+      '<div class="add-row"><input class="add-input" id="new-todo" placeholder="Add something to the list…" maxlength="140" aria-label="New to-do" />' +
+      '<input class="add-due" id="new-todo-due" type="date" aria-label="Due date (optional)" />' +
+      '<button class="btn" data-act="add-todo">' + ic("plus") + "Add</button></div>" +
+      '<p class="small hint">A date is optional. Without one it waits quietly under “Someday”.</p></div>' +
+      '<p class="todo-sub">' + esc(sub) + "</p>" +
+      (groups || doneCard ? groups + doneCard : '<p class="empty center">Nothing here yet. Write down the thing you keep remembering at midnight.</p>');
+  };
+
   /* ------------------------------------------------------------ REFLECT */
   var MONTH_PROMPTS = [["a", "What went well?"], ["b", "What did I learn?"], ["c", "What am I carrying forward?"]];
   var YEAR_PROMPTS = [["a", "A word for this year"], ["b", "What I’m proudest of"], ["c", "What I’m letting go of"], ["d", "What I want more of"]];
@@ -515,6 +609,36 @@
   A["del-step"] = function (el) {
     var g = goalById(el.dataset.g);
     if (g) { g.steps = g.steps.filter(function (x) { return x.id !== el.dataset.id; }); SI.save(); SI.render(); }
+  };
+  function todoById(id) { return S().todos.filter(function (x) { return x.id === id; })[0]; }
+  A["add-todo"] = function () {
+    var input = document.getElementById("new-todo"), dueEl = document.getElementById("new-todo-due");
+    var t = input && input.value.trim();
+    if (!t) { if (input) input.focus(); return; }
+    var due = dueEl && /^\d{4}-\d{2}-\d{2}$/.test(dueEl.value) ? dueEl.value : "";
+    S().todos.push({ id: SI.uid(), t: t, done: false, due: due });
+    input.value = ""; if (dueEl) dueEl.value = "";
+    SI.save(); refocus("#new-todo"); SI.render();
+  };
+  A["toggle-todo"] = function (el) {
+    var it = todoById(el.dataset.id);
+    if (it) { it.done = !it.done; SI.save(); SI.render(); }
+  };
+  A["set-due"] = function (el) {
+    var it = todoById(el.dataset.id);
+    if (!it) return;
+    it.due = /^\d{4}-\d{2}-\d{2}$/.test(el.value) ? el.value : "";
+    SI.save(); refocus("#due-" + it.id); SI.render();
+  };
+  A["del-todo"] = function (el) {
+    S().todos = S().todos.filter(function (x) { return x.id !== el.dataset.id; });
+    SI.save(); SI.render();
+  };
+  A["clear-done"] = function () {
+    var n = S().todos.filter(function (x) { return x.done; }).length;
+    if (!n || !window.confirm("Remove " + n + (n === 1 ? " finished to-do" : " finished to-dos") + " from the list?")) return;
+    S().todos = S().todos.filter(function (x) { return !x.done; });
+    SI.save(); SI.render(); SI.toast(n + (n === 1 ? " to-do cleared." : " to-dos cleared."));
   };
   A.export = function () { SI.exportData(); };
 })();

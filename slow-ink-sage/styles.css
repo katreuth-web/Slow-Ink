@@ -967,3 +967,69 @@ body[data-page="money"] .money-cols > .card { margin-top: 0; }
 .ws-item span { overflow-wrap: anywhere; }
 .ws-more { font-size: 11.5px; color: var(--ink-mute); padding-left: 52px; }
 .wsched:hover .ws-item span { text-decoration: underline; }
+
+/* ---------------------------------------------------------------- To-Do list */
+.todo-add { padding-bottom: 14px; }
+.todo-add .add-row { margin-top: 0; }
+.add-due,
+.todo-due {
+  font: inherit; font-size: 14px; color: var(--ink-soft); background: var(--field);
+  border: 1px dashed var(--rule-2); border-radius: 10px; padding: 7px 9px; min-width: 0;
+}
+.add-due { flex: 0 0 auto; }
+.add-due:focus, .todo-due:focus { border-style: solid; outline: none; border-color: var(--sage); }
+.todo-sub {
+  margin: 20px 0 10px; font-family: var(--serif); font-style: var(--hstyle);
+  font-weight: 600; color: var(--ink-mute);
+}
+.todo-group { margin: 0 0 22px; }
+.todo-group-title {
+  display: flex; align-items: center; gap: 10px; margin: 0 0 4px;
+  font-family: var(--serif); font-style: var(--hstyle); font-weight: 600;
+  font-size: 19px; color: var(--forest);
+}
+.todo-group.is-late .todo-group-title { color: var(--late); }
+.todo-count {
+  font-family: var(--sans); font-style: normal; font-size: 12px; font-weight: 600;
+  line-height: 1; padding: 4px 8px; border-radius: 999px;
+  background: var(--sage-wash); color: var(--ink-soft);
+}
+.todo-group.is-late .todo-count { background: var(--clay-soft); color: var(--late); }
+.todo-group .hint { margin: 0 0 6px; }
+.todo-clear { margin-left: auto; }
+.todo-done-group { opacity: 0.78; }
+.todo-done-group:hover, .todo-done-group:focus-within { opacity: 1; }
+
+.task.todo { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+.todo-when { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.todo-due-label { font-size: 13px; color: var(--ink-soft); white-space: nowrap; }
+.todo-when.late .todo-due-label { color: var(--late); font-weight: 600; }
+.todo-when.late .todo-due { border-color: var(--late); }
+.task.todo.done .todo-due { opacity: 0.55; }
+/* A row with no date shouldn't shout an empty field at you; it steps forward on
+   hover, on focus, and on touch screens where there is no hover to step forward from. */
+.todo-due.empty { border-color: transparent; color: var(--ink-mute); opacity: 0.5; }
+.task.todo:hover .todo-due.empty,
+.todo-due.empty:focus { border-color: var(--rule-2); opacity: 1; }
+@media (hover: none) { .todo-due.empty { opacity: 0.8; border-color: var(--rule-2); } }
+.kl-date.late { color: var(--late); }
+
+@media (max-width: 620px) {
+  .todo-add .add-row { flex-wrap: wrap; }
+  .todo-add .add-input { flex: 1 1 100%; }
+  .add-due { flex: 1 1 auto; }
+  /* On a narrow screen the date drops under the text rather than squeezing it. */
+  .task.todo { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .todo-when { grid-column: 2 / 3; grid-row: 2; padding-bottom: 4px; }
+  .task.todo .icon-btn.del { grid-column: 3 / 4; grid-row: 1; }
+}
+
+/* The accent at full strength is too pale on light paper for small text, so each light
+   theme gets a deeper version for anything marked overdue. Dark modes already read
+   well above 7:1 and keep the accent unchanged. */
+:root { --late: var(--clay); }
+:root:not([data-theme]):not([data-mode="dark"]),
+:root[data-theme="sage"]:not([data-mode="dark"]) { --late: #954C2A; }
+:root[data-theme="clay"]:not([data-mode="dark"]) { --late: #4C6B51; }
+:root[data-theme="dusk"]:not([data-mode="dark"]) { --late: #93486E; }
+:root[data-theme="rose"]:not([data-mode="dark"]) { --late: #3C705D; }

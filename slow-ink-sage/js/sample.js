@@ -23,6 +23,26 @@
     day(K(24), "", [item("Garden project: first review", 0, true)]);
     day(K(41), "", [item("Weekend away", 0, true)]);
 
+    /* A list that looks lived-in: a couple slipped, some dated, some waiting. */
+    function todo(txt, when, done) {
+      return { id: SI.uid(), t: txt, done: !!done, due: when == null ? "" : K(when) };
+    }
+    s.todos = [
+      todo("Renew the car insurance", -3),
+      todo("Send the deposit for the venue", -1),
+      todo("Pick up the repaired bike", 0),
+      todo("Reply to Sam about the weekend", 0),
+      todo("Order seeds for spring", 2),
+      todo("Book the dentist for a check-up", 4),
+      todo("Find a plumber for the dripping tap", 9),
+      todo("Renew the library card", 19),
+      todo("Sort the photo backlog", null),
+      todo("Look into a pottery class", null),
+      todo("Fix the squeaky gate", null),
+      todo("Back up the laptop", -5, true),
+      todo("Cancel the unused subscription", -2, true)
+    ];
+
     var hw = "h-water", hm = "h-move", hr = "h-read", L = s.habitLog;
     L[hw] = {}; L[hm] = {}; L[hr] = {};
     for (var i = 0; i < 24; i++) {
