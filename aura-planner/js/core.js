@@ -74,6 +74,7 @@
       selfcare: { intention: "", areas: { physical: { ready: "", work: "", rate: 5 }, mental: { ready: "", work: "", rate: 5 }, emotional: { ready: "", work: "", rate: 5 }, relationships: { ready: "", work: "", rate: 5 }, rest: { ready: "", work: "", rate: 5 }, nutrition: { ready: "", work: "", rate: 5 }, spiritual: { ready: "", work: "", rate: 5 }, identity: { ready: "", work: "", rate: 5 }, boundaries: { ready: "", work: "", rate: 5 } }, allowed: [false, false, false, false, false, false], custom: ["", ""], support: { reach: "", pro: "", tools: "", reminders: "" } },
       dream: { parts: { who: "", health: "", career: "", relations: "", home: "", growth: "", experiences: "" }, grateful: "", paragraph: "" },
       manifest: { items: [], view: "board" },
+      actions: [],
       scripts: [],
       viz: { sessions: [], sound: true, minutes: 5 },
       affirm: { favs: [], custom: [], counts: {}, cat: "all" },
@@ -100,6 +101,23 @@
     try { saved = JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { saved = null; }
     A.state = merge(A.defaults(), saved || {});
     delete A.state.sync; /* drop settings left over from the removed board sync */
+    A.state.actions = A.cleanActions(A.state.actions);
+  };
+  /* Inspired actions, kept to a known shape so a hand-edited or older file can't break the page. */
+  A.cleanActions = function (raw) {
+    if (!Array.isArray(raw)) return [];
+    return raw.filter(function (it) {
+      return it && typeof it === "object" && typeof it.text === "string";
+    }).slice(0, 2000).map(function (it) {
+      return {
+        id: typeof it.id === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(it.id) ? it.id : A.uid(),
+        text: it.text.slice(0, 160),
+        done: !!it.done,
+        due: /^\d{4}-\d{2}-\d{2}$/.test(it.due) ? it.due : "",
+        mid: typeof it.mid === "string" && /^[A-Za-z0-9_-]{1,40}$/.test(it.mid) ? it.mid : "",
+        created: /^\d{4}-\d{2}-\d{2}$/.test(it.created) ? it.created : ""
+      };
+    });
   };
   var quotaWarned = false;
   A.saveNow = function () {
@@ -468,7 +486,7 @@
   A.GROUPS = [
     { id: "home", label: "Home", icon: "home", items: [["home", "Home"]] },
     { id: "plan", label: "Planner", icon: "calendar", items: [["year", "Year"], ["month", "Month"], ["week", "Week"], ["day", "Daily Practice"]] },
-    { id: "manifest", label: "Manifest", icon: "sparkle", items: [["manifest", "My Manifestations"], ["script", "Scripting"], ["beliefs", "Reframe Beliefs"], ["visualize", "Visualize"], ["affirm", "Affirmations"], ["rituals", "Rituals & Moon"]] },
+    { id: "manifest", label: "Manifest", icon: "sparkle", items: [["manifest", "My Manifestations"], ["actions", "Inspired Actions"], ["script", "Scripting"], ["beliefs", "Reframe Beliefs"], ["visualize", "Visualize"], ["affirm", "Affirmations"], ["rituals", "Rituals & Moon"]] },
     { id: "align", label: "Align", icon: "compass", items: [["wheel", "Level 10 Life"], ["ikigai", "Ikigai"], ["dream", "Dream Life Script"], ["birth", "Birth Chart"], ["selfcare", "Self-Care Wheel"], ["vision", "Vision Board"], ["mindmap", "Dream Map"], ["habits", "Habits"]] },
     { id: "notes", label: "Notebook", icon: "notebook", items: [["notebook", "Notebook"]] },
     { id: "ai", label: "Insights", icon: "eye", items: [["coach", "Pattern Insights"], ["synth", "Thought Sorter"]] }

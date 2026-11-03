@@ -89,13 +89,29 @@
       return '<li class="li' + (x.done ? " done" : "") + '"><span class="n">' + (i + 1) + "</span>" + A.input("days." + k + ".top3." + i + ".t", 'placeholder="An inspired step ' + (i + 1) + '"', "bare") + A.checkbox("days." + k + ".top3." + i + ".done") + "</li>";
     }).join("") + "</ul>";
 
+    /* Anything on the Inspired Actions list that is due today or has slipped past its date. */
+    var acts = Array.isArray(A.state.actions) ? A.state.actions : [];
+    var pressing = acts.filter(function (x) { return !x.done && x.due && x.due <= k; })
+      .sort(function (a2, b2) { return a2.due < b2.due ? -1 : a2.due > b2.due ? 1 : 0; });
+    var openActs = acts.filter(function (x) { return !x.done; }).length;
+    var fromList = '<p class="eyebrow hm-act-eyebrow">From your list</p>' + (pressing.length
+      ? '<ul class="list hm-acts">' + pressing.slice(0, 4).map(function (x) {
+        var late = x.due < k;
+        return '<li class="li"><span class="chip' + (late ? " late" : "") + '">' + (late ? "past its date" : "today") + "</span>" +
+          '<a class="grow" href="#/actions">' + esc(x.text || "A step") + "</a></li>";
+      }).join("") + "</ul>"
+      : '<p class="small muted" style="margin:0">' + (openActs
+        ? "Nothing due today. " + openActs + (openActs === 1 ? " step is" : " steps are") + " waiting."
+        : "Nothing on the list yet.") + "</p>") +
+      '<p class="small muted" style="margin:10px 0 0"><a href="#/actions">Open Inspired Actions</a></p>';
+
     var dateTitle = t.toLocaleDateString(undefined, { weekday: "long" }) + ' <span class="soft">' + t.toLocaleDateString(undefined, { month: "long", day: "numeric" }) + "</span>";
     return banner + '<div class="home-top">' + A.head(hello, dateTitle, "", '<a class="btn" href="' + A.hrefDay(t) + '">' + ic("sparkle") + "Daily practice</a>") +
       '<div class="home-ring" aria-label="' + pc + " of " + np + ' practices done today">' + A.ring(pc / np, 84, pc + "/" + np, 8) + '<span class="small muted">practices today</span></div></div>' +
       kpis + gettingStarted() +
       '<div class="grid"><div class="c7 stack">' + affCard +
       A.card("Today’s practice", A.practiceChips(k), { icon: "sprout", tint: "lav" }) +
-      A.card("Inspired actions", top3, { icon: "star", tone: "pink", sub: "Up to three small steps you feel pulled to take today." }) +
+      A.card("Inspired actions", top3 + fromList, { icon: "star", tone: "pink", sub: "Up to three small steps you feel pulled to take today." }) +
       A.card("This week", strip, { icon: "calendar" }) + '</div>' +
       '<div class="c5 stack">' +
       '<div class="card moon-chip"><span class="moon-art sm">' + (A.stickerSvg ? A.stickerSvg(ph.key) : "") + "</span><div><b>" + esc(ph.name) + '</b><div class="small muted">' + esc(ph.prompt) + '</div></div><a class="btn xs ghost" href="#/rituals/moon">Moon</a></div>' +
@@ -124,7 +140,7 @@
       d.r369 = { m: true, a: i !== 0, e: i > 1 };
       d.top3[0] = { t: ["Write the first page of my script", "Take a long walk", "Plan the week", "Call a friend", "Tidy the desk", "Read for 20 minutes", "Rest"][i], done: i > 0 };
       d.top3[1] = { t: i === 0 ? "Send the proposal" : "", done: false };
-      d.tasks = i === 0 ? [{ t: "Book the studio visit", done: false }, { t: "Water the plants", done: true }] : [];
+      d.tasks = i === 0 ? [{ id: A.uid() + "ta", text: "Book the studio visit", done: false }, { id: A.uid() + "tb", text: "Water the plants", done: true }] : [];
     }
     function item(title, cat, status, align, why, evid, checks) {
       var m = A.newManifest({ title: title, category: cat });
@@ -140,6 +156,26 @@
     item("A cosy home that feels like mine", "Home", "planted", 5, "I’d love a space that feels restful.", []);
     item("A weekend away with friends", "Joy", "manifested", 9, "Time together matters.", [["win", "The trip is booked"]], []);
     S.manifest.items.reverse();
+    /* A list that looks lived-in: a couple slipped, some dated, some waiting, most tied
+       to something being called in. */
+    var mi = S.manifest.items;
+    function act(text, when, mIdx, done) {
+      return { id: A.uid(), text: text, done: !!done, due: when == null ? "" : A.ymd(A.addDays(t, when)),
+        mid: mIdx == null || !mi[mIdx] ? "" : mi[mIdx].id, created: A.ymd(A.addDays(t, -7)) };
+    }
+    S.actions = [
+      act("Set the alarm 20 minutes earlier", -4, 0),
+      act("Ask Jess about her studio", -1, 1),
+      act("Lay the journal out the night before", 0, 0),
+      act("Write for 20 minutes before breakfast", 0, 1),
+      act("Clear the shelf by the window", 2, 2),
+      act("Price up the framing", 5, 1),
+      act("Book a weekend in the diary", 11, null),
+      act("Find a second-hand armchair", null, 2),
+      act("Look into a pottery class", null, null),
+      act("Buy a proper teapot", -6, 0, true),
+      act("Message the group about dates", -3, null, true)
+    ];
     var sc = A.newScript("day", S.manifest.items[0].id, "calm morning");
     sc.text = "I wake up gently, sunlight on the quilt. I stretch, make tea and sit by the window. There is no rush. I feel rested and glad to be here.";
     for (i = 0; i < 4; i++) S.viz.sessions.push({ date: A.ymd(A.addDays(t, -i * 2)), mins: 5 + i, manifestId: S.manifest.items[0].id });

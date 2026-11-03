@@ -123,6 +123,7 @@
     if (!isObj(out.wheel) || !Array.isArray(out.wheel.areas) || !out.wheel.areas.length) out.wheel = A.defaults().wheel;
     if (!isObj(out.mindmap) || !Array.isArray(out.mindmap.nodes) || !out.mindmap.nodes.length) out.mindmap = A.defaults().mindmap;
     if (!isObj(out.vision) || !Array.isArray(out.vision.tiles)) out.vision = A.defaults().vision;
+    out.actions = A.cleanActions(raw.actions);
     if (isObj(raw.manifest)) out.manifest = { items: arr(raw.manifest.items, 500).filter(isObj).map(function (m) {
       return { id: ID.test(m.id) ? m.id : A.uid(), title: str(m.title, 120), category: str(m.category, 40), why: str(m.why, 4000), feeling: str(m.feeling, 4000), affirm: str(m.affirm, 140), next: str(m.next, 140), outcome: str(m.outcome, 4000),
         target: dkey(m.target), status: STATUSES.indexOf(m.status) >= 0 ? m.status : "planted", align: Math.round(num(m.align, 1, 10, 5)), created: dkey(m.created), doneDate: dkey(m.doneDate),
