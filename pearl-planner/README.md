@@ -1,6 +1,18 @@
-# Slow Ink Pearl — All-in-one Digital Planner
+# Slow Ink Pearl — Dashboard Life Planner
 
-A soft, neumorphic + glassmorphic life planner built with plain HTML5, CSS and JavaScript — no build step, no framework, no dependencies. It lives alongside the original Slow Ink planner in this repo as its own static app.
+Slow Ink Life rebuilt around a dashboard, in a pearlescent palette. Plain HTML5, CSS and JavaScript — no build step, no framework, no dependencies. It lives alongside the other Slow Ink planners in this repo as its own static app, with its own saved data: Pearl and Life never share a planner, even in the same browser.
+
+## What makes Pearl different from Life
+
+Pearl has the same pages, the same data model and the same notebook as Slow Ink Life. What changes is how you meet it.
+
+- **A dashboard as the front page.** Instead of opening on a list of cards, Pearl opens on a greeting, four ring charts (today's tasks, habits, movement this week, and how far through the year you are), four quick tiles for the things you do most, and an accent feature card.
+- **A floating window.** On a wide screen the whole planner sits as one rounded panel on a softly washed background, rather than filling the browser edge to edge.
+- **An icon rail with a notch.** Navigation is a 92px rail of icons down the left. The page you're on is *cut into* the page beside it with two concave corners, so the rail and the page read as one surface.
+- **Collapsible sections.** Every card's heading is a button. Fold the ones you don't need and they stay folded — per page, so folding Notes on a day page leaves the week's Notes open.
+- **Pick up where you left off.** A card on the dashboard remembers the last few places you were and how long ago, and takes you straight back.
+- **This week's shape.** A small bar chart of the week: one bar per day, its height the number of things ticked off that day, with days still to come dimmed. Each bar opens that day.
+- **A pearlescent palette.** Four themes — Blush, Sage, Sky and Lilac — each in light and dark, over a pearl-washed background.
 
 ## App flow
 
@@ -9,7 +21,7 @@ A soft, neumorphic + glassmorphic life planner built with plain HTML5, CSS and J
 - **Life hubs** — Fitness, Meals & Recipes, Finance, Mind & Ikigai, Travel, Home & Chores. **Productivity** — Habits, Mood Log, Goals, Projects, Routines & To-Dos, Brain Dump, Vision Board, Mind Map.
 - **Notebook** — opens as a bound book on its own desk: coloured section tabs (Journal, Notes, Ideas, plus your own), a contents page, and nine papers to write, draw or arrange on.
 
-Navigation is a floating glass sidebar on desktop and an iOS-style neumorphic dock (plus an "All sections" sheet) on mobile.
+Navigation is an icon rail on desktop — the current page notched into the page beside it — and an iOS-style dock (plus an "All sections" sheet) on phones.
 
 ## Features
 
@@ -36,7 +48,7 @@ Static site, no build step:
 python3 -m http.server 8000
 ```
 
-Then open `http://localhost:8000/life-planner/` in your browser.
+Then open `http://localhost:8000/pearl-planner/` in your browser.
 
 ## Photos on recipes
 

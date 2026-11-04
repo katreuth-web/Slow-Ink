@@ -1,7 +1,15 @@
 SLOW INK PEARL - START HERE
 ===========================
-A soft, all-in-one life planner with a notebook of its own.
+An all-in-one life planner built around a dashboard, with a notebook of its own.
 Thank you for your purchase!
+
+WHAT YOU'RE LOOKING AT
+Pearl opens on a dashboard: a greeting, four rings showing today at a glance,
+quick buttons for the things you do most, a chart of this week's shape, and a
+card that takes you back to wherever you last were. Everything else lives on
+the icon rail down the left (or the dock along the bottom on a phone).
+Every section heading is a button - click one to fold that section away, and it
+stays folded until you open it again.
 
 HOW TO OPEN IT
 1. Unzip (extract) the folder first. Please don't open the planner from inside the zip file.

@@ -15,6 +15,7 @@ PRODUCTS = {
     "slow-ink-sage": "Slow Ink Sage",
     "life-planner": "Slow Ink Life",
     "aura-planner": "Aura Manifestation Planner",
+    "pearl-planner": "Slow Ink Pearl",
 }
 SKIP_FILES = {"README.md", ".DS_Store", "Thumbs.db"}
 
