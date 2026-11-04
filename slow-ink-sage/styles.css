@@ -1033,3 +1033,20 @@ body[data-page="money"] .money-cols > .card { margin-top: 0; }
 :root[data-theme="clay"]:not([data-mode="dark"]) { --late: #4C6B51; }
 :root[data-theme="dusk"]:not([data-mode="dark"]) { --late: #93486E; }
 :root[data-theme="rose"]:not([data-mode="dark"]) { --late: #3C705D; }
+
+/* ---------------------------------------------------------------- bank file import */
+.imp-card { margin-top: 18px; }
+.imp-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+.imp-f { display: flex; flex-direction: column; gap: 4px; flex: 1 1 180px; min-width: 0; }
+.imp-f .field { width: 100%; }
+.imp-f .lbl { margin: 0; }
+.imp-checks { gap: 8px 20px; }
+.imp-chk { display: flex; align-items: center; gap: 8px; font-size: 13.5px; color: var(--ink-soft); flex: 1 1 260px; }
+.imp-chk input { flex: none; }
+.imp-prev li { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.imp-prev .imp-d { font-variant-numeric: tabular-nums; color: var(--ink-soft); flex: 0 0 auto; }
+.imp-prev .imp-t { flex: 1 1 140px; min-width: 0; overflow-wrap: anywhere; }
+.imp-prev .imp-a { font-variant-numeric: tabular-nums; font-weight: 600; flex: 0 0 auto; }
+.imp-prev .imp-note { font-size: 12.5px; color: var(--ink-mute); flex: 0 0 auto; }
+.imp-prev .imp-dup { opacity: 0.55; }
+@media (max-width: 600px) { .imp-f { flex: 1 1 100%; } }

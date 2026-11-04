@@ -36,7 +36,8 @@ WHAT'S INSIDE
 - Star a task to make it a KEY DATE: it is highlighted in the Year and Month pages.
 - A To-Do page: one list for everything not tied to a day yet. Give a thing a date or leave it
   undated, and the list sorts itself into Overdue, Today, The next few days, Later and Someday.
-- Habits, Goals, Reflect (monthly and yearly prompts) and Money: an income and savings tracker (what came in, what you set aside, savings goals), a debt payoff planner (list what you owe, choose a snowball or avalanche plan, see your debt-free date and the interest you'd save, log payments, and use the built-in calculator with tip, sale, savings and loan shortcuts).
+- Habits, Goals, Reflect (monthly and yearly prompts) and Money: an income and savings tracker (what came in, what you set aside, savings goals,
+  and you can bring entries in from a bank CSV file instead of typing them), a debt payoff planner (list what you owe, choose a snowball or avalanche plan, see your debt-free date and the interest you'd save, log payments, and use the built-in calculator with tip, sale, savings and loan shortcuts).
 - NOTEBOOK (dark green button, top right): a separate bound book with coloured
   section tabs (Journal, Notes, Ideas - add your own with the + tab) and lined,
   blank, dot grid and squared paper.

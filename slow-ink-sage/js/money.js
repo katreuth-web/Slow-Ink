@@ -123,7 +123,8 @@
       (mo.goals.length ? '<ul class="money-list">' + mo.goals.map(function (g) { return row("money.goals", g, [["name", "Goal name", "text", "m-text", null, "Goal name"], ["target", "Target (" + c + ")", "num", "m-amt", null, "Target"], ["due", "Target date", "date", "m-date"]], "goal"); }).join("") + "</ul>" : '<p class="empty">Name something you are saving for, like a holiday or a safety cushion.</p>') +
       '<div class="money-add"><input class="field m-text" id="mg-name" maxlength="80" placeholder="Goal name (e.g. Holiday fund)" aria-label="Goal name"><input class="field m-amt" id="mg-target" inputmode="decimal" placeholder="Target (' + esc(c) + ')" aria-label="Target amount"><input class="field m-date" type="date" id="mg-due" aria-label="Target date (optional)"><button class="btn" data-act="money-goal-add">' + ic("plus") + "Add goal</button></div>" +
       '<p class="small">The target date is optional. With one, you will see how much to save each month.</p></section>';
-    return head + '<div id="money-live">' + live(y, m) + '</div><div class="money-cols">' + incomeCard + savingsCard + "</div>" + goalsCard;
+    return head + '<div id="money-live">' + live(y, m) + '</div><div class="money-cols">' + incomeCard + savingsCard + "</div>" + goalsCard +
+      (SI.importCard ? SI.importCard() : "");
   }
 
   /* update the summary while someone types in an amount, without redrawing the page */

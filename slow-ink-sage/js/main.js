@@ -137,6 +137,15 @@
     }
   });
 
+  /* A file picker and a <select> report through "change", not "input". */
+  document.addEventListener("change", function (e) {
+    var el = e.target;
+    if (el.hasAttribute && el.hasAttribute("data-act-input")) {
+      var fn = SI.actions[el.getAttribute("data-act-input")];
+      if (fn) fn(el, e);
+    }
+  });
+
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Enter" || e.isComposing) return;
     var el = e.target;
