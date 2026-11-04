@@ -1377,3 +1377,20 @@ body.markup-on .book { margin-bottom: 90px; }
 :root[data-theme="blush"]:not([data-mode="dark"]) .mini-cal .wk-n,
 :root:not([data-theme]):not([data-mode="dark"]) .mnum,
 :root:not([data-theme]):not([data-mode="dark"]) .mini-cal .wk-n { color: #8c4a5a; }
+
+/* ---- bank statement import ---- */
+.imp-f { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1 1 170px; }
+.imp-f select { width: 100%; }
+.imp-chk { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); flex: 1 1 240px; }
+.imp-chk input { flex: none; }
+.imp-prev td, .imp-prev th { white-space: nowrap; }
+.imp-prev .imp-amt { text-align: right; font-variant-numeric: tabular-nums; }
+.imp-prev .imp-dup td { opacity: 0.55; }
+.imp-prev .imp-bad td { color: var(--pink-deep); font-size: 12.5px; }
+.imp-teach li, .imp-rules li { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.imp-teach select { max-width: 160px; }
+.imp-teach .grow, .imp-rules .grow { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  .imp-f { flex: 1 1 100%; }
+  .imp-teach select { max-width: none; flex: 1 1 100%; }
+}

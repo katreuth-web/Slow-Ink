@@ -2080,6 +2080,335 @@
   }
   function subMonthly(s) { return s.cycle === "yearly" ? num(s.amount) / 12 : s.cycle === "weekly" ? (num(s.amount) * 52) / 12 : num(s.amount); }
 
+  /* ------------------------------------------------------------ bank statement import */
+  /* Buyers download a CSV from their bank and drop it in here. Everything happens in this
+     browser: the file is read with FileReader, never uploaded. The parsed file is held in a
+     module variable rather than in saved state, so a half-finished import is never written
+     to storage and a big statement can't fill it up. */
+  var imp = null; /* { name, rows, head, map, fmt, sign, delim } while an import is in progress */
+
+  /* A real CSV reader: quoted fields, doubled quotes inside them, delimiters and newlines
+     inside quotes, and CRLF. Banks export all of these. */
+  function csvParse(text, delim) {
+    text = String(text).replace(/^﻿/, "");
+    var rows = [], row = [], field = "", q = false, i = 0;
+    while (i < text.length) {
+      var c = text.charAt(i);
+      if (q) {
+        if (c === '"') {
+          if (text.charAt(i + 1) === '"') { field += '"'; i += 2; continue; }
+          q = false; i++; continue;
+        }
+        field += c; i++; continue;
+      }
+      if (c === '"') { q = true; i++; continue; }
+      if (c === delim) { row.push(field); field = ""; i++; continue; }
+      if (c === "\n" || c === "\r") {
+        if (c === "\r" && text.charAt(i + 1) === "\n") i++;
+        row.push(field); field = "";
+        if (row.length > 1 || row[0] !== "") rows.push(row);
+        row = []; i++; continue;
+      }
+      field += c; i++;
+    }
+    row.push(field);
+    if (row.length > 1 || row[0] !== "") rows.push(row);
+    return rows;
+  }
+  /* Banks differ: UK and US use commas, much of Europe uses semicolons, some use tabs. */
+  function guessDelim(text) {
+    var head = text.split(/\r?\n/).slice(0, 5).join("\n");
+    var best = ",", bestN = 0;
+    [",", ";", "\t", "|"].forEach(function (d) {
+      var n = head.split(d).length - 1;
+      if (n > bestN) { bestN = n; best = d; }
+    });
+    return best;
+  }
+
+  var DATE_FMTS = [["dmy", "Day/Month/Year"], ["mdy", "Month/Day/Year"], ["ymd", "Year-Month-Day"]];
+  function impDate(v, fmt) {
+    v = String(v == null ? "" : v).trim();
+    if (!v) return "";
+    var m = /^(\d{1,4})[^\d](\d{1,2})[^\d](\d{2,4})/.exec(v);
+    if (!m) {
+      /* "12 Mar 2027" and "Mar 12, 2027" */
+      var t = Date.parse(v);
+      if (!isNaN(t)) { var dd = new Date(t); return ymd(new Date(dd.getFullYear(), dd.getMonth(), dd.getDate())); }
+      return "";
+    }
+    var a = +m[1], b = +m[2], c = +m[3], y, mo, da;
+    if (fmt === "ymd" || String(m[1]).length === 4) { y = a; mo = b; da = c; }
+    else if (fmt === "mdy") { mo = a; da = b; y = c; }
+    else { da = a; mo = b; y = c; }
+    if (y < 100) y += y < 70 ? 2000 : 1900;
+    if (mo < 1 || mo > 12 || da < 1 || da > 31 || y < 1900 || y > 2200) return "";
+    var d2 = new Date(y, mo - 1, da);
+    return d2.getMonth() === mo - 1 ? ymd(d2) : "";
+  }
+  /* Guess the date order from the file itself: a value above 12 can only be a day. */
+  function guessFmt(vals) {
+    var firstBig = false, secondBig = false, isoish = false;
+    vals.forEach(function (v) {
+      var m = /^(\d{1,4})[^\d](\d{1,2})[^\d](\d{2,4})/.exec(String(v).trim());
+      if (!m) return;
+      if (String(m[1]).length === 4) { isoish = true; return; }
+      if (+m[1] > 12) firstBig = true;
+      if (+m[2] > 12) secondBig = true;
+    });
+    if (isoish) return "ymd";
+    if (secondBig) return "mdy";
+    return "dmy";
+  }
+  /* "1.234,56", "1,234.56", "£12.00", "(45.00)", "45.00 CR" all have to come out right. */
+  function impAmount(v) {
+    var s = String(v == null ? "" : v).trim();
+    if (!s) return null;
+    var neg = /^\(.*\)$/.test(s) || /(^|\s)(DR|debit)\b/i.test(s) || /^-/.test(s.replace(/[^\d.,()-]/g, ""));
+    if (/(^|\s)(CR|credit)\b/i.test(s)) neg = false;
+    s = s.replace(/[^\d.,-]/g, "");
+    if (!s) return null;
+    var lastC = s.lastIndexOf(","), lastD = s.lastIndexOf(".");
+    if (lastC > -1 && lastD > -1) {
+      if (lastC > lastD) s = s.replace(/\./g, "").replace(",", ".");
+      else s = s.replace(/,/g, "");
+    } else if (lastC > -1) {
+      /* a lone comma is a decimal point if it has 1-2 digits after it, else a separator */
+      s = /,\d{1,2}$/.test(s) ? s.replace(",", ".") : s.replace(/,/g, "");
+    }
+    s = s.replace(/-(?!^)/g, "");
+    var n = parseFloat(s);
+    if (!isFinite(n)) return null;
+    n = Math.abs(n);
+    return neg || /^-/.test(String(v).trim()) ? -n : n;
+  }
+  function impHeadGuess(head, words) {
+    for (var i = 0; i < head.length; i++) {
+      var h = String(head[i]).toLowerCase();
+      for (var j = 0; j < words.length; j++) if (h.indexOf(words[j]) >= 0) return i;
+    }
+    return -1;
+  }
+  /* A header row is one whose cells are mostly words rather than numbers or dates. */
+  function looksLikeHeader(row) {
+    var wordy = row.filter(function (c) {
+      c = String(c).trim();
+      return c && !/^[\d\s.,()\/-]+$/.test(c);
+    }).length;
+    return wordy >= Math.max(2, Math.ceil(row.length / 2));
+  }
+
+  function finRules() {
+    if (!Array.isArray(state.finance.rules)) state.finance.rules = [];
+    return state.finance.rules;
+  }
+  function catFor(text) {
+    var t = String(text || "").toLowerCase();
+    var rs = finRules();
+    for (var i = 0; i < rs.length; i++) {
+      var m = String(rs[i].match || "").toLowerCase().trim();
+      if (m && t.indexOf(m) >= 0) return rs[i].cat || "Other";
+    }
+    return "Other";
+  }
+
+  /* Turn the raw file into dated rows, using the current mapping. */
+  function impRows() {
+    if (!imp) return [];
+    var m = imp.map, out = [];
+    imp.rows.forEach(function (r, idx) {
+      if (idx === 0 && imp.hasHead) return;
+      var date = impDate(r[m.date], imp.fmt);
+      var text = String(r[m.text] == null ? "" : r[m.text]).replace(/\s+/g, " ").trim().slice(0, 120);
+      var amt = null;
+      if (imp.twoCol) {
+        var inAmt = impAmount(r[m.inCol]), outAmt = impAmount(r[m.outCol]);
+        if (outAmt) amt = -Math.abs(outAmt);
+        else if (inAmt) amt = Math.abs(inAmt);
+      } else {
+        amt = impAmount(r[m.amount]);
+        if (amt != null && imp.sign === "pos") amt = -amt;
+      }
+      if (!date || amt == null || !amt) { out.push({ bad: true, raw: r, date: date, text: text, amount: amt }); return; }
+      out.push({ date: date, text: text || "Transaction", amount: amt, cat: amt < 0 ? catFor(text) : "", dup: false });
+    });
+    /* mark anything already in the planner for that month */
+    out.forEach(function (x) {
+      if (x.bad) return;
+      var mk = x.date.slice(0, 7), f = state.finance.months[mk];
+      if (!f) return;
+      var listy = x.amount < 0 ? f.expenses : f.income;
+      if (!Array.isArray(listy)) return;
+      x.dup = listy.some(function (e) {
+        return (e.date || mk + "-01") === x.date &&
+          Math.abs(num(e.amount) - Math.abs(x.amount)) < 0.005 &&
+          String(e.text || "").trim().toLowerCase() === x.text.toLowerCase();
+      });
+    });
+    return out;
+  }
+
+  function impCard() {
+    if (!imp) {
+      return card("Import from your bank",
+        '<p class="small muted" style="margin:0 0 10px">Most banks let you download your transactions as a CSV file. Choose that file here and it will fill in your spending and income — all on this device, nothing is uploaded.</p>' +
+        '<label class="btn pink">' + ic("plus") + ' Choose a CSV file<input type="file" accept=".csv,text/csv,text/plain" hidden id="imp-file"></label>' +
+        (finRules().length ? '<p class="small muted" style="margin:10px 0 0">' + finRules().length + " category rule" + (finRules().length === 1 ? "" : "s") + " saved.</p>" : ""),
+        { dot: "s", cls: "tint-sage" });
+    }
+    var rows = impRows();
+    var good = rows.filter(function (x) { return !x.bad && !x.dup; });
+    var bad = rows.filter(function (x) { return x.bad; });
+    var dups = rows.filter(function (x) { return x.dup; });
+    var spend = good.filter(function (x) { return x.amount < 0; });
+    var inc = good.filter(function (x) { return x.amount > 0; });
+    var months = {};
+    good.forEach(function (x) { months[x.date.slice(0, 7)] = 1; });
+    var mKeys = Object.keys(months).sort();
+
+    var colOpts = function (sel) {
+      return imp.head.map(function (h, i) {
+        return '<option value="' + i + '"' + (i === sel ? " selected" : "") + ">" + esc(h || "Column " + (i + 1)) + "</option>";
+      }).join("");
+    };
+    var map = '<div class="row wrap" style="gap:10px">' +
+      '<label class="imp-f"><span class="lbl">Date column</span><select data-act-sel="imp-map" data-k="date">' + colOpts(imp.map.date) + "</select></label>" +
+      '<label class="imp-f"><span class="lbl">Description column</span><select data-act-sel="imp-map" data-k="text">' + colOpts(imp.map.text) + "</select></label>" +
+      (imp.twoCol
+        ? '<label class="imp-f"><span class="lbl">Money in</span><select data-act-sel="imp-map" data-k="inCol">' + colOpts(imp.map.inCol) + "</select></label>" +
+          '<label class="imp-f"><span class="lbl">Money out</span><select data-act-sel="imp-map" data-k="outCol">' + colOpts(imp.map.outCol) + "</select></label>"
+        : '<label class="imp-f"><span class="lbl">Amount column</span><select data-act-sel="imp-map" data-k="amount">' + colOpts(imp.map.amount) + "</select></label>") +
+      '<label class="imp-f"><span class="lbl">Date order</span><select data-act-sel="imp-fmt">' + DATE_FMTS.map(function (f) {
+        return '<option value="' + f[0] + '"' + (f[0] === imp.fmt ? " selected" : "") + ">" + f[1] + "</option>";
+      }).join("") + "</select></label>" + "</div>" +
+      '<div class="row wrap" style="gap:14px;margin-top:10px">' +
+      '<label class="imp-chk"><input type="checkbox" data-act-sel="imp-two"' + (imp.twoCol ? " checked" : "") + '> My bank uses separate “money in” and “money out” columns</label>' +
+      (imp.twoCol ? "" : '<label class="imp-chk"><input type="checkbox" data-act-sel="imp-sign"' + (imp.sign === "pos" ? " checked" : "") + '> Positive numbers mean spending</label>') +
+      '<label class="imp-chk"><input type="checkbox" data-act-sel="imp-head"' + (imp.hasHead ? " checked" : "") + '> The first row is column titles</label></div>';
+
+    var preview = rows.slice(0, 8).map(function (x) {
+      if (x.bad) return '<tr class="imp-bad"><td colspan="4">Couldn’t read this row — check the columns above</td></tr>';
+      return "<tr" + (x.dup ? ' class="imp-dup"' : "") + "><td>" + esc(x.date) + "</td><td>" + esc(x.text) + "</td><td>" +
+        (x.amount < 0 ? esc(x.cat) : '<span class="muted">income</span>') + "</td><td class=\"imp-amt\">" +
+        (x.amount < 0 ? "−" : "+") + money(Math.abs(x.amount)) + (x.dup ? ' <span class="muted">already here</span>' : "") + "</td></tr>";
+    }).join("");
+
+    /* The descriptions that would land in "Other" — naming a category here writes a rule,
+       so this import and every future one get it right. */
+    var counts = {};
+    spend.forEach(function (x) { if (x.cat === "Other" && x.text) counts[x.text] = (counts[x.text] || 0) + 1; });
+    var common = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).slice(0, 6);
+    var teach = common.length
+      ? '<div class="divider"></div><p class="lbl">Teach it your shops</p>' +
+        '<p class="small muted" style="margin:0 0 10px">Give these a category and it will remember them next time.</p>' +
+        '<ul class="list imp-teach">' + common.map(function (t) {
+          return '<li><span class="grow">' + esc(t) + '</span><span class="meta">' + counts[t] + "×</span>" +
+            '<select data-act-sel="imp-rule" data-text="' + esc(t) + '"><option value="">Category…</option>' +
+            FIN_CATS.map(function (c) { return "<option>" + c + "</option>"; }).join("") + "</select></li>";
+        }).join("") + "</ul>"
+      : "";
+
+    var rulesList = finRules().length
+      ? '<div class="divider"></div><p class="lbl">Saved rules</p>' +
+        '<p class="small muted" style="margin:0 0 10px">Shorten the text to catch more: “TESCO STORES 2891” becomes “tesco” and then every branch matches.</p>' +
+        '<ul class="list imp-rules">' + finRules().map(function (r) {
+        return '<li><span class="muted">Anything containing</span>' +
+          itemInput("finance.rules", r, "match", 'class="grow" aria-label="Text to match" maxlength="60" data-rerender') +
+          '<span class="muted">→</span>' + itemSelect("finance.rules", r, "cat", FIN_CATS, 'data-rerender aria-label="Category"') +
+          '<button class="del" data-act="imp-rule-del" data-id="' + r.id + '" aria-label="Delete rule">' + ic("x") + "</button></li>";
+      }).join("") + "</ul>"
+      : "";
+
+    var summary;
+    if (good.length) {
+      summary = good.length + " transaction" + (good.length === 1 ? "" : "s") + " ready · " +
+        spend.length + " spending, " + inc.length + " income · " +
+        (mKeys.length > 1 ? mKeys[0] + " to " + mKeys[mKeys.length - 1] : mKeys[0] || "") +
+        (dups.length ? " · " + dups.length + " already in your planner will be skipped" : "") +
+        (bad.length ? " · " + bad.length + " row" + (bad.length === 1 ? "" : "s") + " couldn’t be read" : "");
+    } else if (dups.length && !bad.length) {
+      /* the rows read fine; you have simply imported this statement already */
+      summary = dups.length === 1
+        ? "That transaction is already in your planner — there is nothing new to import."
+        : "All " + dups.length + " transactions are already in your planner — there is nothing new to import.";
+    } else {
+      summary = "Nothing readable yet — check the columns and date order below.";
+    }
+
+    return card("Import from your bank",
+      '<p class="small"><b>' + esc(imp.name) + "</b></p>" +
+      '<p class="small muted" style="margin:0 0 12px">' + esc(summary) + "</p>" + map +
+      '<div class="scroll-x" style="margin-top:12px"><table class="table imp-prev"><tr><th>Date</th><th>Description</th><th>Category</th><th>Amount</th></tr>' + preview + "</table></div>" +
+      (rows.length > 8 ? '<p class="small muted" style="margin:8px 0 0">…and ' + (rows.length - 8) + " more.</p>" : "") +
+      teach + rulesList +
+      '<div class="divider"></div><div class="row wrap">' +
+      '<button class="btn pink" data-act="imp-go"' + (good.length ? "" : " disabled") + ">" + ic("check") + " Import " + good.length + " transaction" + (good.length === 1 ? "" : "s") + "</button>" +
+      '<button class="btn ghost" data-act="imp-cancel">Cancel</button></div>',
+      { dot: "s", cls: "tint-sage" });
+  }
+
+  function impStart(file) {
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) { toast("That file is very large — try exporting a shorter date range."); return; }
+    var fr = new FileReader();
+    fr.onerror = function () { toast("Couldn’t read that file."); };
+    fr.onload = function () {
+      var text = String(fr.result || "");
+      var delim = guessDelim(text);
+      var rows = csvParse(text, delim).filter(function (r) { return r.some(function (c) { return String(c).trim(); }); });
+      if (rows.length < 2) { toast("That file doesn’t look like a transaction list."); return; }
+      var hasHead = looksLikeHeader(rows[0]);
+      var head = hasHead ? rows[0].map(function (h) { return String(h).trim(); }) : rows[0].map(function (_, i) { return "Column " + (i + 1); });
+      var body = hasHead ? rows.slice(1) : rows;
+      var di = impHeadGuess(head, ["date", "posted", "transaction d"]);
+      var ti = impHeadGuess(head, ["description", "details", "narrative", "payee", "memo", "reference", "name"]);
+      var ai = impHeadGuess(head, ["amount", "value"]);
+      var ini = impHeadGuess(head, ["money in", "paid in", "credit", "deposit", "in"]);
+      var outi = impHeadGuess(head, ["money out", "paid out", "debit", "withdraw", "out"]);
+      /* Decide the in/out pair from the column titles alone, before any guessing from the
+         data: statements with "Paid out"/"Paid in" usually carry a running Balance column
+         too, and guessing first would pick the balance and call every row income. */
+      var twoCol = ini >= 0 && outi >= 0 && ini !== outi && ai < 0;
+      /* fall back to looking at the data when the titles don't say */
+      if (di < 0) for (var i = 0; i < head.length; i++) { if (body.slice(0, 6).filter(function (r) { return impDate(r[i], "dmy"); }).length >= 2) { di = i; break; } }
+      if (!twoCol && ai < 0) {
+        for (var j = head.length - 1; j >= 0; j--) {
+          /* a running balance is not the transaction amount */
+          if (/balance|running|total/i.test(String(head[j]))) continue;
+          if (body.slice(0, 6).filter(function (r) { return impAmount(r[j]) != null; }).length >= 2) { ai = j; break; }
+        }
+      }
+      if (ti < 0) for (var k = 0; k < head.length; k++) { if (k !== di && k !== ai && body.slice(0, 6).filter(function (r) { return /[a-z]{3}/i.test(String(r[k])); }).length >= 2) { ti = k; break; } }
+      imp = {
+        name: file.name, rows: rows, head: head, hasHead: hasHead, delim: delim, twoCol: twoCol, sign: "neg",
+        fmt: guessFmt(body.slice(0, 40).map(function (r) { return r[Math.max(0, di)]; })),
+        map: { date: Math.max(0, di), text: Math.max(0, ti), amount: Math.max(0, ai), inCol: Math.max(0, ini), outCol: Math.max(0, outi) }
+      };
+      state.ui.finTab = "budget";
+      render();
+    };
+    fr.readAsText(file);
+  }
+
+  /* The mapping controls: each change re-reads the file with the new settings. */
+  function impSel(el) {
+    if (!imp) return;
+    var k = el.getAttribute("data-act-sel");
+    if (k === "imp-map") imp.map[el.getAttribute("data-k")] = +el.value;
+    else if (k === "imp-fmt") imp.fmt = el.value;
+    else if (k === "imp-two") imp.twoCol = !!el.checked;
+    else if (k === "imp-sign") imp.sign = el.checked ? "pos" : "neg";
+    else if (k === "imp-head") imp.hasHead = !!el.checked;
+    else if (k === "imp-rule") {
+      var t = el.getAttribute("data-text"), c = el.value;
+      if (!t || !c) return;
+      finRules().push({ id: uid(), match: t, cat: c });
+      save();
+    }
+    render();
+  }
+
+
 
   /* ---- shopping lists & wishlists: picture cards with a link to the shop ---- */
   function wishCatNames() { return WISH_CATS.map(function (c) { return c[0]; }); }
@@ -2271,7 +2600,8 @@
       body = '<div class="grid"><div class="c4">' + card("Income", '<table class="table">' + incRows + "</table>" + '<div class="row" style="margin-top:10px" data-form="income"><input type="text" name="text" placeholder="Salary, freelance…" aria-label="Income source"><input type="number" name="amount" placeholder="Amount" style="max-width:110px" aria-label="Amount"><button class="icon-btn sm" data-act="fin-add" data-kind="income" aria-label="Add income">' + ic("plus") + '</button></div><div class="divider"></div><div class="row"><span class="grow muted">Total</span><b>' + money(income) + "</b></div>", { cls: "tint-butter", dot: "b" }) + "</div>" +
         '<div class="c8">' + card("Spending", '<div class="row wrap" data-form="expense"><input type="date" name="date" value="' + (mk === monthKey(today()) ? todayKey() : mk + "-01") + '" style="max-width:150px" aria-label="Date"><input type="text" name="text" placeholder="What was it?" class="grow" aria-label="Expense"><select name="cat" style="max-width:140px" aria-label="Category">' + FIN_CATS.map(function (c) { return "<option>" + c + "</option>"; }).join("") + '</select><input type="number" name="amount" placeholder="Amount" style="max-width:110px" aria-label="Amount"><button class="btn pink" data-act="fin-add" data-kind="expense">' + ic("plus") + " Add</button></div>" +
           (expRows ? '<div class="scroll-x" style="margin-top:12px"><table class="table"><tr><th>Date</th><th>Item</th><th>Category</th><th>Amount</th><th></th></tr>' + expRows + "</table></div>" : '<div class="empty" style="margin-top:12px">No spending logged this month.</div>') +
-          '<div class="divider"></div><div class="row"><span class="grow muted">Total spent</span><b>' + money(spent) + "</b></div>", { dot: "p" }) + "</div></div>";
+          '<div class="divider"></div><div class="row"><span class="grow muted">Total spent</span><b>' + money(spent) + "</b></div>", { dot: "p" }) +
+        '<div style="margin-top:18px">' + impCard() + "</div></div></div>";
     } else if (tb.cur === "savings") {
       var pots = state.finance.pots.map(function (p) {
         var pct = num(p.target) ? (num(p.saved) / num(p.target)) * 100 : 0;
@@ -4033,6 +4363,8 @@
   document.addEventListener("change", function (e) {
     var el = e.target;
     if (el.hasAttribute("data-import")) { importFile(el.files[0]); el.value = ""; return; }
+    if (el.id === "imp-file") { impStart(el.files && el.files[0]); el.value = ""; return; }
+    if (el.getAttribute("data-act-sel")) { impSel(el); return; }
     if (el.dataset.send) { dumpSend(el.dataset.send, el.value); return; }
     if (el.dataset.sched) { var sv = parseInt(el.value, 10); if (isFinite(sv)) { var pt = {}; pt[el.dataset.sched === "end" ? "end" : "start"] = sv; schedSet(pt); } return; }
     if (el.dataset.photo) {
@@ -4382,6 +4714,24 @@
         if (d.kind === "income") fm.income.push({ id: uid(), text: fv.text || "Income", amount: num(fv.amount) });
         else fm.expenses.push({ id: uid(), date: fv.date || mk + "-01", text: fv.text || "Expense", cat: fv.cat || "Other", amount: num(fv.amount) });
         save(); render(); return;
+      }
+      case "imp-cancel": imp = null; render(); return;
+      case "imp-rule-del": state.finance.rules = finRules().filter(function (r) { return r.id !== d.id; }); save(); render(); return;
+      case "imp-go": {
+        if (!imp) return;
+        var ready = impRows().filter(function (x) { return !x.bad && !x.dup; });
+        if (!ready.length) { toast("Nothing to import yet."); return; }
+        var added = 0;
+        ready.forEach(function (x) {
+          var fm = finMonth(x.date.slice(0, 7));
+          if (x.amount < 0) fm.expenses.push({ id: uid(), date: x.date, text: x.text, cat: x.cat || "Other", amount: Math.abs(x.amount) });
+          else fm.income.push({ id: uid(), text: x.text, amount: x.amount, date: x.date });
+          added++;
+        });
+        imp = null;
+        save(); render();
+        toast("Imported " + added + " transaction" + (added === 1 ? "" : "s") + ".");
+        return;
       }
       case "pot-add": state.finance.pots.push({ id: uid(), text: "New pot", target: 1000, saved: 0 }); save(); render(); return;
       case "debt-add": state.finance.debts.push({ id: uid(), text: "Card / loan", start: 0, balance: 0, rate: "", min: "" }); save(); render(); return;
