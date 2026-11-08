@@ -95,6 +95,8 @@
     undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/>',
     redo: '<path d="M15 14l5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/>',
     print: '<path d="M7 9V4h10v5M7 17H5a1 1 0 0 1-1-1v-5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v5a1 1 0 0 1-1 1h-2M7 14h10v6H7z"/>',
+    kanban: '<rect x="3.5" y="4.5" width="4.6" height="15" rx="1.6"/><rect x="9.7" y="4.5" width="4.6" height="10" rx="1.6"/><rect x="15.9" y="4.5" width="4.6" height="6.5" rx="1.6"/>',
+    scale: '<path d="M12 5v14.5M8 19.5h8"/><path d="M4.5 8h15"/><path d="M12 5.5a1 1 0 0 0 0 2.5"/><path d="M4.5 8L2 13a2.6 2.6 0 0 0 5 0z"/><path d="M19.5 8L17 13a2.6 2.6 0 0 0 5 0z"/>',
     grid: '<circle cx="6" cy="6" r="1.4"/><circle cx="12" cy="6" r="1.4"/><circle cx="18" cy="6" r="1.4"/><circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/><circle cx="6" cy="18" r="1.4"/><circle cx="12" cy="18" r="1.4"/><circle cx="18" cy="18" r="1.4"/>',
     download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
     upload: '<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>',
@@ -226,6 +228,8 @@
         smart: [],
         matrix: { q1: [], q2: [], q3: [], q4: [] }
       },
+      kanban: {},
+      swot: {},
       travel: { trips: {}, bucket: [] },
       chores: seedChores(),
       choreDone: {},
@@ -913,7 +917,7 @@
   var NAV = [
     { group: "Plan", items: [["home", "Today", "home"], ["year", "Year", "year"], ["month", "Month", "month"], ["week", "Week", "week"], ["day", "Day", "sun"]] },
     { group: "Life", items: [["fitness", "Fitness", "dumbbell"], ["meals", "Meals & Recipes", "bowl"], ["finance", "Finance", "wallet"], ["mind", "Mind & Ikigai", "lotus"], ["travel", "Travel", "plane"], ["home-care", "Home & Chores", "house"]] },
-    { group: "Productivity", items: [["habits", "Habits", "check"], ["mood", "Mood Log", "smile"], ["goals", "Goals", "target"], ["projects", "Projects", "layers"], ["routines", "Routines & To-Dos", "clock"], ["braindump", "Brain Dump", "bulb"], ["vision", "Vision Board", "image"], ["mindmap", "Mind Map", "branch"]] },
+    { group: "Productivity", items: [["habits", "Habits", "check"], ["mood", "Mood Log", "smile"], ["goals", "Goals", "target"], ["projects", "Projects", "layers"], ["kanban", "Kanban Board", "kanban"], ["swot", "SWOT Analysis", "scale"], ["routines", "Routines & To-Dos", "clock"], ["braindump", "Brain Dump", "bulb"], ["vision", "Vision Board", "image"], ["mindmap", "Mind Map", "branch"]] },
     { group: "Journal", items: [["notebook", "Notebook", "book"]] },
     { group: "System", items: [["settings", "Settings", "sliders"]] }
   ];
@@ -3122,6 +3126,276 @@
     return head_ + card("", stats) + '<div class="spacer"></div><div class="trip-list board-list goal-list">' + pills + "</div>" + header + '<div class="spacer"></div>' + tt.html + inner;
   }
 
+
+  /* ------------------------------------------------------------ views: kanban board */
+  /* Cards move by dragging, and also by the ‹ › buttons on every card. The buttons are not
+     a fallback nobody uses: they are how this works on a phone, and how it works for anyone
+     driving the page from the keyboard. */
+  var KAN_TAGS = [["", "No colour"], ["p", "Pink"], ["b", "Butter"], ["s", "Sage"], ["k", "Sky"], ["l", "Lilac"]];
+
+  function kanBoards() {
+    if (!state.kanban || typeof state.kanban !== "object") state.kanban = {};
+    return state.kanban;
+  }
+  function kanList() {
+    var b = kanBoards();
+    return Object.keys(b).map(function (k) { return b[k]; }).sort(function (x, y) { return (x.created || 0) - (y.created || 0); });
+  }
+  function kanCur() {
+    var list = kanList();
+    return (state.ui.kanban && kanBoards()[state.ui.kanban]) || list[0] || null;
+  }
+  function kanNew(title) {
+    var id = uid();
+    kanBoards()[id] = {
+      id: id, title: title || "New board", created: Date.now(),
+      cols: [
+        { id: uid(), title: "To do", limit: "", cards: [] },
+        { id: uid(), title: "Doing", limit: "", cards: [] },
+        { id: uid(), title: "Done", limit: "", cards: [] }
+      ]
+    };
+    state.ui.kanban = id;
+    return kanBoards()[id];
+  }
+  /* Find a card anywhere on the board, so a move doesn't need to know where it started. */
+  function kanFind(board, cardId) {
+    for (var i = 0; i < board.cols.length; i++) {
+      var cs = board.cols[i].cards || [];
+      for (var j = 0; j < cs.length; j++) if (cs[j].id === cardId) return { col: i, idx: j, card: cs[j] };
+    }
+    return null;
+  }
+  function kanMove(board, cardId, toCol, toIdx) {
+    var at = kanFind(board, cardId);
+    if (!at) return false;
+    if (toCol < 0 || toCol >= board.cols.length) return false;
+    board.cols[at.col].cards.splice(at.idx, 1);
+    var dest = board.cols[toCol].cards;
+    if (toIdx == null || toIdx > dest.length) toIdx = dest.length;
+    dest.splice(toIdx, 0, at.card);
+    return true;
+  }
+
+  function kanCard(board, ci, card) {
+    var p = "kanban." + board.id + ".cols." + ci + ".cards";
+    var over = card.due && card.due < todayKey() && ci !== board.cols.length - 1;
+    return '<li class="kan-card tag-' + esc(card.tag || "none") + '" data-card="' + esc(card.id) + '" data-col="' + ci + '">' +
+      '<div class="kan-card-top">' +
+        '<input class="kan-text" type="text" value="' + esc(card.text) + '" data-item="' + p + "|" + card.id + '|text" aria-label="Card" maxlength="160">' +
+        '<button class="del" data-act="kan-card-del" data-b="' + board.id + '" data-id="' + esc(card.id) + '" aria-label="Delete card">' + ic("x") + "</button></div>" +
+      '<div class="kan-card-foot">' +
+        '<button class="kan-arrow" data-act="kan-move" data-b="' + board.id + '" data-id="' + esc(card.id) + '" data-val="-1" aria-label="Move to the previous column"' + (ci === 0 ? " disabled" : "") + ">" + ic("left") + "</button>" +
+        '<input type="date" class="kan-due' + (over ? " late" : "") + (card.due ? "" : " empty") + '" value="' + esc(card.due || "") + '" data-item="' + p + "|" + card.id + '|due" data-rerender aria-label="Date">' +
+        '<select class="kan-tag" data-item="' + p + "|" + card.id + '|tag" data-rerender aria-label="Colour">' + KAN_TAGS.map(function (t) {
+          return '<option value="' + t[0] + '"' + ((card.tag || "") === t[0] ? " selected" : "") + ">" + t[1] + "</option>";
+        }).join("") + "</select>" +
+        '<button class="kan-arrow" data-act="kan-move" data-b="' + board.id + '" data-id="' + esc(card.id) + '" data-val="1" aria-label="Move to the next column"' + (ci === board.cols.length - 1 ? " disabled" : "") + ">" + ic("right") + "</button>" +
+      "</div></li>";
+  }
+
+  function viewKanban() {
+    var list = kanList(), cur = kanCur();
+    var head_ = head("Productivity", 'Kanban <span class="em">board</span>', '<button class="btn pink" data-act="kan-add">' + ic("plus") + " New board</button>");
+    if (!cur) {
+      return head_ + card("", '<div class="empty" style="padding:30px 10px;text-align:center">A board is three columns and a pile of cards: what you haven\'t started, what you\'re doing, and what\'s finished. Drag a card along as it moves.</div>' +
+        '<div style="text-align:center"><button class="btn pink" data-act="kan-add">' + ic("plus") + " Create your first board</button></div>");
+    }
+    var pills = list.length > 1 ? '<div class="trip-list board-list goal-list">' + list.map(function (b) {
+      var n = (b.cols || []).reduce(function (a, c) { return a + (c.cards || []).length; }, 0);
+      return '<button class="trip-pill goal-pill' + (b.id === cur.id ? " on" : "") + '" data-act="kan-open" data-id="' + b.id + '"><b>' + esc(b.title || "Untitled board") + '</b><span class="small muted">' + n + (n === 1 ? " card" : " cards") + "</span></button>";
+    }).join("") + "</div><div class=\"spacer\"></div>" : "";
+
+    var total = cur.cols.reduce(function (a, c) { return a + (c.cards || []).length; }, 0);
+    var doneN = (cur.cols[cur.cols.length - 1].cards || []).length;
+    var over = cur.cols.filter(function (c) { return num(c.limit) && (c.cards || []).length > num(c.limit); });
+
+    var header = card("", '<div class="row wrap" style="align-items:flex-end"><div class="grow" style="min-width:220px"><label class="lbl">Board</label>' +
+      bindInput("kanban." + cur.id + ".title", 'placeholder="What is this board for?" maxlength="120" style="height:46px;font-family:var(--serif);font-size:1.2rem;font-weight:600"') + "</div>" +
+      '<button class="del" data-act="kan-del" data-id="' + cur.id + '" aria-label="Delete board" title="Delete board">' + ic("trash") + "</button></div>" +
+      '<div class="row wrap" style="margin-top:12px;gap:10px"><span class="badge">' + total + (total === 1 ? " card" : " cards") + "</span>" +
+      '<span class="badge">' + doneN + " in " + esc(cur.cols[cur.cols.length - 1].title || "the last column") + "</span>" +
+      (over.length ? '<span class="badge pink">' + over.length + " column" + (over.length === 1 ? "" : "s") + " over the limit</span>" : "") + "</div>", { cls: "tint-butter" });
+
+    var cols = cur.cols.map(function (c, ci) {
+      var cards = c.cards || [], lim = num(c.limit);
+      return '<section class="kan-col' + (lim && cards.length > lim ? " is-over" : "") + '" data-col="' + ci + '">' +
+        '<div class="kan-col-head">' +
+          '<input class="kan-col-title" type="text" value="' + esc(c.title) + '" data-bind="kanban.' + cur.id + ".cols." + ci + '.title" aria-label="Column name" maxlength="40">' +
+          '<span class="badge' + (lim && cards.length > lim ? " pink" : "") + '">' + cards.length + (lim ? "/" + lim : "") + "</span>" +
+          '<button class="icon-btn sm" data-act="kan-col-move" data-b="' + cur.id + '" data-i="' + ci + '" data-val="-1" aria-label="Move column left"' + (ci === 0 ? " disabled" : "") + ">" + ic("left") + "</button>" +
+          '<button class="icon-btn sm" data-act="kan-col-move" data-b="' + cur.id + '" data-i="' + ci + '" data-val="1" aria-label="Move column right"' + (ci === cur.cols.length - 1 ? " disabled" : "") + ">" + ic("right") + "</button>" +
+          '<button class="del" data-act="kan-col-del" data-b="' + cur.id + '" data-i="' + ci + '" aria-label="Delete column">' + ic("trash") + "</button>" +
+        "</div>" +
+        '<div class="kan-col-limit"><label class="lbl">Most at once</label><input type="number" min="0" inputmode="numeric" placeholder="no limit" value="' + esc(c.limit || "") + '" data-bind="kanban.' + cur.id + ".cols." + ci + '.limit" data-type="num" data-rerender aria-label="Limit for ' + esc(c.title) + '"></div>' +
+        '<ul class="kan-cards" data-col="' + ci + '">' + cards.map(function (x) { return kanCard(cur, ci, x); }).join("") +
+        (cards.length ? "" : '<li class="kan-empty">Nothing here.</li>') + "</ul>" +
+        '<div class="adder kan-adder"><input type="text" placeholder="Add a card…" data-kan-add="' + ci + '" aria-label="New card in ' + esc(c.title) + '" maxlength="160">' +
+        '<button class="icon-btn sm" data-act="kan-card-add" data-b="' + cur.id + '" data-i="' + ci + '" aria-label="Add card">' + ic("plus") + "</button></div>" +
+        "</section>";
+    }).join("");
+
+    return head_ + pills + header + '<div class="spacer"></div>' +
+      '<div class="kan-board" id="kan-board">' + cols +
+      '<div class="kan-addcol"><button class="btn ghost" data-act="kan-col-add" data-b="' + cur.id + '">' + ic("plus") + " Add a column</button></div></div>" +
+      '<p class="small muted" style="margin-top:12px">Drag a card to move it, or use the ‹ › buttons on the card. "Most at once" is a gentle cap — go over it and the column says so, nothing is stopped.</p>';
+  }
+
+  /* Dragging: pointer events, so one code path covers mouse, trackpad and touch. */
+  function mountKanban() {
+    var board = document.getElementById("kan-board");
+    if (!board) return;
+    /* wrapDates() moves each date input inside a .datefield; carry the card's own marks
+       onto that wrapper so they can be styled. */
+    Array.prototype.forEach.call(board.querySelectorAll(".kan-due"), function (i) {
+      var w = i.parentNode;
+      if (!w || !w.classList.contains("datefield")) return;
+      if (i.classList.contains("late")) w.classList.add("late");
+    });
+    var drag = null;
+    function cleanup() {
+      if (!drag) return;
+      if (drag.ghost && drag.ghost.parentNode) drag.ghost.parentNode.removeChild(drag.ghost);
+      if (drag.el) drag.el.classList.remove("dragging");
+      Array.prototype.forEach.call(board.querySelectorAll(".kan-col"), function (c) { c.classList.remove("drop-into"); });
+      drag = null;
+    }
+    board.addEventListener("pointerdown", function (e) {
+      /* let the inputs, selects and buttons on a card work normally */
+      if (e.target.closest("input, select, button, textarea, a")) return;
+      var li = e.target.closest(".kan-card");
+      if (!li || e.button > 0) return;
+      var r = li.getBoundingClientRect();
+      drag = { el: li, id: li.getAttribute("data-card"), dx: e.clientX - r.left, dy: e.clientY - r.top, w: r.width, moved: false, x: e.clientX, y: e.clientY };
+      li.setPointerCapture(e.pointerId);
+    });
+    board.addEventListener("pointermove", function (e) {
+      if (!drag) return;
+      if (!drag.moved) {
+        if (Math.abs(e.clientX - drag.x) + Math.abs(e.clientY - drag.y) < 6) return;
+        drag.moved = true;
+        drag.ghost = drag.el.cloneNode(true);
+        drag.ghost.className = "kan-card kan-ghost " + drag.el.className.replace("kan-card", "").replace("dragging", "");
+        drag.ghost.style.width = drag.w + "px";
+        document.body.appendChild(drag.ghost);
+        drag.el.classList.add("dragging");
+      }
+      e.preventDefault();
+      drag.ghost.style.left = e.clientX - drag.dx + "px";
+      drag.ghost.style.top = e.clientY - drag.dy + "px";
+      var col = null;
+      Array.prototype.forEach.call(board.querySelectorAll(".kan-col"), function (c) {
+        var r = c.getBoundingClientRect();
+        c.classList.remove("drop-into");
+        if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) col = c;
+      });
+      if (col) col.classList.add("drop-into");
+      drag.over = col;
+    });
+    function finish(e) {
+      if (!drag) return;
+      var moved = drag.moved, id = drag.id, col = drag.over;
+      var y = e ? e.clientY : 0;
+      cleanup();
+      if (!moved || !col) return;
+      var cur = kanCur();
+      if (!cur) return;
+      var ci = +col.getAttribute("data-col");
+      /* drop above the first card whose middle is below the pointer */
+      var idx = null, cards = col.querySelectorAll(".kan-card:not(.dragging)");
+      for (var i = 0; i < cards.length; i++) {
+        var r = cards[i].getBoundingClientRect();
+        if (y < r.top + r.height / 2) { idx = i; break; }
+      }
+      if (kanMove(cur, id, ci, idx)) { save(); render(); }
+    }
+    board.addEventListener("pointerup", finish);
+    board.addEventListener("pointercancel", function () { cleanup(); });
+  }
+
+  /* ------------------------------------------------------------ views: SWOT analysis */
+  /* The four lists are the easy part. The half people skip — and the half that makes it
+     worth doing — is pairing them up: a strength against an opportunity is a plan, a
+     weakness against a threat is a risk. Both halves are on the page. */
+  var SWOT_QUADS = [
+    ["s", "Strengths", "What you already do well", "What am I good at? What do I have that helps?", "s"],
+    ["w", "Weaknesses", "What holds you back", "Where do I struggle? What is missing?", "p"],
+    ["o", "Opportunities", "What is open to you", "What could I take advantage of? What is changing in my favour?", "k"],
+    ["t", "Threats", "What could get in the way", "What could go wrong? What is outside my control?", "b"]
+  ];
+  var SWOT_PAIRS = [
+    ["so", "Strengths + Opportunities", "Where to push", "What can I go after, using what I am already good at?"],
+    ["st", "Strengths + Threats", "What to defend", "How can my strengths protect me from what might go wrong?"],
+    ["wo", "Weaknesses + Opportunities", "What to shore up", "What would I need to fix to take the chance in front of me?"],
+    ["wt", "Weaknesses + Threats", "What to avoid", "Where am I most exposed, and what will I do about it?"]
+  ];
+
+  function swots() {
+    if (!state.swot || typeof state.swot !== "object") state.swot = {};
+    return state.swot;
+  }
+  function swotList() {
+    var s = swots();
+    return Object.keys(s).map(function (k) { return s[k]; }).sort(function (x, y) { return (x.created || 0) - (y.created || 0); });
+  }
+  function swotCur() {
+    var list = swotList();
+    return (state.ui.swot && swots()[state.ui.swot]) || list[0] || null;
+  }
+  function swotNew(title) {
+    var id = uid();
+    swots()[id] = { id: id, title: title || "New analysis", created: Date.now(), subject: "", s: [], w: [], o: [], t: [], so: "", st: "", wo: "", wt: "" };
+    state.ui.swot = id;
+    return swots()[id];
+  }
+
+  function viewSwot() {
+    var list = swotList(), cur = swotCur();
+    var head_ = head("Productivity", 'SWOT <span class="em">analysis</span>', '<button class="btn pink" data-act="swot-add">' + ic("plus") + " New analysis</button>");
+    if (!cur) {
+      return head_ + card("", '<div class="empty" style="padding:30px 10px;text-align:center">Pick something you are weighing up — a job, a move, a business idea, a year ahead — and look at it from four sides: what you have going for you, what holds you back, what is open to you, and what could get in the way.</div>' +
+        '<div style="text-align:center"><button class="btn pink" data-act="swot-add">' + ic("plus") + " Start your first analysis</button></div>");
+    }
+    var p = "swot." + cur.id;
+    var pills = list.length > 1 ? '<div class="trip-list board-list goal-list">' + list.map(function (x) {
+      var n = ["s", "w", "o", "t"].reduce(function (a, k) { return a + (x[k] || []).length; }, 0);
+      return '<button class="trip-pill goal-pill' + (x.id === cur.id ? " on" : "") + '" data-act="swot-open" data-id="' + x.id + '"><b>' + esc(x.title || "Untitled") + '</b><span class="small muted">' + n + (n === 1 ? " point" : " points") + "</span></button>";
+    }).join("") + "</div><div class=\"spacer\"></div>" : "";
+
+    var counts = SWOT_QUADS.map(function (q) { return (cur[q[0]] || []).length; });
+    var filled = counts.filter(function (n) { return n; }).length;
+
+    var header = card("", '<div class="row wrap" style="align-items:flex-end"><div class="grow" style="min-width:220px"><label class="lbl">Analysis</label>' +
+      bindInput(p + ".title", 'placeholder="What are you weighing up?" maxlength="120" style="height:46px;font-family:var(--serif);font-size:1.2rem;font-weight:600"') + "</div>" +
+      '<button class="del" data-act="swot-del" data-id="' + cur.id + '" aria-label="Delete analysis" title="Delete analysis">' + ic("trash") + "</button></div>" +
+      '<label class="lbl" style="margin-top:12px">The question behind it</label>' +
+      bindArea(p + ".subject", "e.g. Should I go freelance next year? What would have to be true?", 'style="min-height:64px"') +
+      '<div class="row wrap" style="margin-top:12px;gap:10px">' + SWOT_QUADS.map(function (q, i) {
+        return '<span class="badge' + (counts[i] ? "" : " muted") + '">' + esc(q[1]) + ": " + counts[i] + "</span>";
+      }).join("") + "</div>", { cls: "tint-butter" });
+
+    var grid = '<div class="grid swot-grid">' + SWOT_QUADS.map(function (q) {
+      return '<div class="c6">' + card(q[1], '<p class="small muted" style="margin:0 0 10px">' + esc(q[3]) + "</p>" +
+        listEd(p + "." + q[0], { noCheck: true, placeholder: "Add a point…", empty: "Nothing noted yet." }),
+        { dot: q[4], cls: "swot-quad swot-" + q[0] }) + "</div>";
+    }).join("") + "</div>";
+
+    var pairs = '<div class="grid">' + SWOT_PAIRS.map(function (x) {
+      return '<div class="c6">' + card(x[2], '<p class="small muted" style="margin:0 0 4px"><b>' + esc(x[1]) + "</b></p>" +
+        '<p class="small muted" style="margin:0 0 10px">' + esc(x[3]) + "</p>" +
+        bindArea(p + "." + x[0], "", 'style="min-height:88px"'), { dot: "l" }) + "</div>";
+    }).join("") + "</div>";
+
+    var prompt = filled < 2
+      ? card("", '<div class="empty">Fill in at least two of the four boxes above and the pairing below starts to be worth doing.</div>', { cls: "tint-sage" })
+      : "";
+
+    return head_ + pills + header + '<div class="spacer"></div>' + grid +
+      '<div class="spacer"></div><h2 class="swot-sec">What it suggests</h2>' +
+      '<p class="small muted" style="margin:-6px 0 14px">The lists above are only half of it. Put two together and you get something you can act on.</p>' +
+      prompt + pairs;
+  }
+
   /* ------------------------------------------------------------ views: routines & to-dos */
 
   function viewRoutines() {
@@ -4524,6 +4798,8 @@
         case "mood": html = viewMood(); break;
         case "goals": html = viewGoals(); break;
         case "projects": html = viewProjects(); break;
+        case "kanban": html = viewKanban(); mount = mountKanban; break;
+        case "swot": html = viewSwot(); break;
         case "routines": html = viewRoutines(); break;
         case "braindump": html = viewDump(); break;
         case "vision":
@@ -5017,6 +5293,70 @@
         save(); render();
         toast("Imported " + added + " transaction" + (added === 1 ? "" : "s") + ".");
         return;
+      }
+      /* ---- kanban ---- */
+      case "kan-add": { var nb = kanNew("New board"); save(); render(); toast("Board added."); return; }
+      case "kan-open": state.ui.kanban = d.id; save(); render(); return;
+      case "kan-del": {
+        var kb = kanBoards()[d.id];
+        if (!kb || !confirm("Delete \u201c" + (kb.title || "this board") + "\u201d and every card on it?")) return;
+        delete kanBoards()[d.id];
+        if (state.ui.kanban === d.id) state.ui.kanban = "";
+        save(); render(); return;
+      }
+      case "kan-card-add": {
+        var kba = kanBoards()[d.b], sel = '[data-kan-add="' + d.i + '"]', inp = view.querySelector(sel);
+        var txt = inp && inp.value.trim();
+        if (!kba || !txt) { if (inp) inp.focus(); return; }
+        kba.cols[+d.i].cards.push({ id: uid(), text: txt.slice(0, 160), due: "", tag: "" });
+        save(); render();
+        var again = view.querySelector(sel);
+        if (again) { again.value = ""; again.focus({ preventScroll: true }); }
+        return;
+      }
+      case "kan-card-del": {
+        var kbd = kanBoards()[d.b];
+        if (!kbd) return;
+        kbd.cols.forEach(function (c) { c.cards = (c.cards || []).filter(function (x) { return x.id !== d.id; }); });
+        save(); render(); return;
+      }
+      case "kan-move": {
+        var kbm = kanBoards()[d.b], at = kbm && kanFind(kbm, d.id);
+        if (!at) return;
+        if (kanMove(kbm, d.id, at.col + num(d.val), null)) { save(); render(); }
+        return;
+      }
+      case "kan-col-add": {
+        var kbc = kanBoards()[d.b];
+        if (!kbc) return;
+        if (kbc.cols.length >= 8) { toast("Eight columns is plenty — any more and the board stops being readable."); return; }
+        kbc.cols.push({ id: uid(), title: "New column", limit: "", cards: [] });
+        save(); render(); return;
+      }
+      case "kan-col-del": {
+        var kbx = kanBoards()[d.b], ci = +d.i, colx = kbx && kbx.cols[ci];
+        if (!colx) return;
+        if (kbx.cols.length <= 1) { toast("A board needs at least one column."); return; }
+        if ((colx.cards || []).length && !confirm("Delete \u201c" + (colx.title || "this column") + "\u201d and its " + colx.cards.length + " card" + (colx.cards.length === 1 ? "" : "s") + "?")) return;
+        kbx.cols.splice(ci, 1);
+        save(); render(); return;
+      }
+      case "kan-col-move": {
+        var kbv = kanBoards()[d.b], i0 = +d.i, i1 = i0 + num(d.val);
+        if (!kbv || i1 < 0 || i1 >= kbv.cols.length) return;
+        var movedCol = kbv.cols.splice(i0, 1)[0];
+        kbv.cols.splice(i1, 0, movedCol);
+        save(); render(); return;
+      }
+      /* ---- SWOT ---- */
+      case "swot-add": { swotNew("New analysis"); save(); render(); toast("Analysis added."); return; }
+      case "swot-open": state.ui.swot = d.id; save(); render(); return;
+      case "swot-del": {
+        var sw = swots()[d.id];
+        if (!sw || !confirm("Delete \u201c" + (sw.title || "this analysis") + "\u201d?")) return;
+        delete swots()[d.id];
+        if (state.ui.swot === d.id) state.ui.swot = "";
+        save(); render(); return;
       }
       case "pot-add": state.finance.pots.push({ id: uid(), text: "New pot", target: 1000, saved: 0 }); save(); render(); return;
       case "debt-add": state.finance.debts.push({ id: uid(), text: "Card / loan", start: 0, balance: 0, rate: "", min: "" }); save(); render(); return;

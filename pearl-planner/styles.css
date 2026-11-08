@@ -1689,3 +1689,83 @@ body::before {
 .ins-unc .grow { flex: 1 1 170px; }
 .ins-unc select { flex: 0 1 165px; max-width: 165px; }
 @media (max-width: 560px) { .ins-unc select { flex: 1 1 100%; max-width: none; } }
+
+/* ---------------------------------------------------------------- kanban board */
+.kan-board { display: flex; gap: 14px; align-items: flex-start; overflow-x: auto; padding-bottom: 10px; scroll-snap-type: x proximity; }
+.kan-col {
+  flex: 0 0 292px; min-width: 292px; scroll-snap-align: start;
+  background: var(--surface-2); border-radius: 18px; padding: 12px; box-shadow: var(--raise-sm);
+}
+.kan-col.is-over { box-shadow: var(--raise-sm), 0 0 0 1.5px var(--pink); }
+.kan-col.drop-into { background: var(--pink-soft); }
+.kan-col-head { display: flex; align-items: center; gap: 5px; }
+.kan-col-title {
+  flex: 1 1 auto; min-width: 0; border: 0; background: transparent; padding: 4px 6px; border-radius: 9px;
+  font-family: var(--serif); font-size: 1.02rem; font-weight: 600; color: var(--ink); box-shadow: none;
+}
+.kan-col-title:focus { background: var(--surface); box-shadow: var(--press-sm); outline: none; }
+.kan-col-limit { display: flex; align-items: center; gap: 8px; margin: 8px 2px 10px; }
+.kan-col-limit .lbl { margin: 0; white-space: nowrap; font-size: 11px; }
+.kan-col-limit input { width: 78px; padding: 5px 8px; font-size: 12px; }
+.kan-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 9px; min-height: 36px; }
+.kan-empty { color: var(--muted); font-size: 13px; padding: 10px 4px; font-style: italic; }
+.kan-card {
+  background: var(--surface); border-radius: 14px; padding: 9px 10px; box-shadow: var(--raise-sm);
+  border-left: 4px solid transparent; cursor: grab; touch-action: pan-y;
+}
+.kan-card.tag-p { border-left-color: var(--pink); }
+.kan-card.tag-b { border-left-color: var(--butter); }
+.kan-card.tag-s { border-left-color: var(--sage); }
+.kan-card.tag-k { border-left-color: var(--sky); }
+.kan-card.tag-l { border-left-color: var(--lilac); }
+.kan-card.dragging { opacity: 0.35; }
+.kan-ghost {
+  position: fixed; z-index: 90; pointer-events: none; cursor: grabbing;
+  box-shadow: 0 16px 36px -14px var(--sd); transform: rotate(1.5deg);
+}
+.kan-card-top { display: flex; align-items: center; gap: 6px; }
+.kan-text {
+  flex: 1 1 auto; min-width: 0; border: 0; background: transparent; box-shadow: none;
+  padding: 2px 4px; border-radius: 8px; font-size: 13.5px; color: var(--ink);
+}
+.kan-text:focus { background: var(--surface-2); box-shadow: var(--press-sm); outline: none; }
+/* Four controls will not fit on one line in a column this narrow: a squashed date input
+   draws its placeholder over its own value. Let the row wrap instead. */
+.kan-card-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 7px; }
+.kan-arrow {
+  flex: 0 0 auto; width: 24px; height: 26px; display: inline-grid; place-items: center;
+  border: 0; border-radius: 8px; background: var(--surface-2); color: var(--muted); cursor: pointer;
+}
+.kan-arrow:hover:not(:disabled) { background: var(--pink-soft); color: var(--pink-deep); }
+.kan-arrow:disabled { opacity: 0.3; cursor: default; }
+.kan-arrow svg { width: 13px; height: 13px; }
+/* Every date input is wrapped in a .datefield by the app, so the flex sizing has to go on
+   the wrapper: putting it on the input leaves the wrapper to collapse and its label lands
+   on top of the field. */
+.kan-card-foot .datefield {
+  flex: 1 1 100px; min-width: 94px; width: auto; min-height: 0;
+  padding: 4px 7px; font-size: 11.5px; border-radius: 8px;
+}
+.kan-card-foot .datefield.unset { box-shadow: none; opacity: 0.6; }
+.kan-card:hover .kan-card-foot .datefield.unset,
+.kan-card-foot .datefield.unset:focus-within { box-shadow: var(--press-sm); opacity: 1; }
+.kan-card-foot .datefield.late { box-shadow: var(--press-sm), 0 0 0 1.5px var(--pink-deep); }
+.kan-card-foot .datefield.late .df-text { color: var(--pink-deep); font-weight: 600; }
+.kan-tag {
+  flex: 1 1 78px; min-width: 72px; font-size: 11.5px; padding: 5px 4px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface-2); color: var(--ink);
+}
+.kan-adder { margin-top: 10px; }
+.kan-addcol { flex: 0 0 auto; padding-top: 8px; }
+@media (hover: none) { .kan-due.empty { opacity: 0.9; border-color: var(--line); } }
+@media (max-width: 560px) {
+  .kan-col { flex-basis: 84vw; min-width: 84vw; }
+}
+
+/* ---------------------------------------------------------------- SWOT */
+.swot-sec { font-family: var(--serif); font-size: 1.35rem; font-weight: 600; margin: 0 0 4px; color: var(--ink); }
+.swot-quad .list li { align-items: flex-start; }
+.swot-s { background: linear-gradient(160deg, var(--sage-soft), var(--surface) 72%); }
+.swot-w { background: linear-gradient(160deg, var(--pink-soft), var(--surface) 72%); }
+.swot-o { background: linear-gradient(160deg, var(--sky-soft), var(--surface) 72%); }
+.swot-t { background: linear-gradient(160deg, var(--butter-soft), var(--surface) 72%); }
