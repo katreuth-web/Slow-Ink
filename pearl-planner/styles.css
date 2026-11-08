@@ -1670,3 +1670,22 @@ body::before {
   .imp-f { flex: 1 1 100%; }
   .imp-teach select { max-width: none; flex: 1 1 100%; }
 }
+
+/* ---- spending insights ---- */
+.ins-list li { display: flex; align-items: center; gap: 10px; }
+.ins-list .grow { min-width: 0; overflow-wrap: anywhere; }
+.ins-list .meta { color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+.ins-list b { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ins-up { color: var(--pink-deep); }
+.ins-down { color: var(--sage-deep); }
+.ins-notes li { display: block; padding: 7px 0; line-height: 1.5; }
+.ins-notes li + li { border-top: 1px dashed var(--line); }
+.ins-budget td { vertical-align: middle; }
+.ins-budget input { width: 100%; }
+.progress.over i { background: var(--pink-deep); }
+/* The category dropdown must not crowd out the name beside it: without a bound, flex
+   squeezes the label to one character wide and it wraps letter by letter. */
+.ins-unc li { flex-wrap: wrap; }
+.ins-unc .grow { flex: 1 1 170px; }
+.ins-unc select { flex: 0 1 165px; max-width: 165px; }
+@media (max-width: 560px) { .ins-unc select { flex: 1 1 100%; max-width: none; } }

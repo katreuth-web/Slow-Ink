@@ -2080,6 +2080,276 @@
   }
   function subMonthly(s) { return s.cycle === "yearly" ? num(s.amount) / 12 : s.cycle === "weekly" ? (num(s.amount) * 52) / 12 : num(s.amount); }
 
+  /* ------------------------------------------------------------ spending insights */
+  /* Everything here is measured against the planner's own history. There is no notion of
+     what a category "should" cost: the only claims made are "more than you usually spend"
+     and "more than the budget you set yourself". A month still in progress is never used
+     as a baseline, because a half-finished month always looks cheap. */
+
+  function finMonthKeys() {
+    return Object.keys(state.finance.months).filter(function (k) {
+      var m = state.finance.months[k];
+      return /^\d{4}-\d{2}$/.test(k) && m && (m.expenses || []).length;
+    }).sort();
+  }
+  function finSpend(mk) {
+    var m = state.finance.months[mk];
+    return m ? sum(m.expenses || [], function (e) { return num(e.amount); }) : 0;
+  }
+  function finByCat(mk) {
+    var m = state.finance.months[mk], out = {};
+    (m && m.expenses ? m.expenses : []).forEach(function (e) {
+      var c = e.cat || "Other";
+      out[c] = (out[c] || 0) + num(e.amount);
+    });
+    return out;
+  }
+  /* Complete months before this one, most recent first. */
+  function finPriorKeys(mk, limit) {
+    var now = monthKey(today());
+    return finMonthKeys().filter(function (k) { return k < mk && k !== now; }).reverse().slice(0, limit || 6);
+  }
+  function finBudgets() {
+    if (!state.finance.budgets || typeof state.finance.budgets !== "object") state.finance.budgets = {};
+    return state.finance.budgets;
+  }
+  /* "TESCO STORES 2891" and "TESCO STORES 0114" are the same shop. Drop digits, card
+     reference noise and punctuation so they group together. */
+  function finPlace(text) {
+    return String(text || "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9 ]+/g, " ")
+      .replace(/\b\d+\b/g, " ")
+      .replace(/\b(LTD|LIMITED|INC|LLC|PLC|UK|COM|CO|ON|CARD|PAYMENT|PURCHASE|POS|VISA|DEBIT)\b/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  function finPlaces(mk) {
+    var m = state.finance.months[mk], by = {};
+    (m && m.expenses ? m.expenses : []).forEach(function (e) {
+      var p = finPlace(e.text);
+      if (!p) return;
+      if (!by[p]) by[p] = { label: e.text || p, total: 0, n: 0 };
+      by[p].total += num(e.amount);
+      by[p].n++;
+    });
+    return Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return b.total - a.total; });
+  }
+  /* A payment that shows up in three or more different months at a similar amount is
+     almost certainly a subscription or a standing order. Worth seeing in one place. */
+  function finRecurring() {
+    var keys = finMonthKeys(), by = {};
+    keys.forEach(function (mk) {
+      var seen = {};
+      (state.finance.months[mk].expenses || []).forEach(function (e) {
+        var p = finPlace(e.text);
+        if (!p || seen[p]) return;
+        seen[p] = 1;
+        if (!by[p]) by[p] = { label: e.text || p, months: [], amounts: [] };
+        by[p].months.push(mk);
+        by[p].amounts.push(num(e.amount));
+      });
+    });
+    return Object.keys(by).map(function (k) { return by[k]; }).filter(function (r) {
+      if (r.months.length < 3) return false;
+      var avg = r.amounts.reduce(function (a, b) { return a + b; }, 0) / r.amounts.length;
+      if (avg <= 0) return false;
+      /* steady amounts only: a shop you happen to visit monthly varies far more */
+      return r.amounts.every(function (a) { return Math.abs(a - avg) <= Math.max(1, avg * 0.2); });
+    }).map(function (r) {
+      var avg = r.amounts.reduce(function (a, b) { return a + b; }, 0) / r.amounts.length;
+      return { label: r.label, n: r.months.length, avg: avg, last: r.months[r.months.length - 1], year: avg * 12 };
+    }).sort(function (a, b) { return b.year - a.year; });
+  }
+
+
+  /* Imported rows arrive with no category, so the comparisons above would all read
+     "Other" until the buyer taught it every shop. This gathers the uncategorised
+     spending by place so it can be named in one go — and naming one applies it to the
+     transactions already logged, not just to future imports. */
+  function finUncategorised() {
+    var by = {};
+    finMonthKeys().forEach(function (mk) {
+      (state.finance.months[mk].expenses || []).forEach(function (e) {
+        if ((e.cat || "Other") !== "Other") return;
+        var p = finPlace(e.text);
+        if (!p) return;
+        if (!by[p]) by[p] = { key: p, label: e.text || p, total: 0, n: 0 };
+        by[p].total += num(e.amount);
+        by[p].n++;
+      });
+    });
+    return Object.keys(by).map(function (k) { return by[k]; }).sort(function (a, b) { return b.total - a.total; });
+  }
+  /* Re-run the rules over everything still sitting in "Other". A category set by hand is
+     never overwritten. */
+  function finApplyRules() {
+    var n = 0;
+    finMonthKeys().forEach(function (mk) {
+      (state.finance.months[mk].expenses || []).forEach(function (e) {
+        if ((e.cat || "Other") !== "Other") return;
+        var c = catFor(e.text);
+        if (c && c !== "Other") { e.cat = c; n++; }
+      });
+    });
+    return n;
+  }
+
+  function insightsTab(mk) {
+    /* ---- spending with no category yet ---- */
+    var unc = finUncategorised(), uncTotal = unc.reduce(function (a, x) { return a + x.total; }, 0);
+    var uncCard = unc.length
+      ? card("Give these a category",
+          '<p class="small muted" style="margin:0 0 10px">' + money(uncTotal) + " of your spending has no category yet, so it can't be compared. Name a place once and every transaction from it — past and future — is filed.</p>" +
+          '<ul class="list ins-list ins-unc">' + unc.slice(0, 8).map(function (u) {
+            return '<li><span class="grow">' + esc(u.label) + '</span><span class="meta">' + u.n + "× · " + money(u.total) + "</span>" +
+              '<select data-act-sel="ins-cat" data-place="' + esc(u.key) + '" aria-label="Category for ' + esc(u.label) + '"><option value="">Category…</option>' +
+              FIN_CATS.filter(function (c) { return c !== "Other"; }).map(function (c) { return "<option>" + c + "</option>"; }).join("") + "</select></li>";
+          }).join("") + "</ul>" +
+          (unc.length > 8 ? '<p class="small muted" style="margin:8px 0 0">…and ' + (unc.length - 8) + " more places.</p>" : ""),
+          { dot: "b", cls: "tint-butter" })
+      : "";
+
+    var prior = finPriorKeys(mk, 3);
+    var cur = finByCat(mk), curTotal = finSpend(mk);
+    var isNow = mk === monthKey(today());
+    var allKeys = finMonthKeys();
+
+    /* ---- the twelve months up to and including this one ---- */
+    var md = parseD(mk + "-01") || today();
+    /* Start at the first month that has anything in it: a run of empty bars before the
+       buyer began is noise, not history. */
+    var firstKey = allKeys.length ? allKeys[0] : mk;
+    var span = 11;
+    for (var q = 0; q <= 11; q++) {
+      var qd = new Date(md.getFullYear(), md.getMonth() - q, 1);
+      if (monthKey(qd) < firstKey) { span = Math.max(0, q - 1); break; }
+    }
+    var series = [], complete = [];
+    for (var i = span; i >= 0; i--) {
+      var d = new Date(md.getFullYear(), md.getMonth() - i, 1), k = monthKey(d);
+      var v = finSpend(k);
+      series.push({ label: MON3[d.getMonth()], v: v, k: k });
+      if (k !== monthKey(today()) && v) complete.push(v);
+    }
+    var typical = complete.length ? complete.reduce(function (a, b) { return a + b; }, 0) / complete.length : 0;
+    var trendCard = card("Month by month",
+      (allKeys.length
+        ? barChart(series, typical || 0) +
+          '<p class="small muted" style="margin:8px 0 0">' +
+          (typical
+            ? "The dashed line is your usual month: " + money(typical) + ", averaged over " + complete.length + " finished month" + (complete.length === 1 ? "" : "s") + "."
+            : "Once you have a finished month to compare against, a line will show your usual spending.") + "</p>"
+        : '<div class="empty">No spending logged yet. Add some, or import a statement on the Income &amp; spending tab.</div>'),
+      { dot: "k" });
+
+    /* ---- categories against your own recent average ---- */
+    var base = {};
+    prior.forEach(function (k) {
+      var c = finByCat(k);
+      Object.keys(c).forEach(function (cat) { base[cat] = (base[cat] || 0) + c[cat]; });
+    });
+    Object.keys(base).forEach(function (cat) { base[cat] = base[cat] / prior.length; });
+
+    var cats = Object.keys(cur).concat(Object.keys(base)).filter(function (c, i, a) { return a.indexOf(c) === i; });
+    var rows = cats.map(function (c) {
+      var now = cur[c] || 0, was = base[c] || 0;
+      return { cat: c, now: now, was: was, diff: now - was, pct: was ? ((now - was) / was) * 100 : null };
+    }).sort(function (a, b) { return b.diff - a.diff; });
+
+    var compareCard;
+    if (!prior.length) {
+      compareCard = card("Against your usual",
+        '<div class="empty">This needs at least one finished month to compare against. Keep logging, or import a few months of statements at once, and this will fill in.</div>',
+        { dot: "l" });
+    } else {
+      var up = rows.filter(function (r) { return r.diff > 0.5 && r.now > 0; });
+      var down = rows.filter(function (r) { return r.diff < -0.5; });
+      var line = function (r) {
+        var over = r.diff > 0;
+        return '<li><span class="grow">' + esc(r.cat) + '</span><span class="meta">' +
+          (r.was ? money(r.was) + " usually" : "new this month") + "</span>" +
+          '<b class="' + (over ? "ins-up" : "ins-down") + '">' + (over ? "+" : "−") + money(Math.abs(r.diff)) +
+          (r.pct != null && Math.abs(r.pct) >= 1 ? " <span class=\"small\">(" + (over ? "+" : "−") + Math.round(Math.abs(r.pct)) + "%)</span>" : "") + "</b></li>";
+      };
+      compareCard = card("Against your usual",
+        '<p class="small muted" style="margin:0 0 10px">Compared with your average over the last ' + prior.length + " finished month" + (prior.length === 1 ? "" : "s") +
+        (isNow ? ". This month isn't over yet, so it will naturally look lighter until it is." : ".") + "</p>" +
+        (up.length ? '<p class="lbl">Spending more on</p><ul class="list ins-list">' + up.slice(0, 6).map(line).join("") + "</ul>" : "") +
+        (down.length ? '<p class="lbl" style="margin-top:12px">Spending less on</p><ul class="list ins-list">' + down.slice(0, 4).map(line).join("") + "</ul>" : "") +
+        (!up.length && !down.length ? '<div class="empty">Nothing stands out — this month looks much like your usual.</div>' : ""),
+        { dot: "l" });
+    }
+
+    /* ---- budgets you set yourself ---- */
+    var bud = finBudgets();
+    var budRows = FIN_CATS.map(function (c) {
+      var target = num(bud[c]), spent = cur[c] || 0;
+      var pct = target ? (spent / target) * 100 : 0;
+      return '<tr><td>' + esc(c) + "</td>" +
+        '<td style="width:120px"><input type="number" inputmode="decimal" min="0" placeholder="—" value="' + (target || "") + '" data-bind="finance.budgets.' + esc(c) + '" data-type="num" data-rerender aria-label="Monthly budget for ' + esc(c) + '"></td>' +
+        "<td>" + money(spent) + "</td>" +
+        '<td style="min-width:130px">' + (target ? progress(pct, pct > 100 ? "over" : "") : '<span class="muted small">no budget set</span>') + "</td>" +
+        '<td style="white-space:nowrap">' + (target ? (spent > target ? '<b class="ins-up">' + money(spent - target) + " over</b>" : '<span class="muted">' + money(target - spent) + " left</span>") : "") + "</td></tr>";
+    }).join("");
+    var budgetCard = card("Your own limits",
+      '<p class="small muted" style="margin:0 0 10px">Set a monthly figure for any category and this will show how you are tracking against it. Nothing is suggested for you — these are your numbers.</p>' +
+      '<div class="scroll-x"><table class="table ins-budget"><tr><th>Category</th><th>Budget</th><th>Spent</th><th></th><th></th></tr>' + budRows + "</table></div>",
+      { dot: "b" });
+
+    /* ---- where it actually goes ---- */
+    var places = finPlaces(mk).slice(0, 8);
+    var placesCard = card("Where it goes",
+      places.length
+        ? '<ul class="list ins-list">' + places.map(function (p) {
+          return '<li><span class="grow">' + esc(p.label) + '</span><span class="meta">' + p.n + "×</span><b>" + money(p.total) + "</b></li>";
+        }).join("") + "</ul>"
+        : '<div class="empty">Nothing logged this month.</div>',
+      { dot: "p" });
+
+    /* ---- payments that repeat ---- */
+    var rec = finRecurring();
+    var recCard = card("Payments that repeat",
+      rec.length
+        ? '<p class="small muted" style="margin:0 0 10px">Paid in three or more months at about the same amount. Worth a look — these are the ones people forget they are still paying.</p>' +
+          '<ul class="list ins-list">' + rec.slice(0, 10).map(function (r) {
+            return '<li><span class="grow">' + esc(r.label) + '</span><span class="meta">' + r.n + " months · " + money(r.avg) + "</span><b>" + money(r.year) + "/yr</b></li>";
+          }).join("") + "</ul>" +
+          '<div class="divider"></div><div class="row"><span class="grow muted">All of them, over a year</span><b>' +
+          money(rec.reduce(function (a, r) { return a + r.year; }, 0)) + "</b></div>"
+        : '<div class="empty">Nothing yet. Once three months of spending are logged, anything you pay regularly will show up here.</div>',
+      { dot: "s" });
+
+    /* ---- a few honest sentences ---- */
+    var notes = [];
+    if (curTotal) {
+      var top = Object.keys(cur).sort(function (a, b) { return cur[b] - cur[a]; })[0];
+      notes.push("Your biggest category this month is " + top + " at " + money(cur[top]) + " — " + Math.round((cur[top] / curTotal) * 100) + "% of what you spent.");
+      var days = {}, m0 = state.finance.months[mk];
+      (m0.expenses || []).forEach(function (e) { if (e.date) days[e.date] = 1; });
+      var nDays = Object.keys(days).length;
+      if (nDays) notes.push("You spent on " + nDays + " separate day" + (nDays === 1 ? "" : "s") + ", averaging " + money(curTotal / nDays) + " on a day you spend.");
+    }
+    if (prior.length && typical && !isNow) {
+      var vs = curTotal - typical;
+      notes.push(Math.abs(vs) < typical * 0.05
+        ? "In total this was a typical month for you."
+        : "In total this month was " + money(Math.abs(vs)) + (vs > 0 ? " more" : " less") + " than your usual " + money(typical) + ".");
+    }
+    if (rec.length) notes.push("Payments that repeat come to " + money(rec.reduce(function (a, r) { return a + r.avg; }, 0)) + " a month before anything else.");
+    if (!notes.length) notes.push("Once there is some spending logged, a short summary will appear here.");
+    var notesCard = card("In plain words", '<ul class="list ins-notes">' + notes.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ul>", { dot: "p", cls: "tint-pink" });
+
+    return '<div class="grid">' + (uncCard ? '<div class="c12">' + uncCard + "</div>" : "") +
+      '<div class="c12">' + notesCard + "</div>" +
+      '<div class="c12">' + trendCard + "</div>" +
+      '<div class="c6">' + compareCard + "</div>" +
+      '<div class="c6">' + placesCard + "</div>" +
+      '<div class="c7">' + budgetCard + "</div>" +
+      '<div class="c5">' + recCard + "</div></div>";
+  }
+
+
   /* ------------------------------------------------------------ bank statement import */
   /* Buyers download a CSV from their bank and drop it in here. Everything happens in this
      browser: the file is read with FileReader, never uploaded. The parsed file is held in a
@@ -2390,6 +2660,18 @@
     fr.readAsText(file);
   }
 
+
+  /* Naming a place on the Insights tab: save it as a rule, then file everything already
+     logged from that place. */
+  function insCat(el) {
+    var place = el.getAttribute("data-place"), c = el.value;
+    if (!place || !c) return;
+    finRules().push({ id: uid(), match: place.toLowerCase(), cat: c });
+    var n = finApplyRules();
+    save(); render();
+    toast(n ? n + " transaction" + (n === 1 ? "" : "s") + " filed under " + c + "." : "Saved. New transactions from there will be filed under " + c + ".");
+  }
+
   /* The mapping controls: each change re-reads the file with the new settings. */
   function impSel(el) {
     if (!imp) return;
@@ -2576,7 +2858,7 @@
 
   function viewFinance() {
     var mk = state.ui.finMonth || monthKey(today()), md = parseD(mk + "-01"), f = finMonth(mk);
-    var tb = tabs("finance", [["overview", "Overview"], ["budget", "Income & spending"], ["savings", "Savings & debt"], ["subs", "Subscriptions"], ["wish", "Shopping"], ["pkg", "Packages"], ["calc", "Calculator"]]);
+    var tb = tabs("finance", [["overview", "Overview"], ["budget", "Income & spending"], ["insights", "Insights"], ["savings", "Savings & debt"], ["subs", "Subscriptions"], ["wish", "Shopping"], ["pkg", "Packages"], ["calc", "Calculator"]]);
     var income = sum(f.income, function (x) { return x.amount; }), spent = sum(f.expenses, function (x) { return x.amount; });
     var subs = sum(state.finance.subs, subMonthly);
     var saved = sum(state.finance.pots, function (p) { return p.saved; });
@@ -2602,6 +2884,8 @@
           (expRows ? '<div class="scroll-x" style="margin-top:12px"><table class="table"><tr><th>Date</th><th>Item</th><th>Category</th><th>Amount</th><th></th></tr>' + expRows + "</table></div>" : '<div class="empty" style="margin-top:12px">No spending logged this month.</div>') +
           '<div class="divider"></div><div class="row"><span class="grow muted">Total spent</span><b>' + money(spent) + "</b></div>", { dot: "p" }) +
         '<div style="margin-top:18px">' + impCard() + "</div></div></div>";
+    } else if (tb.cur === "insights") {
+      body = insightsTab(mk);
     } else if (tb.cur === "savings") {
       var pots = state.finance.pots.map(function (p) {
         var pct = num(p.target) ? (num(p.saved) / num(p.target)) * 100 : 0;
@@ -4364,6 +4648,7 @@
     var el = e.target;
     if (el.hasAttribute("data-import")) { importFile(el.files[0]); el.value = ""; return; }
     if (el.id === "imp-file") { impStart(el.files && el.files[0]); el.value = ""; return; }
+    if (el.getAttribute("data-act-sel") === "ins-cat") { insCat(el); return; }
     if (el.getAttribute("data-act-sel")) { impSel(el); return; }
     if (el.dataset.send) { dumpSend(el.dataset.send, el.value); return; }
     if (el.dataset.sched) { var sv = parseInt(el.value, 10); if (isFinite(sv)) { var pt = {}; pt[el.dataset.sched === "end" ? "end" : "start"] = sv; schedSet(pt); } return; }
