@@ -149,6 +149,22 @@
       Capricorn: "You blend ambition with a sense of vision. Your dreams can become structured goals.",
       Aquarius: "You are drawn to humanitarian ideals and the future. Your imagination serves the wider world.",
       Pisces: "You are deeply intuitive, compassionate and imaginative. Art, faith and empathy are natural to you."
+    },
+    /* Pluto spends a decade or two in a sign, so the sign describes a generation more than a person.
+       The house it falls in is the part that is yours. */
+    Pluto: {
+      Aries: "Your generation pushes for change by starting things over. Power, for you, is the will to begin again.",
+      Taurus: "Your generation reshapes what security and ownership mean. Deep change comes slowly and lasts.",
+      Gemini: "Your generation transforms how people talk and what they are allowed to say. Ideas carry real force.",
+      Cancer: "Your generation remakes home, family and belonging. Old loyalties are examined and rebuilt.",
+      Leo: "Your generation reshapes self-expression and authority. Being seen is both the gift and the test.",
+      Virgo: "Your generation overhauls work, health and routine. Small, exacting changes do the deep work.",
+      Libra: "Your generation rewrites partnership and fairness. Relationships are where the transformation happens.",
+      Scorpio: "Your generation goes straight to what is hidden. Secrecy, intensity and honesty are all heightened.",
+      Sagittarius: "Your generation overturns belief and meaning. Faith is rebuilt from the ground up.",
+      Capricorn: "Your generation dismantles and rebuilds structures and institutions. Authority is answerable.",
+      Aquarius: "Your generation transforms community and technology. Power moves into networks and shared ideas.",
+      Pisces: "Your generation dissolves old boundaries. Compassion, imagination and escape are all intensified."
     }
   };
 
@@ -172,7 +188,8 @@
   A.astroKeyword = {
     Sun: "identity and purpose", Moon: "feelings and comfort", Mercury: "thinking and speech",
     Venus: "love, values and enjoyment", Mars: "drive, courage and desire", Jupiter: "growth and opportunity",
-    Saturn: "structure, commitment and limits", Uranus: "freedom and change", Neptune: "imagination and compassion"
+    Saturn: "structure, commitment and limits", Uranus: "freedom and change", Neptune: "imagination and compassion",
+    Pluto: "depth, power and transformation"
   };
 
   /* how each kind of aspect feels */

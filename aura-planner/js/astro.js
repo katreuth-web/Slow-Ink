@@ -1,26 +1,18 @@
 /* Aura — Birth Chart: works out your natal chart from your birth date, time and place, and reads it in plain words.
-   Positions use low-precision orbital formulas (Paul Schlyter's method): planets to about a fraction of a degree,
-   the Moon to about a degree. Everything is calculated on the device; nothing is sent anywhere. */
+   Positions come from Astronomy Engine 2.1.19 (vendor/astronomy.browser.min.js, MIT, Don Cross), which agrees
+   with JPL Horizons to under half an arcminute for every body including Pluto. House cusps are still Aura's own
+   Placidus calculation. Everything is worked out on the device; nothing is sent anywhere. */
 (function () {
   "use strict";
   var A = window.Aura, esc = A.esc, ic = A.ic, T = A.astroText;
   var D2R = Math.PI / 180, R2D = 180 / Math.PI;
   var SIGNS = ["Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo", "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"];
   var GLYPH = ["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"];
-  var PLANETS = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"];
-  var ABBR = { Sun: "Su", Moon: "Mo", Mercury: "Me", Venus: "Ve", Mars: "Ma", Jupiter: "Ju", Saturn: "Sa", Uranus: "Ur", Neptune: "Ne" };
-  /* orbital elements: [value on 2000 Jan 0.0, change per day] */
-  var EL = {
-    Mercury: { N: [48.3313, 3.24587e-5], i: [7.0047, 5e-8], w: [29.1241, 1.01444e-5], a: [0.387098, 0], e: [0.205635, 5.59e-10], M: [168.6562, 4.0923344368] },
-    Venus: { N: [76.6799, 2.4659e-5], i: [3.3946, 2.75e-8], w: [54.891, 1.38374e-5], a: [0.72333, 0], e: [0.006773, -1.302e-9], M: [48.0052, 1.6021302244] },
-    Mars: { N: [49.5574, 2.11081e-5], i: [1.8497, -1.78e-8], w: [286.5016, 2.92961e-5], a: [1.523688, 0], e: [0.093405, 2.516e-9], M: [18.6021, 0.5240207766] },
-    Jupiter: { N: [100.4542, 2.76854e-5], i: [1.303, -1.557e-7], w: [273.8777, 1.64505e-5], a: [5.20256, 0], e: [0.048498, 4.469e-9], M: [19.895, 0.0830853001] },
-    Saturn: { N: [113.6634, 2.3898e-5], i: [2.4886, -1.081e-7], w: [339.3939, 2.97661e-5], a: [9.55475, 0], e: [0.055546, -9.499e-9], M: [316.967, 0.0334442282] },
-    Uranus: { N: [74.0005, 1.3978e-5], i: [0.7733, 1.9e-8], w: [96.6612, 3.0565e-5], a: [19.18171, -1.55e-8], e: [0.047318, 7.45e-9], M: [142.5905, 0.011725806] },
-    Neptune: { N: [131.7806, 3.0173e-5], i: [1.77, -2.55e-7], w: [272.8461, -6.027e-6], a: [30.05826, 3.313e-8], e: [0.008606, 2.15e-9], M: [260.2471, 0.005995147] }
-  };
-  var SUN = { w: [282.9404, 4.70935e-5], e: [0.016709, -1.151e-9], M: [356.047, 0.9856002585] };
-  var MOON = { N: [125.1228, -0.0529538083], i: [5.1454, 0], w: [318.0634, 0.1643573223], a: [60.2666, 0], e: [0.0549, 0], M: [115.3654, 13.0649929509] };
+  var PLANETS = ["Sun", "Moon", "Mercury", "Venus", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune", "Pluto"];
+  var ABBR = { Sun: "Su", Moon: "Mo", Mercury: "Me", Venus: "Ve", Mars: "Ma", Jupiter: "Ju", Saturn: "Sa", Uranus: "Ur", Neptune: "Ne", Pluto: "Pl" };
+  /* Astronomy Engine's own tables are good from about 1700 to 2200. Outside that it still returns
+     a number rather than refusing, so Aura says so rather than letting it pass unremarked. */
+  var YEAR_MIN = 1700, YEAR_MAX = 2200;
   var ASPECTS = [["Conjunction", 0, 8], ["Sextile", 60, 5], ["Square", 90, 7], ["Trine", 120, 7], ["Opposition", 180, 8]];
 
   function norm(x) { x = x % 360; return x < 0 ? x + 360 : x; }
@@ -28,56 +20,18 @@
   function sind(x) { return Math.sin(x * D2R); }
   function cosd(x) { return Math.cos(x * D2R); }
 
-  /* solve Kepler's equation: mean anomaly M (deg) and eccentricity e -> eccentric anomaly E (deg) */
-  function kepler(M, e) {
-    var E = M + e * R2D * sind(M) * (1 + e * cosd(M));
-    for (var k = 0; k < 30; k++) {
-      var dE = (E - e * R2D * sind(E) - M) / (1 - e * cosd(E));
-      E -= dE;
-      if (Math.abs(dE) < 1e-9) break;
-    }
-    return E;
+  var AE = window.Astronomy;
+
+  /* Geocentric apparent ecliptic longitude, true equinox and ecliptic of date — the frame
+     tropical astrology works in.
+       GeoVector(body, when, true) : geocentric J2000 equatorial vector, corrected for the
+                                     time light takes to reach us, and for aberration.
+       Ecliptic(vector)            : converts that to the true ecliptic of that same date.
+     Note: Astronomy Engine's EclipticLongitude() is HELIOCENTRIC and must not be used here. */
+  function pos(name, when) {
+    var v = AE.Ecliptic(AE.GeoVector(AE.Body[name], when, true));
+    return { lon: norm(v.elon), lat: v.elat };
   }
-  /* the Sun's position as seen from Earth: longitude (deg) and distance (AU) */
-  function sunState(d) {
-    var M = norm(at(SUN.M, d)), w = norm(at(SUN.w, d)), e = at(SUN.e, d), E = kepler(M, e);
-    var xv = cosd(E) - e, yv = Math.sqrt(1 - e * e) * sind(E);
-    return { lon: norm(R2D * Math.atan2(yv, xv) + w), r: Math.sqrt(xv * xv + yv * yv), M: M, w: w };
-  }
-  /* a planet's heliocentric rectangular coordinates */
-  function helio(q, d) {
-    var M = norm(at(q.M, d)), e = at(q.e, d), a = at(q.a, d), E = kepler(M, e);
-    var xv = a * (cosd(E) - e), yv = a * Math.sqrt(1 - e * e) * sind(E);
-    var r = Math.sqrt(xv * xv + yv * yv), vw = (R2D * Math.atan2(yv, xv) + norm(at(q.w, d))) * D2R;
-    var N = norm(at(q.N, d)) * D2R, I = at(q.i, d) * D2R;
-    return {
-      x: r * (Math.cos(N) * Math.cos(vw) - Math.sin(N) * Math.sin(vw) * Math.cos(I)),
-      y: r * (Math.sin(N) * Math.cos(vw) + Math.cos(N) * Math.sin(vw) * Math.cos(I)),
-      z: r * Math.sin(vw) * Math.sin(I)
-    };
-  }
-  /* geocentric ecliptic longitude and latitude of a planet */
-  function planetPos(name, d) {
-    var s = sunState(d), h = helio(EL[name], d), sl = s.lon * D2R;
-    var x = h.x + s.r * Math.cos(sl), y = h.y + s.r * Math.sin(sl), z = h.z;
-    return { lon: norm(R2D * Math.atan2(y, x)), lat: R2D * Math.atan2(z, Math.hypot(x, y)) };
-  }
-  /* the Moon, with the main corrections that matter for its sign and degree */
-  function moonPos(d) {
-    var M = norm(at(MOON.M, d)), w = norm(at(MOON.w, d)), N = norm(at(MOON.N, d)), e = at(MOON.e, d), a = at(MOON.a, d), i = at(MOON.i, d) * D2R;
-    var E = kepler(M, e), xv = a * (cosd(E) - e), yv = a * Math.sqrt(1 - e * e) * sind(E);
-    var r = Math.sqrt(xv * xv + yv * yv), vw = (R2D * Math.atan2(yv, xv) + w) * D2R, n = N * D2R;
-    var x = r * (Math.cos(n) * Math.cos(vw) - Math.sin(n) * Math.sin(vw) * Math.cos(i));
-    var y = r * (Math.sin(n) * Math.cos(vw) + Math.cos(n) * Math.sin(vw) * Math.cos(i));
-    var z = r * Math.sin(vw) * Math.sin(i);
-    var lon = R2D * Math.atan2(y, x), lat = R2D * Math.atan2(z, Math.hypot(x, y));
-    var s = sunState(d), Ls = s.M + s.w, Lm = N + w + M, D = Lm - Ls, F = Lm - N;
-    lon += -1.274 * sind(M - 2 * D) + 0.658 * sind(2 * D) - 0.186 * sind(s.M) - 0.059 * sind(2 * M - 2 * D) - 0.057 * sind(M - 2 * D + s.M) +
-      0.053 * sind(M + 2 * D) + 0.046 * sind(2 * D - s.M) + 0.041 * sind(M - s.M) - 0.035 * sind(D) - 0.031 * sind(M + s.M) - 0.015 * sind(2 * F - 2 * D) + 0.011 * sind(M - 4 * D);
-    lat += -0.173 * sind(F - 2 * D) - 0.055 * sind(M - F - 2 * D) - 0.046 * sind(M + F - 2 * D) + 0.033 * sind(F + 2 * D) + 0.017 * sind(2 * M + F);
-    return { lon: norm(lon), lat: lat };
-  }
-  function pos(name, d) { return name === "Sun" ? { lon: sunState(d).lon, lat: 0 } : name === "Moon" ? moonPos(d) : planetPos(name, d); }
 
   /* house cusps (Placidus). Input: sidereal time of the MC (deg), obliquity (deg), latitude (deg). Output: cusps[1..12] */
   function houses(theta, eps, phi) {
@@ -100,6 +54,7 @@
       }
       return lam;
     }
+    lastAngles = { asc: asc, mc: mc };
     var c = [];
     c[1] = asc; c[10] = mc;
     c[11] = solve(1 / 3, false, mc); c[12] = solve(2 / 3, false, mc);
@@ -108,6 +63,31 @@
     c[7] = norm(asc + 180); c[8] = norm(c[2] + 180); c[9] = norm(c[3] + 180);
     return c;
   }
+  /* Placidus has no answer inside the polar circles: the solver converges onto the same
+     degree for several cusps at once. Spotting that is the difference between an unusual
+     chart and a wrong one. */
+  function cuspsUsable(c) {
+    var total = 0;
+    for (var h = 1; h <= 12; h++) {
+      var gap = norm(c[h % 12 + 1] - c[h]);
+      if (!isFinite(gap) || gap < 0.5 || gap > 180) return false;
+      total += gap;
+    }
+    return Math.abs(total - 360) < 0.5;
+  }
+  /* A plain, well-defined stand-in: twelve equal houses measured from the Ascendant.
+     The Midheaven is reported separately and is still the true one — under equal houses it
+     simply isn't the tenth cusp, which is how equal-house charts are normally drawn. */
+  function equalHouses(asc) {
+    var c = [];
+    for (var h = 1; h <= 12; h++) c[h] = norm(asc + (h - 1) * 30);
+    return c;
+  }
+  /* The true Ascendant and Midheaven from the last houses() call, and what natal() had to
+     do about them. Read by birthPage() so the page can explain itself. */
+  var lastAngles = { asc: 0, mc: 0 };
+  var lastChartNotes = { houseFallback: false, outOfRange: false, clock: { nonexistent: false, ambiguous: false } };
+
   function houseOf(lon, c) {
     for (var h = 1; h <= 12; h++) {
       var start = c[h], end = c[h % 12 + 1];
@@ -132,16 +112,41 @@
     var off2 = zoneOffset(tz, utc);
     return off2 === off ? utc : guess - off2;
   }
+  /* Clocks going forward leave an hour that never happened; clocks going back repeat one.
+     A birth time in either case has no single answer, so the page says so rather than
+     quietly picking one. */
+  function clockCheck(date, time, tz) {
+    var out = { nonexistent: false, ambiguous: false };
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return out;
+    var dp = date.split("-").map(Number), tp = time.split(":").map(Number);
+    var want = Date.UTC(dp[0], dp[1] - 1, dp[2], tp[0], tp[1]);
+    var before = zoneOffset(tz, want - 43200000), after = zoneOffset(tz, want + 43200000);
+    if (before === after) return out;
+    var c1 = want - before, c2 = want - after;
+    var ok1 = zoneOffset(tz, c1) === before, ok2 = zoneOffset(tz, c2) === after;
+    if (!ok1 && !ok2) out.nonexistent = true;
+    else if (ok1 && ok2 && c1 !== c2) out.ambiguous = true;
+    return out;
+  }
 
   /* the whole chart for one birth record */
   function natal(b) {
     var time = b.time || "12:00", utc = localToUtc(b.date, time, b.place.tz);
+    var when = new Date(utc);
     var d = (utc - Date.UTC(1999, 11, 31)) / 86400000;
     var eps = 23.4393 - 3.563e-7 * d;
     var jd = utc / 86400000 + 2440587.5, gmst = norm(280.46061837 + 360.98564736629 * (jd - 2451545));
+    var year = +b.date.slice(0, 4);
+    lastChartNotes = {
+      houseFallback: false,
+      outOfRange: year < YEAR_MIN || year > YEAR_MAX,
+      clock: b.unknownTime ? { nonexistent: false, ambiguous: false } : clockCheck(b.date, time, b.place.tz)
+    };
     var c = houses(norm(gmst + b.place.lon), eps, b.place.lat);
+    if (!cuspsUsable(c)) { c = equalHouses(lastAngles.asc); lastChartNotes.houseFallback = true; }
+    /* a day either side, for the direction and speed of travel */
     var list = PLANETS.map(function (name) {
-      var p = pos(name, d), before = pos(name, d - 0.5), after = pos(name, d + 0.5);
+      var p = pos(name, when), before = pos(name, new Date(utc - 43200000)), after = pos(name, new Date(utc + 43200000));
       var moved = ((after.lon - before.lon + 540) % 360) - 180;
       var s = signOf(p.lon);
       return { name: name, lon: p.lon, sign: s.name, signIndex: s.index, deg: s.deg, house: houseOf(p.lon, c), retro: name !== "Sun" && name !== "Moon" && moved < 0 };
@@ -153,8 +158,9 @@
       ASPECTS.forEach(function (a) { var orb = Math.abs(sep - a[1]); if (orb <= a[2] && (!best || orb < best.orb)) best = { type: a[0], orb: orb }; });
       if (best) aspects.push({ a: list[i], b: list[j], type: best.type, orb: best.orb });
     }
-    var asc = signOf(c[1]), mc = signOf(c[10]);
-    return { planets: list, cusps: c, asc: { lon: c[1], sign: asc.name, deg: asc.deg }, mc: { lon: c[10], sign: mc.name, deg: mc.deg }, aspects: aspects, near: list.filter(function (p) { return p.deg < 1 || p.deg > 29; }) };
+    var mcLon = lastChartNotes.houseFallback ? lastAngles.mc : c[10];
+    var asc = signOf(c[1]), mc = signOf(mcLon);
+    return { planets: list, cusps: c, asc: { lon: c[1], sign: asc.name, deg: asc.deg }, mc: { lon: mcLon, sign: mc.name, deg: mc.deg }, aspects: aspects, near: list.filter(function (p) { return p.deg < 1 || p.deg > 29; }) };
   }
 
   /* the chart wheel: signs outside, houses inside, Ascendant on the left */
@@ -317,10 +323,14 @@
     var b = A.state.birth;
     var head = A.head("Align", 'Birth <span class="soft">chart</span>', "Your natal chart is the sky as it was the moment you were born. Use it as a mirror for reflection, not as a prediction of what will happen.");
     if (!b) return head + A.card("Your birth details", birthForm(null), { icon: "sun", tone: "butter" });
-    var ch = natal(b), lat = b.place.lat;
+    var ch = natal(b), lat = b.place.lat, flags = lastChartNotes;
     var notes = [];
     if (b.unknownTime) notes.push("Birth time unknown: the chart uses 12:00 noon. Your Rising sign and houses are approximate.");
-    if (Math.abs(lat) > 60) notes.push("At this latitude, the house divisions become less reliable.");
+    if (flags.outOfRange) notes.push("This birth year is outside " + YEAR_MIN + "–" + YEAR_MAX + ", the range the position tables are checked against. The placements are still shown, but treat them as approximate.");
+    if (flags.clock.nonexistent) notes.push("The clocks went forward over this birth time, so that time did not exist at this place. The chart uses the closest real moment — if you know whether you were born before or after the change, adjust the time by an hour.");
+    if (flags.clock.ambiguous) notes.push("The clocks went back over this birth time, so it happened twice at this place. The chart uses the later of the two. If you were born before the change, put the time forward by an hour.");
+    if (flags.houseFallback) notes.push("This birth place is inside the polar circle, where Placidus houses have no answer — several cusps would land on the same degree. The chart falls back to twelve equal houses measured from the Ascendant. The Ascendant and Midheaven themselves are still exact.");
+    else if (Math.abs(lat) > 60) notes.push("At this latitude, the house divisions become less reliable.");
     if (ch.near.length) notes.push("Close to a sign boundary: " + ch.near.map(function (p) { return p.name + " (" + (p.deg < 1 ? "start of " : "end of ") + p.sign + ")"; }).join(", ") + ". Small differences in time or method can change these.");
     var sunP = ch.planets[0], moonP = ch.planets[1];
     var big = [
@@ -357,5 +367,5 @@
   };
 
   /* test hooks, used by the scratch tests only */
-  A._astro = { natal: natal, sunState: sunState, moonPos: moonPos, houses: houses, localToUtc: localToUtc };
+  A._astro = { natal: natal, pos: pos, houses: houses, localToUtc: localToUtc, clockCheck: clockCheck, cuspsUsable: cuspsUsable, notes: function () { return lastChartNotes; } };
 })();

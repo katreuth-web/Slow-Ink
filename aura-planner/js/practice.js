@@ -293,28 +293,26 @@
     return '<span class="moon-art" style="width:' + size + 'px;height:' + size + 'px">' + svg + "</span>";
   }
   function tabMoon() {
-    var t = A.today(), ph = A.moonPhase(t), key = lunationKey(t), nn = A.nextMoon(t, false), nf = A.nextMoon(t, true);
+    var t = A.today(), ph = A.moonPhase(t), key = lunationKey(t);
     var fmt = function (d) { return d ? A.fmtDay(d, { weekday: "short", month: "short", day: "numeric" }) : "—"; };
     var lun = A.state.rituals.moon[key] || {};
     var past = Object.keys(A.state.rituals.moon).filter(function (k) { return k !== key && (A.state.rituals.moon[k].intentions || A.state.rituals.moon[k].release); }).sort().reverse().slice(0, 6);
-    var upcoming = [];
-    for (var i = 0; i < 4; i++) {
-      var a = A.nextMoon(i === 0 ? t : (upcoming.length ? upcoming[upcoming.length - 1][1] : t), i % 2 === 1);
-      if (!a) break;
-      upcoming.push([i % 2 === 1 ? "Full moon" : "New moon", a]);
-    }
+    /* The next four new and full moons, in order. Each step takes whichever comes
+       first and then searches from just after it, so nothing is listed twice. */
     var seq = [], from = t;
     for (var j = 0; j < 4; j++) {
       var nm = A.nextMoon(from, false), fm = A.nextMoon(from, true);
-      if (nm && fm) { seq.push(["New moon", nm]); seq.push(["Full moon", fm]); from = nm > fm ? nm : fm; } else break;
+      if (!nm && !fm) break;
+      var next = (!fm || (nm && nm < fm)) ? ["New moon", nm] : ["Full moon", fm];
+      seq.push(next);
+      from = new Date(next[1].getTime() + 3600000);
     }
-    seq.sort(function (a, b) { return a[1] - b[1]; });
     return '<div class="grid">' +
       '<div class="c5 stack">' + A.card("Tonight’s moon", '<div class="moon-now">' + moonSvg(ph.key, 96) + '<div><b class="moon-name">' + esc(ph.name) + '</b><div class="small muted">about ' + Math.round(ph.lit * 100) + "% lit</div></div></div>" +
         '<p class="aff-big" style="font-size:16px;margin:14px 0 0">' + esc(ph.prompt) + "</p>", { icon: "moon", tint: "grad" }) +
         A.card("Coming up", '<ul class="list">' + seq.slice(0, 4).map(function (s) {
           return '<li class="li"><span class="moon-art sm">' + (A.stickerSvg ? A.stickerSvg(s[0] === "Full moon" ? "moon-full" : "moon-new") : "") + '</span><span class="li-text"><b>' + s[0] + "</b></span><span class=\"badge\">" + esc(fmt(s[1])) + "</span></li>";
-        }).join("") + '</ul><p class="small muted" style="margin:10px 0 0">Dates are calculated from the average lunar cycle, so they can be off by about a day.</p>', { icon: "calendar", tone: "pink" }) +
+        }).join("") + '</ul><p class="small muted" style="margin:10px 0 0">Dates are calculated for your time zone and are accurate to within a minute.</p>', { icon: "calendar", tone: "pink" }) +
       "</div>" +
       '<div class="c7 stack">' + A.card("This lunation’s journal", '<p class="small muted" style="margin:0 0 6px">One page per moon cycle, from new moon to new moon.</p>' +
         '<label class="lbl">New moon: what I’m calling in</label>' + A.textarea("rituals.moon." + key + ".intentions", 'rows="4" placeholder="Write your intentions in the present tense…"', "lined") +

@@ -74,6 +74,10 @@
     </dialog>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+    <!-- Astronomy Engine 2.1.19 (MIT, Don Cross). Positions, lunar phases.
+         Loaded first so core.js (moon phases) and astro.js (birth chart) can both use it.
+         See THIRD-PARTY-LICENSES.txt. -->
+    <script src="vendor/astronomy.browser.min.js"></script>
     <script src="js/core.js"></script>
     <script src="js/stickers.js"></script>
     <script src="js/calendar.js"></script>

@@ -243,9 +243,11 @@
   };
 
   /* ------------------------------------------------------------ moon phases */
-  /* An average-month calculation from a known new moon. It is accurate to within about a day,
-     which is plenty for planning rituals, but it is not an astronomical almanac. */
-  var SYNODIC = 29.530588853, NEW_MOON_EPOCH = Date.UTC(2000, 0, 6, 18, 14);
+  /* Worked out by Astronomy Engine (vendor/astronomy.browser.min.js), so the phase shown on
+     Home, the Calendar and the Rituals pages all come from the same place and match an
+     almanac. The old average-month estimate named the wrong phase on about one day in ten.
+     SYNODIC is kept only to express the age in days, which the pages still show. */
+  var SYNODIC = 29.530588853;
   var PHASES = [
     ["New moon", "moon-new", "Plant the seed: set an intention and write down what you’re calling in."],
     ["Waxing crescent", "moon-wax-cres", "Take one small, inspired step toward what you planted."],
@@ -256,22 +258,27 @@
     ["Last quarter", "moon-last", "Let go of what no longer fits. Forgive, tidy, simplify."],
     ["Waning crescent", "moon-wan-cres", "Rest and reset before the next new moon."]
   ];
-  A.moonAge = function (d) {
-    var t = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12).getTime();
-    return (((t - NEW_MOON_EPOCH) / 864e5) % SYNODIC + SYNODIC) % SYNODIC;
-  };
+  /* Local noon on the given day: the pages describe a whole day, not an instant. */
+  function moonNoon(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12); }
+  /* How far the Moon has travelled from the Sun, 0 at new moon through 360. */
+  A.moonElong = function (d) { return window.Astronomy.MoonPhase(moonNoon(d)); };
+  /* Days since the new moon. Same meaning and range as before, measured properly. */
+  A.moonAge = function (d) { return A.moonElong(d) / 360 * SYNODIC; };
   A.moonPhase = function (d) {
-    var age = A.moonAge(d), idx = Math.floor(age / SYNODIC * 8 + 0.5) % 8;
-    return { age: age, idx: idx, name: PHASES[idx][0], key: PHASES[idx][1], prompt: PHASES[idx][2], lit: (1 - Math.cos(2 * Math.PI * age / SYNODIC)) / 2 };
+    var elong = A.moonElong(d), idx = Math.floor(elong / 360 * 8 + 0.5) % 8;
+    var lit = window.Astronomy.Illumination(window.Astronomy.Body.Moon, moonNoon(d)).phase_fraction;
+    return { age: elong / 360 * SYNODIC, idx: idx, name: PHASES[idx][0], key: PHASES[idx][1], prompt: PHASES[idx][2], lit: lit };
   };
-  /* The next new (0) or full (1) moon after `from`, to the nearest day. */
-  A.nextMoon = function (from, full) {
-    for (var i = 1; i <= 35; i++) {
-      var a0 = A.moonAge(A.addDays(from, i - 1)), a1 = A.moonAge(A.addDays(from, i)), half = SYNODIC / 2;
-      if (full ? (a0 < half && a1 >= half) : a1 < a0) return A.addDays(from, i);
-    }
-    return null;
+  /* The next time the Moon reaches a given angle from the Sun:
+     0 new, 90 first quarter, 180 full, 270 third quarter. Returns a Date, or null. */
+  A.nextMoonPhase = function (from, deg) {
+    /* Searches forward from the exact moment given, not from noon of that day:
+       snapping backwards would re-find an event that has already happened. */
+    var t = window.Astronomy.SearchMoonPhase(deg, from, 40);
+    return t ? t.date : null;
   };
+  /* Kept for the pages that ask for the next new (0) or full (1) moon. */
+  A.nextMoon = function (from, full) { return A.nextMoonPhase(from, full ? 180 : 0); };
 
   /* ------------------------------------------------------------ image store (IndexedDB) */
   /* Photos are resized, stored as blobs in IndexedDB and referenced by id from the state,
