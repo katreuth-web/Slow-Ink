@@ -1,0 +1,24 @@
+{
+  "competitors": [
+    {
+      "name": "Notion",
+      "ourProduct": "Pearl (productivity)",
+      "url": "https://www.notion.com/pricing"
+    },
+    {
+      "name": "Todoist",
+      "ourProduct": "Sage To-Do / Pearl",
+      "url": "https://www.todoist.com/pricing"
+    },
+    {
+      "name": "YNAB",
+      "ourProduct": "Life / Sage (budgeting)",
+      "url": "https://www.ynab.com/pricing"
+    },
+    {
+      "name": "Headspace",
+      "ourProduct": "Aura (wellness)",
+      "url": "https://www.headspace.com/subscriptions"
+    }
+  ]
+}

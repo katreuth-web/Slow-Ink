@@ -1,0 +1,133 @@
+{
+  "date": "2026-11-11",
+  "results": [
+    {
+      "name": "Notion",
+      "ourProduct": "Pearl (productivity)",
+      "url": "https://www.notion.com/pricing",
+      "ok": true,
+      "finalUrl": "https://www.notion.com/pricing",
+      "title": "Notion Pricing Plans: Free, Plus, Business, & Enterprise.",
+      "prices": [
+        {
+          "context": "Free",
+          "line": "$0"
+        },
+        {
+          "context": "Plus",
+          "line": "$10"
+        },
+        {
+          "context": "Recommended",
+          "line": "$20"
+        },
+        {
+          "context": "Custom Agents",
+          "line": "AI agents handle repetitive tasks autonomously, so your team doesn’t have to. Free to try, then $10 per 1,000 monthly Notion credits."
+        },
+        {
+          "context": "Free",
+          "line": "$0 per seat/month"
+        },
+        {
+          "context": "Plus",
+          "line": "$10 per seat/month"
+        },
+        {
+          "context": "Business",
+          "line": "$20 per seat/month"
+        }
+      ]
+    },
+    {
+      "name": "Todoist",
+      "ourProduct": "Sage To-Do / Pearl",
+      "url": "https://www.todoist.com/pricing",
+      "ok": true,
+      "finalUrl": "https://www.todoist.com/pricing",
+      "title": "Pricing | Todoist",
+      "prices": [
+        {
+          "context": "US",
+          "line": "$0"
+        },
+        {
+          "context": "US",
+          "line": "$5"
+        },
+        {
+          "context": "per month",
+          "line": "$60 billed yearly"
+        },
+        {
+          "context": "US",
+          "line": "$8"
+        },
+        {
+          "context": "plus local tax",
+          "line": "per user/month, $96 billed yearly"
+        }
+      ]
+    },
+    {
+      "name": "YNAB",
+      "ourProduct": "Life / Sage (budgeting)",
+      "url": "https://www.ynab.com/pricing",
+      "ok": true,
+      "finalUrl": "https://www.ynab.com/pricing",
+      "title": "Pricing | YNAB",
+      "prices": [
+        {
+          "context": "",
+          "line": "Save $600 in one month, $6,000 in one year"
+        },
+        {
+          "context": "Never worry about money again.",
+          "line": "Can you put a price on inner peace? Not really. But $109 a year will get you pretty close."
+        },
+        {
+          "context": "Annual Plan",
+          "line": "$9.08 USD*/month"
+        },
+        {
+          "context": "$9.08 USD*/month",
+          "line": "$70 Savings!"
+        },
+        {
+          "context": "$70 Savings!",
+          "line": "$109 USD* paid annually"
+        },
+        {
+          "context": "Monthly Plan",
+          "line": "$14.99 USD*/month"
+        }
+      ]
+    },
+    {
+      "name": "Headspace",
+      "ourProduct": "Aura (wellness)",
+      "url": "https://www.headspace.com/subscriptions",
+      "ok": true,
+      "finalUrl": "https://www.headspace.com/subscriptions",
+      "title": "Subscribe to Headspace",
+      "prices": [
+        {
+          "context": "Annual Plan",
+          "line": "$34.99 USD/yr  $69.99/yr"
+        },
+        {
+          "context": "Monthly Plan",
+          "line": "$12.99 USD/mo"
+        },
+        {
+          "context": "Annual Plan",
+          "line": "$34.99 USD/yr  $69.99/yr"
+        },
+        {
+          "context": "Monthly Plan",
+          "line": "$12.99 USD/mo"
+        }
+      ]
+    }
+  ]
+}
