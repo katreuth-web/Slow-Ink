@@ -1,0 +1,51 @@
+--- the two Saturn dates the audit found wrong
+    1916-10-05  Saturn 119.3148  Cancer  (was Leo, truth Cancer 119.3148)
+PASS  1916-10-05: Saturn now reads Cancer, not Leo
+PASS  1916-10-05: longitude within 0.01 deg of reference (0.00000)
+    1919-08-07  Saturn 149.3667  Leo  (was Virgo, truth Leo 149.3667)
+PASS  1919-08-07: Saturn now reads Leo, not Virgo
+PASS  1919-08-07: longitude within 0.01 deg of reference (0.00003)
+--- Pluto
+PASS  Pluto is in the placements
+PASS  Pluto 1990-06-15 = Scorpio 225.403 (expect Scorpio ~225.40)
+PASS  Pluto gets a house (3)
+PASS  ten bodies now (10)
+PASS  Pluto 1800-01-01: Pisces 331.43
+PASS  Pluto 1930-02-18: Cancer 107.77
+PASS  Pluto 2026-11-11: Aquarius 303.23
+PASS  Pluto 2200-01-01: Leo 144.74
+--- structure and retrograde
+PASS  planet keys unchanged (deg,house,lon,name,retro,sign,signIndex)
+    retrograde on 1990-06-15: ["Saturn","Uranus","Neptune","Pluto"]
+PASS  retrograde flags still produced
+PASS  Sun and Moon are never marked retrograde
+--- unknown birth time
+PASS  unknown time still falls back to 12:00 noon
+PASS  the unknown-time warning still shows
+--- high latitude
+    lat 70 cusps: 203.65, 233.65, 263.65, 293.65, 323.65, 353.65, 23.65, 53.65, 83.65, 113.65, 143.65, 173.65
+    gap sum: 360.00  min gap: 30.00
+PASS  cusps form one proper ring (sum 360.00, was 1080 before)
+PASS  no collapsed cusps (min gap 30.00, was 0.00 before)
+PASS  and the fallback is recorded, not silent
+PASS  bodies spread across houses (1,3,4,5,6,7,8,9; was only 1 and 6)
+PASS  normal latitudes still use Placidus, untouched
+PASS  the page explains the polar fallback
+--- honesty guards
+PASS  1650 is flagged as outside the checked range
+PASS  1990 is not flagged
+PASS  a time inside the spring-forward gap is flagged as never having existed
+PASS  a repeated autumn hour is flagged as ambiguous
+PASS  an ordinary time is not flagged
+--- lunar
+    2026-11-11: Waxing crescent 4.8% lit, age 2.03 d
+    next new 2026-12-09T00:52  full 2026-11-24T14:54
+    next 1stQ 2026-11-17T11:48  3rdQ 2026-12-01T06:09
+PASS  all four lunar events are found
+PASS  moonPhase still returns name/key/prompt for the UI
+PASS  lit fraction sane (0.048)
+    phase shown: {"home":"Waxing crescent","calendar":null,"rituals":"Waxing crescent","engine":"Waxing crescent"}
+PASS  Home and Rituals both show a phase
+PASS  no JavaScript errors anywhere
+
+ALL ACCEPTANCE CHECKS PASSED
